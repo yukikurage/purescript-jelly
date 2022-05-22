@@ -3,33 +3,37 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Trans.Class (lift)
-import Data.Foldable (sequence_)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
+import Effect.Aff (Milliseconds(..), delay, launchAff_)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Effect.Timer (clearInterval, setInterval, setTimeout)
-import Jelly.Data.Emitter (emit, newEmitter)
+import Effect.Timer (clearInterval, setInterval)
 import Jelly.Data.HookM (HookM, runHookM)
 import Jelly.Data.JellyM (runAlone)
+import Jelly.Hooks.DOM (text)
 import Jelly.Hooks.UseEffect (useEffect)
 import Jelly.Hooks.UseState (useState)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.RunApp (runApp)
+import Web.DOM (Node)
 
 main :: Effect Unit
-main = do
-  emitter <- newEmitter
-  runHookM hooksTest emitter
+main = launchAff_ do
+  {- Dependencies Test -}
+  _ /\ unmount <- liftEffect $ runHookM dependenciesTest
 
-  _ <- setTimeout 2000 $ do
-    log "setTimeout called"
-    sequence_ $ emit emitter unit
-    newEmitter <- newEmitter
-    runHookM hooksTest newEmitter
+  delay $ Milliseconds 1000.0
 
-  pure unit
+  log "setTimeout called"
+  liftEffect $ unmount
 
-hooksTest :: HookM Effect Unit
-hooksTest = do
+  {- App Test -}
+
+  liftEffect $ runApp appTest
+
+dependenciesTest :: HookM Effect Unit
+dependenciesTest = do
   lift $ log "hooksTest called"
 
   getState /\ modifyState <- useState 0
@@ -40,7 +44,7 @@ hooksTest = do
     lift $ log $ "state: " <> show state
     pure $ pure unit
 
-  id <- lift $ setInterval 500 $ runAlone do
+  id <- lift $ setInterval 200 $ runAlone do
     lift $ log "setInterval called"
     modifyState (_ + 1)
 
@@ -49,3 +53,18 @@ hooksTest = do
     lift $ clearInterval id
 
   pure unit
+
+appTest :: HookM Effect Node
+appTest = do
+  lift $ log "appTest called"
+
+  getState /\ modifyState <- useState "C"
+
+  id <- lift $ setInterval 200 $ runAlone do
+    lift $ log "setInterval called"
+    modifyState (_ <> "+")
+
+  useUnmountEffect do
+    lift $ clearInterval id
+
+  text getState
