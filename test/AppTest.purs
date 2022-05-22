@@ -21,7 +21,7 @@ appTest = do
 
   getState /\ modifyState <- useState "C"
 
-  listener <- useListener $ \_ -> runAlone do
+  listener <- useListener $ \_ -> do
     modifyState (_ <> "+")
 
   id <- liftEffect $ setInterval 200 $ do
