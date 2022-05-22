@@ -6,14 +6,15 @@ module Jelly.Data.HookM
 import Prelude
 
 import Control.Monad.Reader (class MonadTrans, ReaderT, lift, runReaderT)
-import Data.Foldable (sequence_)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect.Class (class MonadEffect, liftEffect)
 import Jelly.Data.Emitter (Emitter, emit, newEmitter)
+import Jelly.Data.Machine (Machine)
 
 newtype HookM (m :: Type -> Type) a = HookM
   ( ReaderT
       ( { unmountEmitter :: Emitter m Unit
+        , machine :: Machine m
         }
       )
       m
@@ -29,8 +30,9 @@ derive newtype instance MonadEffect m => MonadEffect (HookM m)
 instance MonadTrans HookM where
   lift = HookM <<< lift
 
-runHookM :: forall m a. MonadEffect m => HookM m a -> m (a /\ (m Unit))
-runHookM (HookM hook) = do
+runHookM
+  :: forall m a. MonadEffect m => Machine m -> HookM m a -> m (a /\ (m Unit))
+runHookM machine (HookM hook) = do
   unmountEmitter <- liftEffect newEmitter
-  a <- runReaderT hook { unmountEmitter }
-  pure $ a /\ (sequence_ $ emit unmountEmitter unit)
+  a <- runReaderT hook { unmountEmitter, machine }
+  pure $ a /\ emit unmountEmitter unit

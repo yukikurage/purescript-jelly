@@ -11,7 +11,8 @@ import Effect.Ref (new, read, write)
 import Jelly.Data.DependenciesSolver (connect, disconnectAll, getObserverCallback, getObserverEffect, getObservers, newObservedState, setObserverCallback)
 import Jelly.Data.HookM (HookM)
 import Jelly.Data.JellyM (JellyM(..))
-import Jelly.Data.Modifier (Modifier)
+
+type Modifier m a = (a -> a) -> JellyM m Unit
 
 useState
   :: forall m a

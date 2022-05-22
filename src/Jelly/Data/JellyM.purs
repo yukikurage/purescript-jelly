@@ -23,5 +23,7 @@ derive newtype instance MonadEffect m => MonadEffect (JellyM m)
 instance MonadTrans JellyM where
   lift = JellyM <<< lift
 
+-- | Convert JellyM m a to m a
+-- | Dependencies will no longer be tracked
 runAlone :: forall m a. JellyM m a -> m a
 runAlone (JellyM m) = runReaderT m Nothing

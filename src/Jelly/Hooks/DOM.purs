@@ -28,3 +28,6 @@ text strM = do
     pure $ pure unit
 
   pure node
+
+-- element :: forall m. MonadEffect m => String -> Array () -> Children -> HookM m Element
+-- putAt
