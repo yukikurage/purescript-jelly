@@ -9,8 +9,9 @@ import Control.Monad.Reader (class MonadAsk, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Jelly.Data.Emitter (Emitter, emit, newEmitter)
+import Jelly.Data.JellyM (JellyM)
 
 newtype HookM r a = HookM
   ( ReaderT
@@ -18,7 +19,7 @@ newtype HookM r a = HookM
         , r :: r
         }
       )
-      Effect
+      JellyM
       a
   )
 
@@ -38,8 +39,8 @@ runHookM
   :: forall r a
    . r
   -> HookM r a
-  -> Effect (a /\ Effect Unit)
+  -> JellyM (a /\ Effect Unit)
 runHookM r (HookM hook) = do
-  unmountEmitter <- newEmitter
+  unmountEmitter <- liftEffect $ newEmitter
   a <- runReaderT hook { unmountEmitter, r }
   pure $ a /\ emit unmountEmitter unit
