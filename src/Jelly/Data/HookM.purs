@@ -5,38 +5,41 @@ module Jelly.Data.HookM
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT, runReaderT)
+import Control.Monad.Reader (class MonadAsk, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Jelly.Data.Emitter (Emitter, emit, newEmitter)
-import Jelly.Data.Machine (Machine)
 
-newtype HookM (m :: Type -> Type) a = HookM
+newtype HookM r a = HookM
   ( ReaderT
       ( { unmountEmitter :: Emitter Effect Unit
-        , machine :: Machine m
+        , r :: r
         }
       )
       Effect
       a
   )
 
-derive newtype instance Functor (HookM m)
-derive newtype instance Apply (HookM m)
-derive newtype instance Applicative (HookM m)
-derive newtype instance Bind (HookM m)
-derive newtype instance Monad (HookM m)
-derive newtype instance MonadEffect (HookM m)
-derive newtype instance MonadRec (HookM m)
+derive newtype instance Functor (HookM r)
+derive newtype instance Apply (HookM r)
+derive newtype instance Applicative (HookM r)
+derive newtype instance Bind (HookM r)
+derive newtype instance Monad (HookM r)
+derive newtype instance MonadEffect (HookM r)
+derive newtype instance MonadRec (HookM r)
+instance MonadAsk r (HookM r) where
+  ask = HookM do
+    { r } <- ask
+    pure r
 
 runHookM
-  :: forall m a
-   . Machine m
-  -> HookM m a
+  :: forall r a
+   . r
+  -> HookM r a
   -> Effect (a /\ Effect Unit)
-runHookM machine (HookM hook) = do
+runHookM r (HookM hook) = do
   unmountEmitter <- newEmitter
-  a <- runReaderT hook { unmountEmitter, machine }
+  a <- runReaderT hook { unmountEmitter, r }
   pure $ a /\ emit unmountEmitter unit

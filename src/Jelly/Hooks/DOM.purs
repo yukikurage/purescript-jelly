@@ -3,7 +3,7 @@ module Jelly.Hooks.DOM where
 import Prelude
 
 import Data.Foldable (for_)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (liftEffect)
 import Jelly.Data.HookM (HookM)
 import Jelly.Data.JellyM (JellyM, alone)
 import Jelly.Data.Props (Prop(..))
@@ -19,7 +19,7 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (document)
 
-setProps :: forall m. MonadEffect m => Element -> Array Prop -> HookM m Unit
+setProps :: forall r. Element -> Array Prop -> HookM r Unit
 setProps element props = do
   for_ props case _ of
     PropAttribute name valueJelly -> do
@@ -34,7 +34,7 @@ setProps element props = do
 
 -- el :: forall m. MonadEffect m => String -> Array (Prop m) -> Array (HookM m Node) -> HookM m Element
 
-text :: forall m. MonadEffect m => JellyM String -> HookM m Node
+text :: forall r. JellyM String -> HookM r Node
 text strM = do
   node <- liftEffect $ Text.toNode <$>
     ( createTextNode "" <<< HTMLDocument.toDocument

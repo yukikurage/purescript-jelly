@@ -9,21 +9,20 @@ import Data.Tuple.Nested ((/\))
 import Effect.Class (liftEffect)
 import Effect.Timer (clearInterval, setInterval)
 import Jelly.Data.HookM (HookM)
-import Jelly.Data.JellyM (alone)
 import Jelly.Hooks.DOM (text)
 import Jelly.Hooks.UseState (useState)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
-import Test.AppM (AppM)
+import Test.AppState (AppState)
 import Web.DOM (Node)
 
-appTest :: HookM AppM Node
+appTest :: HookM AppState Node
 appTest = do
   getState /\ modifyState <- useState $ toCharCode 'a'
 
   let
     txt = singleton <<< fromMaybe 'a' <<< fromCharCode <$> getState
 
-  id <- liftEffect $ setInterval 200 $ alone do
+  id <- liftEffect $ setInterval 200 do
     modifyState (_ + 1)
 
   useUnmountEffect do
