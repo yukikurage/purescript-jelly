@@ -1,29 +1,25 @@
 module Jelly.Data.JellyM
   ( JellyM(..)
-  , runAlone
+  , alone
   ) where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadTrans, ReaderT, lift, runReaderT)
+import Control.Monad.Reader (ReaderT, runReaderT)
 import Data.Maybe (Maybe(..))
+import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Jelly.Data.DependenciesSolver (Observer)
 
--- resolveDependency addDependencyListener removeDependencyListener
+newtype JellyM a = JellyM
+  (ReaderT (Maybe Observer) Effect a)
 
-newtype JellyM m a = JellyM (ReaderT (Maybe (Observer m)) m a)
+derive newtype instance Functor JellyM
+derive newtype instance Apply JellyM
+derive newtype instance Applicative JellyM
+derive newtype instance Bind JellyM
+derive newtype instance Monad JellyM
+derive newtype instance MonadEffect JellyM
 
-derive newtype instance Functor m => Functor (JellyM m)
-derive newtype instance Apply m => Apply (JellyM m)
-derive newtype instance Applicative m => Applicative (JellyM m)
-derive newtype instance Bind m => Bind (JellyM m)
-derive newtype instance Monad m => Monad (JellyM m)
-derive newtype instance MonadEffect m => MonadEffect (JellyM m)
-instance MonadTrans JellyM where
-  lift = JellyM <<< lift
-
--- | Convert JellyM m a to m a
--- | Dependencies will no longer be tracked
-runAlone :: forall m a. JellyM m a -> m a
-runAlone (JellyM m) = runReaderT m Nothing
+alone :: forall a. JellyM a -> Effect a
+alone (JellyM f) = runReaderT f Nothing

@@ -2,21 +2,23 @@ module Jelly.Hooks.UseEffect where
 
 import Prelude
 
-import Control.Monad.Reader (lift, runReaderT)
+import Control.Monad.Reader (runReaderT)
 import Data.Maybe (Maybe(..))
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Jelly.Data.DependenciesSolver (disconnectAll, newObserver, setObserverCallback)
 import Jelly.Data.HookM (HookM)
-import Jelly.Data.JellyM (JellyM(..))
+import Jelly.Data.JellyM (JellyM(..), alone)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
-useEffect :: forall m. MonadEffect m => JellyM m (m Unit) -> HookM m Unit
+useEffect :: forall m. MonadEffect m => JellyM (JellyM Unit) -> HookM m Unit
 useEffect (JellyM resolve) = do
   let
     func = runReaderT resolve
-  observer <- lift $ newObserver \observer -> func $ Just observer
+  observer <- liftEffect $ newObserver \observer -> do
+    callback <- func $ Just observer
+    pure $ alone callback
 
-  callback <- lift $ func $ Just observer
-  lift $ setObserverCallback observer callback
+  callback <- liftEffect $ func $ Just observer
+  liftEffect $ setObserverCallback observer $ alone callback
 
-  useUnmountEffect $ lift $ disconnectAll observer
+  useUnmountEffect $ liftEffect $ disconnectAll observer

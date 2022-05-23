@@ -20,9 +20,9 @@ runApp :: forall m. MonadAff m => MonadRec m => HookM m Node -> m Unit
 runApp hook = do
   bodyMaybe <- liftEffect $ body =<< document =<< window
 
-  machine <- newMachine
+  machine <- liftEffect $ newMachine
 
-  node /\ _ <- runHookM machine hook
+  node /\ _ <- liftEffect $ runHookM machine hook
 
   liftEffect case bodyMaybe of
     Just b -> appendChild node (toNode b)

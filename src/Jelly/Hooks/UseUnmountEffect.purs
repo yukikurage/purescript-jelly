@@ -9,7 +9,7 @@ import Jelly.Data.Emitter (addEmitterListenerOnce)
 import Jelly.Data.HookM (HookM(..))
 import Jelly.Data.JellyM (JellyM(..))
 
-useUnmountEffect :: forall m. MonadEffect m => JellyM m Unit -> HookM m Unit
+useUnmountEffect :: forall m. MonadEffect m => JellyM Unit -> HookM m Unit
 useUnmountEffect (JellyM resolve) = HookM do
   { unmountEmitter } <- ask
   _ <- liftEffect $ addEmitterListenerOnce unmountEmitter \_ -> runReaderT

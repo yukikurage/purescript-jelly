@@ -2,34 +2,34 @@
 Manage observedState-observer dependencies
 */
 
-export const newObserverImpl = (f /* :: Observer m -> m (m Unit) */) => () => {
+export const newObserver = (f /* :: Observer -> Effect (Effect Unit) */) => () => {
   const observer = {
-    callback: undefined, // :: m Unit | undefined
+    callback: undefined, // :: Effect Unit | undefined
     dependencies: new Set(),
   };
-  observer.effect = f(observer); // :: m (m Unit)
+  observer.effect = f(observer); // :: Effect (Effect Unit)
   return observer;
 };
 
-export const newObservedStateImpl = () => new Set()
+export const newObservedState = () => new Set()
 
-export const connectImpl = (observer) => (observedState) => () => {
+export const connect = (observer) => (observedState) => () => {
   observer.dependencies.add(observedState);
   observedState.add(observer);
 };
 
-export const disconnectImpl = (observer) => (observedState) => () => {
+export const disconnect = (observer) => (observedState) => () => {
   observer.dependencies.delete(observedState);
   observedState.delete(observer);
 };
 
-export const disconnectAllImpl = (observer) => () => {
+export const disconnectAll = (observer) => () => {
   observer.dependencies.forEach((observedState) => {
-    disconnectImpl(observer)(observedState);
+    disconnect(observer)(observedState);
   });
 };
 
-export const setObserverCallbackImpl = (observer) => (callback) => () => {
+export const setObserverCallback = (observer) => (callback) => () => {
   observer.callback = callback;
 };
 
@@ -43,6 +43,6 @@ export const getObserverCallbackImpl = (just) => (nothing) => (observer) => () =
 
 export const getObserverEffect = (observer) => observer.effect
 
-export const getObserversImpl = (observedState) => () => {
+export const getObservers = (observedState) => () => {
   return [...observedState];
 };

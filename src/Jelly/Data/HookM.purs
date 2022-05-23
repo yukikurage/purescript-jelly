@@ -5,34 +5,38 @@ module Jelly.Data.HookM
 
 import Prelude
 
-import Control.Monad.Reader (class MonadTrans, ReaderT, lift, runReaderT)
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Control.Monad.Rec.Class (class MonadRec)
 import Data.Tuple.Nested (type (/\), (/\))
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Jelly.Data.Emitter (Emitter, emit, newEmitter)
 import Jelly.Data.Machine (Machine)
 
 newtype HookM (m :: Type -> Type) a = HookM
   ( ReaderT
-      ( { unmountEmitter :: Emitter m Unit
+      ( { unmountEmitter :: Emitter Effect Unit
         , machine :: Machine m
         }
       )
-      m
+      Effect
       a
   )
 
-derive newtype instance Functor m => Functor (HookM m)
-derive newtype instance Apply m => Apply (HookM m)
-derive newtype instance Applicative m => Applicative (HookM m)
-derive newtype instance Bind m => Bind (HookM m)
-derive newtype instance Monad m => Monad (HookM m)
-derive newtype instance MonadEffect m => MonadEffect (HookM m)
-instance MonadTrans HookM where
-  lift = HookM <<< lift
+derive newtype instance Functor (HookM m)
+derive newtype instance Apply (HookM m)
+derive newtype instance Applicative (HookM m)
+derive newtype instance Bind (HookM m)
+derive newtype instance Monad (HookM m)
+derive newtype instance MonadEffect (HookM m)
+derive newtype instance MonadRec (HookM m)
 
 runHookM
-  :: forall m a. MonadEffect m => Machine m -> HookM m a -> m (a /\ (m Unit))
+  :: forall m a
+   . Machine m
+  -> HookM m a
+  -> Effect (a /\ Effect Unit)
 runHookM machine (HookM hook) = do
-  unmountEmitter <- liftEffect newEmitter
+  unmountEmitter <- newEmitter
   a <- runReaderT hook { unmountEmitter, machine }
   pure $ a /\ emit unmountEmitter unit
