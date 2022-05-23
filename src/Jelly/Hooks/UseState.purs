@@ -10,17 +10,17 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write)
 import Jelly.Data.DependenciesSolver (connect, disconnectAll, getObserverCallback, getObserverEffect, getObservers, newObservedState, setObserverCallback)
-import Jelly.Data.HookM (HookM)
 import Jelly.Data.JellyM (JellyM(..))
 
 type Modifier a = (a -> a) -> Effect Unit
 
 useState
-  :: forall m a
+  :: forall m m' a
    . MonadEffect m
+  => MonadEffect m'
   => Eq a
   => a
-  -> HookM m (JellyM a /\ Modifier a)
+  -> m (JellyM a /\ ((a -> a) -> m' Unit))
 useState initValue = liftEffect do
   valueRef <- new initValue
 
@@ -33,7 +33,7 @@ useState initValue = liftEffect do
         Nothing -> pure unit
       liftEffect $ read valueRef
 
-    modifier f = do
+    modifier f = liftEffect do
       oldValue <- read valueRef
       let
         newValue = f oldValue
