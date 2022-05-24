@@ -6,8 +6,8 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Jelly.Data.Jelly (addCleaner, alone, launchJelly, newJelly, stopJelly)
-import Jelly.Data.Props (on, (:=))
-import Jelly.HTML as H
+import Jelly.Data.Props (on)
+import Jelly.HTML (el, el_, text)
 import Jelly.RunApp (runApp)
 
 main :: Effect Unit
@@ -25,18 +25,26 @@ appTest :: Effect Unit
 appTest = runApp do
   counterValue /\ modifyCounterValue <- newJelly 0
 
-  H.div []
-    [ H.button
-        [ on "click" \_ -> modifyCounterValue (_ + 1)
-        , "class" := pure "counter-button"
+  isShowCounter /\ modifyIsShowCounter <- newJelly false
+
+  el_ "div"
+    [ el "button"
+        [ on "click" \_ -> modifyIsShowCounter not
         ]
-        [ H.text $ pure "+" ]
-    , H.div [] [ H.text $ show <$> counterValue ]
-    , H.button
-        [ on "click" \_ -> modifyCounterValue (_ - 1)
-        , "class" := pure "counter-button"
-        ]
-        [ H.text $ pure "-" ]
+        [ text $ ifM isShowCounter (pure "Hide") $ pure "Show" ]
+    , ifM isShowCounter
+        ( el_ "div"
+            [ el "button"
+                [ on "click" \_ -> modifyCounterValue (_ + 1)
+                ]
+                [ text $ pure "+" ]
+            , el_ "div" [ text $ show <$> counterValue ]
+            , el "button"
+                [ on "click" \_ -> modifyCounterValue (_ - 1)
+                ]
+                [ text $ pure "-" ]
+            ]
+        ) $ el_ "div" []
     ]
 
 childJellyCleanerTest :: Effect Unit

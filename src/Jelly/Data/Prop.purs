@@ -14,5 +14,3 @@ on = PropListener
 
 attr :: String -> Jelly String -> Prop
 attr = PropAttribute
-
-infix 5 attr as :=
