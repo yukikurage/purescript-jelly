@@ -4,9 +4,9 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Jelly.DOM (el, text)
 import Jelly.Data.Jelly (newJelly)
 import Jelly.Data.Props (on)
+import Jelly.HTML (el, text)
 import Jelly.RunApp (runApp)
 
 main :: Effect Unit

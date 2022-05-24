@@ -1,4 +1,4 @@
-module Jelly.DOM where
+module Jelly.HTML where
 
 import Prelude
 
@@ -60,6 +60,12 @@ el tagName props children = do
   for_ props $ setProp element
   for_ children $ addChild $ toNode element
   pure $ toNode element
+
+div :: Array Prop -> Array (Jelly Node) -> Jelly Node
+div = el "div"
+
+button :: Array Prop -> Array (Jelly Node) -> Jelly Node
+button = el "button"
 
 text :: Jelly String -> Jelly Node
 text txtJelly = do
