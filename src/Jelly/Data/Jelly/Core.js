@@ -1,13 +1,15 @@
+"use strict"
+
 /*
 Manage observedState-observer dependencies
 */
 
-export const newObserver = (f /* :: Observer -> Effect (Effect Unit) */) => () => {
+export const newObserver = (f /* :: Observer -> Effect Unit */) => () => {
   const observer = {
-    callback: undefined, // :: Effect Unit | undefined
+    callbacks: new Set(), // :: Set<() => void)>
     dependencies: new Set(),
   };
-  observer.effect = f(observer); // :: Effect (Effect Unit)
+  observer.effect = f(observer); // :: Effect Unit
   return observer;
 };
 
@@ -29,16 +31,16 @@ export const disconnectAll = (observer) => () => {
   });
 };
 
-export const setObserverCallback = (observer) => (callback) => () => {
-  observer.callback = callback;
+export const addObserverCallbacks = (observer) => (callback) => () => {
+  observer.callbacks.add(callback);
 };
 
-export const getObserverCallbackImpl = (just) => (nothing) => (observer) => () => {
-  if (observer.callback) {
-    return just(observer.callback);
-  } else {
-    return nothing;
-  }
+export const clearObserverCallbacks = (observer) => () => {
+  observer.callbacks.clear();
+};
+
+export const getObserverCallbacks =  (observer) => () => {
+  return [...observer.callbacks];
 }
 
 export const getObserverEffect = (observer) => observer.effect

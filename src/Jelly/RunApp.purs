@@ -3,9 +3,8 @@ module Jelly.RunApp where
 import Prelude
 
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Jelly.Data.HookM (HookM, runHookM)
+import Jelly.Data.Jelly (Jelly, alone)
 import Web.DOM (Node)
 import Web.DOM.Node (appendChild)
 import Web.HTML (window)
@@ -13,11 +12,11 @@ import Web.HTML.HTMLDocument (body)
 import Web.HTML.HTMLElement (toNode)
 import Web.HTML.Window (document)
 
-runApp :: forall r. HookM r Node -> r -> Effect Unit
-runApp hook r = do
+runApp :: Jelly Node -> Effect Unit
+runApp jellyNode = do
   bodyMaybe <- body =<< document =<< window
 
-  node /\ _ <- runHookM r hook
+  node <- alone jellyNode
 
   case bodyMaybe of
     Just b -> appendChild node (toNode b)
