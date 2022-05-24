@@ -6,7 +6,7 @@ import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Effect.Class (liftEffect)
 import Effect.Ref (new, read, write)
-import Jelly.Data.Jelly (Jelly, alone, launchJelly)
+import Jelly.Data.Jelly (Jelly, alone, launchJelly_)
 import Jelly.Data.Props (Prop(..))
 import Web.DOM (Element, Node)
 import Web.DOM.Document (createElement, createTextNode)
@@ -24,10 +24,9 @@ type Component = Jelly Node
 setProp :: Element -> Prop -> Jelly Unit
 setProp element prop = case prop of
   PropAttribute name valueJelly -> do
-    _ <- launchJelly do
+    launchJelly_ do
       value <- valueJelly
       liftEffect $ setAttribute name value element
-    pure unit
   PropListener name listenerJelly -> do
     listener <- liftEffect $ eventListener \e -> alone $ listenerJelly e
     liftEffect $ addEventListener (EventType name) listener false $
@@ -37,7 +36,7 @@ addChild :: Node -> Component -> Jelly Unit
 addChild parentNode nodeJelly = do
   oldNodeRef <- liftEffect $ new Nothing
 
-  _ <- launchJelly do
+  launchJelly_ do
     oldNodeMaybe <- liftEffect $ read oldNodeRef
     newNode <- nodeJelly
 
@@ -48,8 +47,6 @@ addChild parentNode nodeJelly = do
         insertBefore newNode oldNode parentNode
         removeChild oldNode parentNode
     liftEffect $ write (Just newNode) oldNodeRef
-
-  pure unit
 
 el :: String -> Array Prop -> Array Component -> Component
 el tagName props children = do
@@ -82,7 +79,7 @@ text txtJelly = do
         =<< window
     )
 
-  _ <- launchJelly do
+  launchJelly_ do
     txt <- txtJelly
     liftEffect $ setTextContent txt node
     pure unit

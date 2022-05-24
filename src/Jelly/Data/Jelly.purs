@@ -103,5 +103,19 @@ launchJelly jelly = do
 
   pure $ JellyId $ stopJellyEffect
 
+launchJelly_ :: Jelly Unit -> Jelly Unit
+launchJelly_ jelly = do
+  observer <- liftEffect $ newObserver \observer -> do
+    runJelly jelly observer
+
+  liftEffect $ runJelly jelly observer
+
+  let
+    stopJellyEffect = do
+      disconnectAll observer
+      runCallbackAndClear observer
+
+  addCleaner $ liftEffect stopJellyEffect
+
 stopJelly :: forall m. MonadEffect m => JellyId -> m Unit
 stopJelly (JellyId stop) = liftEffect stop

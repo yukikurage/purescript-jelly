@@ -6,7 +6,7 @@ import Data.Array (replicate)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
-import Jelly.Data.Jelly (Jelly, addCleaner, alone, launchJelly, newJelly, stopJelly)
+import Jelly.Data.Jelly (Jelly, addCleaner, alone, launchJelly, launchJelly_, newJelly, stopJelly)
 import Jelly.Data.Props (on)
 import Jelly.HTML (Component, el, el_, text, whenEl)
 import Jelly.RunComponent (runComponent)
@@ -45,10 +45,10 @@ testJelly = do
   state0 /\ modifyState0 <- newJelly 0
   state1 /\ modifyState1 <- newJelly 0
 
-  _ <- launchJelly do
+  launchJelly_ do
     x0 <- state0
     log $ "Rank 0, state0 == " <> show x0
-    _ <- launchJelly do
+    launchJelly_ do
       x1 <- state1
       log $ "Rank 1,  state0 == " <> show x0 <> ", state1 == " <> show x1
     pure unit
@@ -80,7 +80,7 @@ childJellyCleanerTest :: Effect Unit
 childJellyCleanerTest = alone $ do
   jellyId <- launchJelly do
     stateJelly /\ modifyState <- newJelly 0
-    _ <- launchJelly do
+    launchJelly_ do
       i <- stateJelly
       addCleaner do
         log $ "Child jelly cleaner called. State: " <> show i
