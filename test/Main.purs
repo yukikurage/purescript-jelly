@@ -77,8 +77,8 @@ counter = do
     ]
 
 childJellyCleanerTest :: Effect Unit
-childJellyCleanerTest = do
-  jellyId <- alone $ launchJelly do
+childJellyCleanerTest = alone $ do
+  jellyId <- launchJelly do
     stateJelly /\ modifyState <- newJelly 0
     _ <- launchJelly do
       i <- stateJelly
