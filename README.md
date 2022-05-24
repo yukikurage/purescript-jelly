@@ -261,4 +261,4 @@ _This corresponds to the process of updating/deleting a child element when the p
 
 ここまでの機能で、小規模な Web アプリは作れると思います。
 
-_With the functionality up to this point, we believe it is possible to create a small-scale Web application._
+_With the functionality up to this point, I believe it is possible to create a small-scale Web application._
