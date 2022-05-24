@@ -1,4 +1,4 @@
-module Jelly.Hooks.DOM where
+module Jelly.DOM where
 
 import Prelude
 
