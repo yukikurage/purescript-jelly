@@ -12,9 +12,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write)
 import Jelly.Data.Jelly.Core (Observer, addObserverCallbacks, connect, disconnectAll, getObserverEffect, getObservers, newObservedState, newObserver, runCallbackAndClear)
 
-type JellyInternal =
-  { observer :: Maybe Observer
-  }
+type JellyInternal = Maybe Observer
 
 newtype Jelly a = Jelly (ReaderT JellyInternal Effect a)
 
@@ -29,10 +27,10 @@ derive newtype instance MonadAsk JellyInternal Jelly
 newtype JellyId = JellyId (Effect Unit)
 
 alone :: forall a. Jelly a -> Effect a
-alone (Jelly m) = runReaderT m { observer: Nothing }
+alone (Jelly m) = runReaderT m Nothing
 
 runJelly :: forall a. Jelly a -> Observer -> Effect a
-runJelly (Jelly m) observer = runReaderT m { observer: Just observer }
+runJelly (Jelly m) observer = runReaderT m $ Just observer
 
 newJelly
   :: forall m m' a
@@ -48,7 +46,7 @@ newJelly initValue = liftEffect do
 
   let
     getter = do
-      { observer } <- ask
+      observer <- ask
       liftEffect case observer of
         Just obs -> connect obs observedState
         Nothing -> pure unit
@@ -67,8 +65,7 @@ newJelly initValue = liftEffect do
 
         write newValue valueRef
 
-        for_ observers \observer -> do
-          getObserverEffect observer
+        for_ observers \observer -> getObserverEffect observer
       else pure unit
 
   pure $ getter /\ modifier
@@ -87,7 +84,7 @@ newJellies n initValue = replicateA n (newJelly initValue)
 addCleaner :: Jelly Unit -> Jelly Unit
 addCleaner cleaner = do
   let cleanerEffect = alone cleaner
-  { observer } <- ask
+  observer <- ask
   case observer of
     Just obs -> do
       liftEffect $ addObserverCallbacks obs cleanerEffect
