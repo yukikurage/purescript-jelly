@@ -9,12 +9,12 @@ import Effect.Class.Console (log)
 import Jelly.Data.Jelly (Jelly, addCleaner, alone, launchJelly, newJelly, stopJelly)
 import Jelly.Data.Props (on)
 import Jelly.HTML (Component, el, el_, text, whenEl)
-import Jelly.RunApp (runApp)
+import Jelly.RunComponent (runComponent)
 
 main :: Effect Unit
 main = do
   log "Run App Test"
-  runApp appTest
+  runComponent appTest
 
   log "Child jelly cleaner test"
   childJellyCleanerTest
@@ -92,9 +92,10 @@ childJellyCleanerTest = do
   stopJelly jellyId
 
 loopJellyTest :: Effect Unit
-loopJellyTest = do
+loopJellyTest = alone $ do
   stateJelly /\ modifyState <- newJelly 0
-  jellyId <- alone $ launchJelly do
+
+  jellyId <- launchJelly do
     state <- stateJelly
     if state < 20 then do
       addCleaner $ log $ "First cleaner called. State: " <> show state
@@ -103,5 +104,6 @@ loopJellyTest = do
       addCleaner $ log $ "Second cleaner called. State: " <> show state
       log $ "Fin. State:" <> show state
     else pure unit
+
   log "Stopping jelly"
   stopJelly jellyId

@@ -73,13 +73,13 @@ app = do
 
 _`whenEl` is a function provided by Jelly. Thus, simple code can be used to separate components._
 
-最後に、`runApp` 関数に `Component` を渡して描画します。
+最後に、`runComponent` 関数に `Component` を渡して描画します。
 
 _Finally, pass `Component` to the `runApp` function to draw it._
 
 ```purescript
 main :: Effect Unit
-main = runApp app
+main = runComponent app
 ```
 
 ## Jelly is under development
@@ -109,19 +109,6 @@ _Jelly is `MonadEffect`._
 `newJelly` の型も見てみます。これは React の `useState` に対応します。
 
 _Let's also look at the `newJelly` type. This corresponds to React's `useState`._
-
-```purescript
-newJelly :: forall m m' a
-   . MonadEffect m
-  => MonadEffect m'
-  => Eq a
-  => a
-  -> m (Jelly a /\ ((a -> a) -> m' Unit))
-```
-
-大体の場合 `m` と `m'` は `Jelly` です。
-
-_For the most part `m` and `m'` are `Jelly`._
 
 ```purescript
 newJelly :: forall a  . Eq a => a -> Jelly (Jelly a /\ ((a -> a) -> Jelly Unit))

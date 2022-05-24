@@ -1,4 +1,4 @@
-module Jelly.RunApp where
+module Jelly.RunComponent where
 
 import Prelude
 
@@ -12,8 +12,8 @@ import Web.HTML.HTMLDocument (body)
 import Web.HTML.HTMLElement (toNode)
 import Web.HTML.Window (document)
 
-runApp :: Jelly Node -> Effect Unit
-runApp jellyNode = do
+runComponent :: Jelly Node -> Effect Unit
+runComponent jellyNode = do
   bodyMaybe <- body =<< document =<< window
 
   node <- alone jellyNode
