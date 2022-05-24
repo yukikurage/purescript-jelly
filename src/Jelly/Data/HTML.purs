@@ -2,7 +2,7 @@ module Jelly.HTML where
 
 import Prelude
 
-import Data.Foldable (for_)
+import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Effect.Class (liftEffect)
 import Effect.Ref (new, read, write)

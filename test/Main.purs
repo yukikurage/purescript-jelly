@@ -2,6 +2,7 @@ module Test.Main where
 
 import Prelude
 
+import Data.Array (replicate)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
@@ -36,7 +37,7 @@ appTest = do
             do pure "Stop"
             do pure "Run"
         ]
-    , whenEl isShowCounter counter
+    , whenEl isShowCounter $ el_ "div" $ replicate 10000 counter
     ]
 
 testJelly :: Jelly Unit

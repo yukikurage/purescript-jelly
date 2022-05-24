@@ -3,7 +3,8 @@ module Jelly.Data.Jelly where
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, ReaderT, ask, runReaderT)
-import Data.Foldable (for_)
+import Control.Monad.Rec.Class (class MonadRec)
+import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Unfoldable (replicateA)
@@ -23,6 +24,7 @@ derive newtype instance Bind Jelly
 derive newtype instance Monad Jelly
 derive newtype instance MonadEffect Jelly
 derive newtype instance MonadAsk JellyInternal Jelly
+derive newtype instance MonadRec Jelly
 
 newtype JellyId = JellyId (Effect Unit)
 
