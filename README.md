@@ -77,7 +77,7 @@ _`whenEl` is a function provided by Jelly. Thus, simple code can be used to sepa
 
 ```purescript
 main :: Effect Unit
-main = runApp appTest
+main = runApp app
 ```
 
 ## Jelly is under development
