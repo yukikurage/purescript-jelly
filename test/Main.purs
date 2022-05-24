@@ -4,23 +4,67 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Jelly.Data.Jelly (newJelly)
-import Jelly.Data.Props (on)
+import Effect.Class.Console (log)
+import Jelly.Data.Jelly (addCleaner, alone, launchJelly, newJelly, stopJelly)
+import Jelly.Data.Props (on, (:=))
 import Jelly.HTML as H
 import Jelly.RunApp (runApp)
 
 main :: Effect Unit
-main = runApp do
+main = do
+  log "Run App Test"
+  appTest
+
+  log "Child jelly cleaner test"
+  childJellyCleanerTest
+
+  log "Loop jelly test"
+  loopJellyTest
+
+appTest :: Effect Unit
+appTest = runApp do
   counterValue /\ modifyCounterValue <- newJelly 0
 
   H.div []
     [ H.button
         [ on "click" \_ -> modifyCounterValue (_ + 1)
+        , "class" := pure "counter-button"
         ]
         [ H.text $ pure "+" ]
     , H.div [] [ H.text $ show <$> counterValue ]
     , H.button
         [ on "click" \_ -> modifyCounterValue (_ - 1)
+        , "class" := pure "counter-button"
         ]
         [ H.text $ pure "-" ]
     ]
+
+childJellyCleanerTest :: Effect Unit
+childJellyCleanerTest = do
+  jellyId <- alone $ launchJelly do
+    stateJelly /\ modifyState <- newJelly 0
+    _ <- launchJelly do
+      i <- stateJelly
+      addCleaner do
+        log $ "Child jelly cleaner called. State: " <> show i
+    modifyState (_ + 1)
+    modifyState (_ + 1)
+    modifyState (_ + 1)
+    modifyState (_ + 1)
+    modifyState (_ + 1)
+  stopJelly jellyId
+
+loopJellyTest :: Effect Unit
+loopJellyTest = do
+  stateJelly /\ modifyState <- newJelly 0
+  jellyId <- alone $ launchJelly do
+    state <- stateJelly
+    if state < 20 then do
+      addCleaner $ log $ "First cleaner called. State: " <> show state
+      log $ "Jelly called. State: " <> show state
+      modifyState (_ + 1)
+      addCleaner $ log $ "Second cleaner called. State: " <> show state
+      log $ "Fin. State:" <> show state
+    else pure unit
+  log "Stopping jelly"
+  stopJelly jellyId
