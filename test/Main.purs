@@ -7,7 +7,7 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Jelly.Data.Jelly (Jelly, addCleaner, alone, launchJelly, launchJelly_, newJelly, stopJelly)
-import Jelly.Data.Props (on)
+import Jelly.Data.Props (classes, on)
 import Jelly.HTML (Component, el, el_, text, whenEl)
 import Jelly.RunComponent (runComponent)
 
@@ -32,6 +32,7 @@ appTest = do
   el_ "div"
     [ el "button"
         [ on "click" \_ -> modifyIsShowCounter not
+        , classes [ pure "button" ]
         ]
         [ text $ ifM isShowCounter
             do pure "Stop"

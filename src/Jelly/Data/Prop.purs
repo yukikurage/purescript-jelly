@@ -2,6 +2,8 @@ module Jelly.Data.Props where
 
 import Prelude
 
+import Data.String (joinWith)
+import Data.Traversable (sequence)
 import Jelly.Data.Jelly (Jelly)
 import Web.Event.Internal.Types (Event)
 
@@ -14,3 +16,6 @@ on = PropListener
 
 attr :: String -> Jelly String -> Prop
 attr = PropAttribute
+
+classes :: Array (Jelly String) -> Prop
+classes arr = attr "class" $ joinWith " " <$> sequence arr
