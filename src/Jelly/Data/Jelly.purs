@@ -72,8 +72,7 @@ newJelly initValue = liftEffect do
 
 newJellies
   :: forall m m' a
-   . Applicative m
-  => MonadEffect m
+   . MonadEffect m
   => MonadEffect m'
   => Eq a
   => Int
