@@ -35,12 +35,10 @@ runJelly :: forall a. Jelly a -> Observer -> Effect a
 runJelly (Jelly m) observer = runReaderT m $ Just observer
 
 newJelly
-  :: forall m m' a
-   . MonadEffect m
-  => MonadEffect m'
-  => Eq a
+  :: forall a
+   . Eq a
   => a
-  -> m (Jelly a /\ ((a -> a) -> m' Unit))
+  -> Jelly (Jelly a /\ ((a -> a) -> Jelly Unit))
 newJelly initValue = liftEffect do
   valueRef <- new initValue
 
@@ -73,13 +71,11 @@ newJelly initValue = liftEffect do
   pure $ getter /\ modifier
 
 newJellies
-  :: forall m m' a
-   . MonadEffect m
-  => MonadEffect m'
-  => Eq a
+  :: forall a
+   . Eq a
   => Int
   -> a
-  -> m (Array ((Jelly a) /\ ((a -> a) -> m' Unit)))
+  -> Jelly (Array ((Jelly a) /\ ((a -> a) -> Jelly Unit)))
 newJellies n initValue = replicateA n (newJelly initValue)
 
 addCleaner :: Jelly Unit -> Jelly Unit
