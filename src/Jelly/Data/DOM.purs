@@ -19,6 +19,8 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument (toDocument)
 import Web.HTML.Window (document)
 
+type Component = Jelly Node
+
 setProp :: Element -> Prop -> Jelly Unit
 setProp element prop = case prop of
   PropAttribute name valueJelly -> do
@@ -31,7 +33,7 @@ setProp element prop = case prop of
     liftEffect $ addEventListener (EventType name) listener false $
       toEventTarget element
 
-addChild :: Node -> Jelly Node -> Jelly Unit
+addChild :: Node -> Component -> Jelly Unit
 addChild parentNode nodeJelly = do
   oldNodeRef <- liftEffect $ new Nothing
 
@@ -52,8 +54,8 @@ addChild parentNode nodeJelly = do
 el
   :: String
   -> Array Prop
-  -> Array (Jelly Node)
-  -> Jelly Node
+  -> Array Component
+  -> Component
 el tagName props children = do
   element <- liftEffect $ createElement tagName <<< toDocument =<< document =<<
     window
@@ -63,11 +65,11 @@ el tagName props children = do
 
 el_
   :: String
-  -> Array (Jelly Node)
-  -> Jelly Node
+  -> Array Component
+  -> Component
 el_ tagName children = el tagName [] children
 
-text :: Jelly String -> Jelly Node
+text :: Jelly String -> Component
 text txtJelly = do
   node <- liftEffect $ Text.toNode <$>
     ( createTextNode "" <<< toDocument

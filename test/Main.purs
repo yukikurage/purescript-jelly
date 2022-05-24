@@ -7,13 +7,13 @@ import Effect (Effect)
 import Effect.Class.Console (log)
 import Jelly.Data.Jelly (addCleaner, alone, launchJelly, newJelly, stopJelly)
 import Jelly.Data.Props (on)
-import Jelly.HTML (el, el_, text)
+import Jelly.HTML (Component, el, el_, text)
 import Jelly.RunApp (runApp)
 
 main :: Effect Unit
 main = do
   log "Run App Test"
-  appTest
+  runApp appTest
 
   log "Child jelly cleaner test"
   childJellyCleanerTest
@@ -21,8 +21,8 @@ main = do
   log "Loop jelly test"
   loopJellyTest
 
-appTest :: Effect Unit
-appTest = runApp do
+appTest :: Component
+appTest = do
   counterValue /\ modifyCounterValue <- newJelly 0
 
   isShowCounter /\ modifyIsShowCounter <- newJelly false
