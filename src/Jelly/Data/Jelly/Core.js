@@ -27,7 +27,7 @@ export const disconnect = (observer) => (observedState) => () => {
 
 export const disconnectAll = (observer) => () => {
   observer.dependencies.forEach((observedState) => {
-    disconnect(observer)(observedState);
+    disconnect(observer)(observedState)();
   });
 };
 

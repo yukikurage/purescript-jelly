@@ -5,9 +5,9 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
-import Jelly.Data.Jelly (addCleaner, alone, launchJelly, newJelly, stopJelly)
+import Jelly.Data.Jelly (Jelly, addCleaner, alone, launchJelly, newJelly, stopJelly)
 import Jelly.Data.Props (on)
-import Jelly.HTML (Component, el, el_, text)
+import Jelly.HTML (Component, el, el_, text, whenEl)
 import Jelly.RunApp (runApp)
 
 main :: Effect Unit
@@ -21,30 +21,58 @@ main = do
   log "Loop jelly test"
   loopJellyTest
 
+  log "Test jelly"
+  alone testJelly
+
 appTest :: Component
 appTest = do
-  counterValue /\ modifyCounterValue <- newJelly 0
-
   isShowCounter /\ modifyIsShowCounter <- newJelly false
 
   el_ "div"
     [ el "button"
         [ on "click" \_ -> modifyIsShowCounter not
         ]
-        [ text $ ifM isShowCounter (pure "Hide") $ pure "Show" ]
-    , ifM isShowCounter
-        ( el_ "div"
-            [ el "button"
-                [ on "click" \_ -> modifyCounterValue (_ + 1)
-                ]
-                [ text $ pure "+" ]
-            , el_ "div" [ text $ show <$> counterValue ]
-            , el "button"
-                [ on "click" \_ -> modifyCounterValue (_ - 1)
-                ]
-                [ text $ pure "-" ]
-            ]
-        ) $ el_ "div" []
+        [ text $ ifM isShowCounter
+            do pure "Stop"
+            do pure "Run"
+        ]
+    , whenEl isShowCounter counter
+    ]
+
+testJelly :: Jelly Unit
+testJelly = do
+  state0 /\ modifyState0 <- newJelly 0
+  state1 /\ modifyState1 <- newJelly 0
+
+  _ <- launchJelly do
+    x0 <- state0
+    log $ "Rank 0, state0 == " <> show x0
+    _ <- launchJelly do
+      x1 <- state1
+      log $ "Rank 1,  state0 == " <> show x0 <> ", state1 == " <> show x1
+    pure unit
+
+  log "modifyState1 (_ + 1)"
+  modifyState1 (_ + 1)
+  log "modifyState0 (_ + 10)"
+  modifyState0 (_ + 10)
+  log "modifyState1 (_ + 1)"
+  modifyState1 (_ + 1)
+
+counter :: Component
+counter = do
+  count /\ modifyCounterValue <- newJelly 0
+
+  el_ "div"
+    [ el "button"
+        [ on "click" \_ -> modifyCounterValue (_ + 1)
+        ]
+        [ text $ pure "+" ]
+    , el_ "div" [ text $ show <$> count ]
+    , el "button"
+        [ on "click" \_ -> modifyCounterValue (_ - 1)
+        ]
+        [ text $ pure "-" ]
     ]
 
 childJellyCleanerTest :: Effect Unit

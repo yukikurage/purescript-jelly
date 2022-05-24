@@ -51,11 +51,7 @@ addChild parentNode nodeJelly = do
 
   pure unit
 
-el
-  :: String
-  -> Array Prop
-  -> Array Component
-  -> Component
+el :: String -> Array Prop -> Array Component -> Component
 el tagName props children = do
   element <- liftEffect $ createElement tagName <<< toDocument =<< document =<<
     window
@@ -63,11 +59,20 @@ el tagName props children = do
   for_ children $ addChild $ toNode element
   pure $ toNode element
 
-el_
-  :: String
-  -> Array Component
-  -> Component
+el_ :: String -> Array Component -> Component
 el_ tagName children = el tagName [] children
+
+emptyEl :: Component
+emptyEl = text $ pure ""
+
+whenEl :: Jelly Boolean -> Component -> Component
+whenEl conditionJelly childJelly = do
+  condition <- conditionJelly
+  if condition then childJelly
+  else emptyEl
+
+ifEl :: Jelly Boolean -> Component -> Component -> Component
+ifEl = ifM
 
 text :: Jelly String -> Component
 text txtJelly = do

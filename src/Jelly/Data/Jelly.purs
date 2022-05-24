@@ -6,6 +6,7 @@ import Control.Monad.Reader (class MonadAsk, ReaderT, ask, runReaderT)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Unfoldable (replicateA)
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write)
@@ -71,6 +72,17 @@ newJelly initValue = liftEffect do
       else pure unit
 
   pure $ getter /\ modifier
+
+newJellies
+  :: forall m m' a
+   . Applicative m
+  => MonadEffect m
+  => MonadEffect m'
+  => Eq a
+  => Int
+  -> a
+  -> m (Array ((Jelly a) /\ ((a -> a) -> m' Unit)))
+newJellies n initValue = replicateA n (newJelly initValue)
 
 addCleaner :: Jelly Unit -> Jelly Unit
 addCleaner cleaner = do
