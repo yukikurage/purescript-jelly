@@ -120,7 +120,8 @@ newJelly :: forall m m' a
 ```
 
 大体の場合 `m` と `m'` は `Jelly` です。
-For the most part `m` and `m'` are `Jelly`.
+
+_For the most part `m` and `m'` are `Jelly`._
 
 ```purescript
 newJelly :: forall a  . Eq a => a -> Jelly (Jelly a /\ ((a -> a) -> Jelly Unit))
