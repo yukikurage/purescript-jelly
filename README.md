@@ -158,7 +158,7 @@ launchJelly :: Jelly Unit -> Jelly JellyId
 
 `Jelly a` は「いくつかの状態に依存した、a を返す副作用」を表しています。
 
-_`Jelly a` represents "a side effect that depends on several states and returns a._
+_`Jelly a` represents "a side effect that depends on several states and returns a"._
 
 `launchJelly` は引数に渡された `Jelly` を、初回と依存する状態が更新されるたび実行します。例を見てみます。
 
