@@ -2,7 +2,7 @@ module Jelly.Data.Jelly.Core where
 
 import Prelude
 
-import Data.Foldable (sequence_)
+import Control.Safely (for_)
 import Effect (Effect)
 
 foreign import data Observer :: Type
@@ -41,5 +41,5 @@ foreign import getObservers
 runCallbackAndClear :: Observer -> Effect Unit
 runCallbackAndClear observer = do
   callbacks <- getObserverCallbacks observer
-  sequence_ callbacks
+  for_ callbacks \_ -> pure unit
   clearObserverCallbacks observer

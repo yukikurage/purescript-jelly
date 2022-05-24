@@ -37,7 +37,7 @@ appTest = do
             do pure "Stop"
             do pure "Run"
         ]
-    , whenEl isShowCounter $ el_ "div" $ replicate 10000 counter
+    , whenEl isShowCounter $ el_ "div" $ replicate 100 counter
     ]
 
 testJelly :: Jelly Unit
