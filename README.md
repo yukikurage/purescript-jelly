@@ -75,6 +75,8 @@ _`whenEl` is a function provided by Jelly. Thus, simple code can be used to sepa
 
 最後に、`runApp` 関数に `Component` を渡して描画します。
 
+_Finally, pass `Component` to the `runApp` function to draw it._
+
 ```purescript
 main :: Effect Unit
 main = runApp app
