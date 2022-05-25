@@ -18,7 +18,7 @@ _This is because I decided that I don't need such abstraction when we build a We
 
 ## Installation
 
-This package is not in package-sets, so add following to `spago.dhall`
+This package is not in package-sets, so add following to `packages.dhall`
 
 ```
 ...
@@ -46,10 +46,12 @@ in  upstream
     , repo =
         "https://github.com/yukikurage/purescript-jelly"
     , version =
-        "v0.1.0"
+        "v0.1.1"
     }
 ...
 ```
+
+and run `spago install jelly` (or `npx spago install jelly`)
 
 ## Example
 
