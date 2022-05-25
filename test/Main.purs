@@ -28,6 +28,7 @@ main = do
 appTest :: Component
 appTest = do
   isShowCounter /\ modifyIsShowCounter <- newJelly false
+  count /\ modifyCounterValue <- newJelly 0
 
   el_ "div"
     [ el "button"
@@ -38,7 +39,28 @@ appTest = do
             do pure "Stop"
             do pure "Run"
         ]
-    , whenEl isShowCounter $ el_ "div" $ replicate 100 counter
+    , whenEl isShowCounter $ el_ "div" $ replicate 100 $ counter
+        { value: count, onValueChange: \v -> modifyCounterValue (const v) }
+    ]
+
+counter
+  :: { value :: Jelly Int, onValueChange :: Int -> Jelly Unit } -> Component
+counter { value, onValueChange } = do
+
+  el_ "div"
+    [ el "button"
+        [ on "click" \_ -> do
+            v <- value
+            onValueChange (v + 1)
+        ]
+        [ text $ pure "+" ]
+    , el_ "div" [ text $ show <$> value ]
+    , el "button"
+        [ on "click" \_ -> do
+            v <- value
+            onValueChange (v - 1)
+        ]
+        [ text $ pure "-" ]
     ]
 
 testJelly :: Jelly Unit
@@ -60,22 +82,6 @@ testJelly = do
   modifyState0 (_ + 10)
   log "modifyState1 (_ + 1)"
   modifyState1 (_ + 1)
-
-counter :: Component
-counter = do
-  count /\ modifyCounterValue <- newJelly 0
-
-  el_ "div"
-    [ el "button"
-        [ on "click" \_ -> modifyCounterValue (_ + 1)
-        ]
-        [ text $ pure "+" ]
-    , el_ "div" [ text $ show <$> count ]
-    , el "button"
-        [ on "click" \_ -> modifyCounterValue (_ - 1)
-        ]
-        [ text $ pure "-" ]
-    ]
 
 childJellyCleanerTest :: Effect Unit
 childJellyCleanerTest = alone $ do
