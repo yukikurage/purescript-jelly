@@ -1,0 +1,34 @@
+{
+    "name": "purescript-jelly",
+    "license": [
+        "MIT"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yukikurage/purescript-jelly.git"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-arrays": "^v7.0.0",
+        "purescript-console": "^v6.0.0",
+        "purescript-effect": "^v4.0.0",
+        "purescript-foldable-traversable": "^v6.0.0",
+        "purescript-maybe": "^v6.0.0",
+        "purescript-prelude": "^v6.0.0",
+        "purescript-refs": "^v6.0.0",
+        "purescript-safely": "^v4.0.1",
+        "purescript-strings": "^v6.0.0",
+        "purescript-tailrec": "^v6.0.0",
+        "purescript-transformers": "^v6.0.0",
+        "purescript-tuples": "^v7.0.0",
+        "purescript-unfoldable": "^v6.0.0",
+        "purescript-web-dom": "^v6.0.0",
+        "purescript-web-events": "^v4.0.0",
+        "purescript-web-html": "^v4.0.0"
+    }
+}
