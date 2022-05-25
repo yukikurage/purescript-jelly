@@ -23,7 +23,7 @@ Jelly の詳細を述べる前に例を示します。非常に単純なカウ�
 _Before going into the details of Jelly, here is an example. It is a very simple counter._
 
 ```purescript
-counter :: Component
+counter :: forall r. Component r
 counter = do
   count /\ modifyCounterValue <- newJelly 0
 
@@ -53,7 +53,7 @@ _I think you can somewhat understand the process._
 _Suppose we want to load this component from the parent component, and then use the "Run" button to activate the counter and the "Stop" button to turn it off. This can be implemented as follows_
 
 ```purescript
-app :: Component
+app :: forall r. Component r
 app = do
   isShowCounter /\ modifyIsShowCounter <- newJelly false
 
@@ -79,7 +79,7 @@ _Finally, pass `Component` to the `runApp` function to draw it._
 
 ```purescript
 main :: Effect Unit
-main = runComponent app
+main = runComponent unit app
 ```
 
 ## Jelly is under development
@@ -100,18 +100,22 @@ Component は次のように定義されています。
 
 _Component is defined as follows_
 
-`type Component = Jelly Node`
+`type Component r = Jelly r Node`
 
-Jelly は `MonadEffect` です。
+ここで `r` はグローバル状態を表していて、今は無視して結構です。
 
-_Jelly is `MonadEffect`._
+_Here `r` represents the global state, which can be ignored for now._
+
+`Jelly r` は `MonadEffect` です。
+
+_`Jelly r` is `MonadEffect`._
 
 `newJelly` の型も見てみます。これは React の `useState` に対応します。
 
 _Let's also look at the `newJelly` type. This corresponds to React's `useState`._
 
 ```purescript
-newJelly :: forall a  . Eq a => a -> Jelly (Jelly a /\ ((a -> a) -> Jelly Unit))
+newJelly :: forall m r a. MonadEffect m => Eq a => a -> m (Jelly r a /\ ((a -> a) -> Jelly r Unit))
 ```
 
 返ってくるタプルは、Getter と Modifier の組です。
@@ -123,11 +127,11 @@ _The tuple returned is a pair of Getter and Modifier._
 _Let's take a quick look at the other value types._
 
 ```purescript
-el :: String -> Array Prop -> Array Component -> Component
-el_ :: String -> Array Component -> Component
-text :: Jelly String -> Component
-on :: String -> (Event -> Jelly Unit) -> Prop
-whenEl :: Jelly Boolean -> Component -> Component
+el :: forall r. String -> Array (Prop r) -> Array (Component r) -> Component r
+el_ :: forall r. String -> Array (Component r) -> Component r
+text :: forall r. Jelly r String -> Component r
+on :: forall r. String -> (Event -> Jelly r Unit) -> Prop r
+whenEl :: forall r. Jelly r Boolean -> Component r -> Component r
 ifM :: forall a m. Bind m ⇒ m Boolean → m a → m a → m a
 ```
 
@@ -140,7 +144,7 @@ _You can see the role of each by comparing it to the example above._
 _And one more thing to know how `Jelly` works: you need to know how the function `launchJelly` works. (Jelly use this function internally)_
 
 ```purescript
-launchJelly :: Jelly Unit -> Jelly JellyId
+launchJelly :: forall r. Jelly r Unit -> Jelly r Unit
 ```
 
 `Jelly a` は「いくつかの状態に依存した、a を返す副作用」を表しています。
@@ -152,7 +156,7 @@ _`Jelly a` represents "a side effect that depends on several states and returns 
 _`launchJelly` executes the `Jelly` passed as argument the first time and each time the dependent state is updated. Let's look at an example._
 
 ```purescript
-testJelly :: Jelly Unit
+testJelly :: forall r. Jelly r Unit
 testJelly = do
   state /\ modifyState <- newJelly 0
 
@@ -171,7 +175,7 @@ testJelly = do
 _Use the `alone` function to run `Jelly` in `main`._
 
 ```purescript
-main = alone testJelly
+main = alone unit testJelly
 ```
 
 結果 _Result_
@@ -201,7 +205,7 @@ _Also, if there is another `launchJelly` in the `Jelly` passed to the nested `la
 _It is difficult to understand, so here is an example._
 
 ```purescript
-testJelly :: Jelly Unit
+testJelly :: forall r. Jelly r Unit
 testJelly = do
   state0 /\ modifyState0 <- newJelly 0
   state1 /\ modifyState1 <- newJelly 0
