@@ -16,6 +16,41 @@ _It is similar to reactivity, but made very simple and, conversely, not so abstr
 
 _This is because I decided that I don't need such abstraction when we build a Web UI._
 
+## Installation
+
+This package is not in package-sets, so add following to `spago.dhall`
+
+```
+...
+let upstream = ...
+in  upstream
+  with jelly =
+    { dependencies =
+      [ "arrays"
+      , "console"
+      , "effect"
+      , "foldable-traversable"
+      , "maybe"
+      , "prelude"
+      , "refs"
+      , "safely"
+      , "strings"
+      , "tailrec"
+      , "transformers"
+      , "tuples"
+      , "unfoldable"
+      , "web-dom"
+      , "web-events"
+      , "web-html"
+      ]
+    , repo =
+        "https://github.com/yukikurage/purescript-jelly"
+    , version =
+        "v0.1.0"
+    }
+...
+```
+
 ## Example
 
 Jelly の詳細を述べる前に例を示します。非常に単純なカウンターです。
