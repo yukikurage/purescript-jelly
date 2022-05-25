@@ -7,18 +7,18 @@ import Data.Traversable (sequence)
 import Jelly.Data.Jelly (Jelly)
 import Web.Event.Internal.Types (Event)
 
-data Prop r
-  = PropAttribute String (Jelly r String)
-  | PropListener String (Event -> Jelly r Unit)
+data Prop
+  = PropAttribute String (Jelly String)
+  | PropListener String (Event -> Jelly Unit)
 
 -- | Make Listener Prop. ex) on "click" \ev -> ...
-on :: forall r. String -> (Event -> Jelly r Unit) -> Prop r
+on :: String -> (Event -> Jelly Unit) -> Prop
 on = PropListener
 
 -- | Make Attribute Prop. ex) attr "id" $ pure "hoge-id"
-attr :: forall r. String -> Jelly r String -> Prop r
+attr :: String -> Jelly String -> Prop
 attr = PropAttribute
 
 -- | Make class attribute from Array.
-classes :: forall r. Array (Jelly r String) -> Prop r
+classes :: Array (Jelly String) -> Prop
 classes arr = attr "class" $ joinWith " " <$> sequence arr
