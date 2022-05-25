@@ -9,6 +9,7 @@ esbuild
     sourcemap: true,
     target: ["chrome70", "firefox57", "safari11", "edge16"],
     watch: false,
+    logLevel: "info",
   })
   .catch((e) => {
     console.error(e);
