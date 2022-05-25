@@ -6,6 +6,7 @@ import Control.Monad.Reader (class MonadAsk, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
+import Data.Tuple (fst, snd)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Unfoldable (replicateA)
 import Effect (Effect)
@@ -28,13 +29,16 @@ derive newtype instance MonadRec (Jelly r)
 
 newtype JellyId = JellyId (Effect Unit)
 
+-- | Convert Jelly to Effect, dependencies are no longer tracked.
 alone :: forall r a. r -> Jelly r a -> Effect a
 alone context (Jelly m) = runReaderT m { observer: Nothing, context }
 
+-- | [Internal] Run a Jelly with a context and observer.
 runJelly :: forall r a. Observer -> r -> Jelly r a -> Effect a
 runJelly observer context (Jelly m) = runReaderT m $
   { observer: Just observer, context }
 
+-- | Make new Jelly State.
 newJelly
   :: forall m r a
    . MonadEffect m
@@ -72,15 +76,19 @@ newJelly initValue = liftEffect do
 
   pure $ getter /\ modifier
 
+-- | Make new Jelly States.
 newJellies
   :: forall m r a
    . MonadEffect m
   => Eq a
   => Int
   -> a
-  -> m (Array ((Jelly r a) /\ ((a -> a) -> Jelly r Unit)))
-newJellies n initValue = replicateA n (newJelly initValue)
+  -> m (Array (Jelly r a) /\ Array ((a -> a) -> Jelly r Unit))
+newJellies n initValue = do
+  res <- replicateA n (newJelly initValue)
+  pure $ map fst res /\ map snd res
 
+-- | Add Cleaner. This will be called when the Jelly is destroyed.
 addCleaner :: forall r. Jelly r Unit -> Jelly r Unit
 addCleaner cleaner = do
   { observer, context } <- ask
@@ -90,6 +98,7 @@ addCleaner cleaner = do
       liftEffect $ addObserverCallbacks obs cleanerEffect
     Nothing -> pure unit
 
+-- | Launch a Jelly. Launched Jelly runs when dependant state changes.
 launchJelly :: forall r. Jelly r Unit -> Jelly r JellyId
 launchJelly jelly = do
   { context } <- ask
@@ -108,6 +117,7 @@ launchJelly jelly = do
 
   pure $ JellyId $ stopJellyEffect
 
+-- | launchJelly without JellyId
 launchJelly_ :: forall r. Jelly r Unit -> Jelly r Unit
 launchJelly_ jelly = do
   { context } <- ask
@@ -124,5 +134,6 @@ launchJelly_ jelly = do
 
   addCleaner $ liftEffect stopJellyEffect
 
+-- | stop Jelly
 stopJelly :: forall m. MonadEffect m => JellyId -> m Unit
 stopJelly (JellyId stop) = liftEffect stop
