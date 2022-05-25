@@ -13,32 +13,34 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write)
 import Jelly.Data.Jelly.Core (Observer, addObserverCallbacks, connect, disconnectAll, getObserverEffect, getObservers, newObservedState, newObserver, runCallbackAndClear)
 
-type JellyInternal = Maybe Observer
+type JellyInternal r = { observer :: Maybe Observer, context :: r }
 
-newtype Jelly a = Jelly (ReaderT JellyInternal Effect a)
+newtype Jelly r a = Jelly (ReaderT (JellyInternal r) Effect a)
 
-derive newtype instance Functor Jelly
-derive newtype instance Apply Jelly
-derive newtype instance Applicative Jelly
-derive newtype instance Bind Jelly
-derive newtype instance Monad Jelly
-derive newtype instance MonadEffect Jelly
-derive newtype instance MonadAsk JellyInternal Jelly
-derive newtype instance MonadRec Jelly
+derive newtype instance Functor (Jelly r)
+derive newtype instance Apply (Jelly r)
+derive newtype instance Applicative (Jelly r)
+derive newtype instance Bind (Jelly r)
+derive newtype instance Monad (Jelly r)
+derive newtype instance MonadEffect (Jelly r)
+derive newtype instance MonadAsk (JellyInternal r) (Jelly r)
+derive newtype instance MonadRec (Jelly r)
 
 newtype JellyId = JellyId (Effect Unit)
 
-alone :: forall a. Jelly a -> Effect a
-alone (Jelly m) = runReaderT m Nothing
+alone :: forall r a. r -> Jelly r a -> Effect a
+alone context (Jelly m) = runReaderT m { observer: Nothing, context }
 
-runJelly :: forall a. Jelly a -> Observer -> Effect a
-runJelly (Jelly m) observer = runReaderT m $ Just observer
+runJelly :: forall r a. Observer -> r -> Jelly r a -> Effect a
+runJelly observer context (Jelly m) = runReaderT m $
+  { observer: Just observer, context }
 
 newJelly
-  :: forall a
-   . Eq a
+  :: forall m r a
+   . MonadEffect m
+  => Eq a
   => a
-  -> Jelly (Jelly a /\ ((a -> a) -> Jelly Unit))
+  -> m (Jelly r a /\ ((a -> a) -> Jelly r Unit))
 newJelly initValue = liftEffect do
   valueRef <- new initValue
 
@@ -46,7 +48,7 @@ newJelly initValue = liftEffect do
 
   let
     getter = do
-      observer <- ask
+      { observer } <- ask
       liftEffect case observer of
         Just obs -> connect obs observedState
         Nothing -> pure unit
@@ -71,28 +73,31 @@ newJelly initValue = liftEffect do
   pure $ getter /\ modifier
 
 newJellies
-  :: forall a
-   . Eq a
+  :: forall m r a
+   . MonadEffect m
+  => Eq a
   => Int
   -> a
-  -> Jelly (Array ((Jelly a) /\ ((a -> a) -> Jelly Unit)))
+  -> m (Array ((Jelly r a) /\ ((a -> a) -> Jelly r Unit)))
 newJellies n initValue = replicateA n (newJelly initValue)
 
-addCleaner :: Jelly Unit -> Jelly Unit
+addCleaner :: forall r. Jelly r Unit -> Jelly r Unit
 addCleaner cleaner = do
-  let cleanerEffect = alone cleaner
-  observer <- ask
+  { observer, context } <- ask
+  let cleanerEffect = alone context cleaner
   case observer of
     Just obs -> do
       liftEffect $ addObserverCallbacks obs cleanerEffect
     Nothing -> pure unit
 
-launchJelly :: Jelly Unit -> Jelly JellyId
+launchJelly :: forall r. Jelly r Unit -> Jelly r JellyId
 launchJelly jelly = do
-  observer <- liftEffect $ newObserver \observer -> do
-    runJelly jelly observer
+  { context } <- ask
 
-  liftEffect $ runJelly jelly observer
+  observer <- liftEffect $ newObserver \observer -> do
+    runJelly observer context jelly
+
+  liftEffect $ runJelly observer context jelly
 
   let
     stopJellyEffect = do
@@ -103,12 +108,14 @@ launchJelly jelly = do
 
   pure $ JellyId $ stopJellyEffect
 
-launchJelly_ :: Jelly Unit -> Jelly Unit
+launchJelly_ :: forall r. Jelly r Unit -> Jelly r Unit
 launchJelly_ jelly = do
-  observer <- liftEffect $ newObserver \observer -> do
-    runJelly jelly observer
+  { context } <- ask
 
-  liftEffect $ runJelly jelly observer
+  observer <- liftEffect $ newObserver \observer -> do
+    runJelly observer context jelly
+
+  liftEffect $ runJelly observer context jelly
 
   let
     stopJellyEffect = do

@@ -4,19 +4,19 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Jelly.Data.Jelly (Jelly, alone)
-import Web.DOM (Node)
+import Jelly.Data.Jelly (alone)
+import Jelly.HTML (Component)
 import Web.DOM.Node (appendChild)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (body)
 import Web.HTML.HTMLElement (toNode)
 import Web.HTML.Window (document)
 
-runComponent :: Jelly Node -> Effect Unit
-runComponent jellyNode = do
+runComponent :: forall r. r -> Component r -> Effect Unit
+runComponent r jellyNode = do
   bodyMaybe <- body =<< document =<< window
 
-  node <- alone jellyNode
+  node <- alone r jellyNode
 
   case bodyMaybe of
     Just b -> appendChild node (toNode b)

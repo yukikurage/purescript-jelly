@@ -7,15 +7,15 @@ import Data.Traversable (sequence)
 import Jelly.Data.Jelly (Jelly)
 import Web.Event.Internal.Types (Event)
 
-data Prop
-  = PropAttribute String (Jelly String)
-  | PropListener String (Event -> Jelly Unit)
+data Prop r
+  = PropAttribute String (Jelly r String)
+  | PropListener String (Event -> Jelly r Unit)
 
-on :: String -> (Event -> Jelly Unit) -> Prop
+on :: forall r. String -> (Event -> Jelly r Unit) -> Prop r
 on = PropListener
 
-attr :: String -> Jelly String -> Prop
+attr :: forall r. String -> Jelly r String -> Prop r
 attr = PropAttribute
 
-classes :: Array (Jelly String) -> Prop
+classes :: forall r. Array (Jelly r String) -> Prop r
 classes arr = attr "class" $ joinWith " " <$> sequence arr

@@ -14,7 +14,7 @@ import Jelly.RunComponent (runComponent)
 main :: Effect Unit
 main = do
   log "Run App Test"
-  runComponent appTest
+  runComponent unit appTest
 
   log "Child jelly cleaner test"
   childJellyCleanerTest
@@ -23,9 +23,9 @@ main = do
   loopJellyTest
 
   log "Test jelly"
-  alone testJelly
+  alone unit testJelly
 
-appTest :: Component
+appTest :: forall r. Component r
 appTest = do
   isShowCounter /\ modifyIsShowCounter <- newJelly false
   count /\ modifyCounterValue <- newJelly 0
@@ -44,7 +44,9 @@ appTest = do
     ]
 
 counter
-  :: { value :: Jelly Int, onValueChange :: Int -> Jelly Unit } -> Component
+  :: forall r
+   . { value :: Jelly r Int, onValueChange :: Int -> Jelly r Unit }
+  -> Component r
 counter { value, onValueChange } = do
 
   el_ "div"
@@ -63,7 +65,7 @@ counter { value, onValueChange } = do
         [ text $ pure "-" ]
     ]
 
-testJelly :: Jelly Unit
+testJelly :: forall r. Jelly r Unit
 testJelly = do
   state0 /\ modifyState0 <- newJelly 0
   state1 /\ modifyState1 <- newJelly 0
@@ -84,7 +86,7 @@ testJelly = do
   modifyState1 (_ + 1)
 
 childJellyCleanerTest :: Effect Unit
-childJellyCleanerTest = alone $ do
+childJellyCleanerTest = alone unit $ do
   jellyId <- launchJelly do
     stateJelly /\ modifyState <- newJelly 0
     launchJelly_ do
@@ -99,7 +101,7 @@ childJellyCleanerTest = alone $ do
   stopJelly jellyId
 
 loopJellyTest :: Effect Unit
-loopJellyTest = alone $ do
+loopJellyTest = alone unit $ do
   stateJelly /\ modifyState <- newJelly 0
 
   jellyId <- launchJelly do

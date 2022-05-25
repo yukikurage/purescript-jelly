@@ -2,6 +2,7 @@ module Jelly.HTML where
 
 import Prelude
 
+import Control.Monad.Reader (ask)
 import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Effect.Class (liftEffect)
@@ -19,20 +20,24 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument (toDocument)
 import Web.HTML.Window (document)
 
-type Component = Jelly Node
+type Component r = Jelly r Node
 
-setProp :: Element -> Prop -> Jelly Unit
-setProp element prop = case prop of
-  PropAttribute name valueJelly -> do
-    launchJelly_ do
-      value <- valueJelly
-      liftEffect $ setAttribute name value element
-  PropListener name listenerJelly -> do
-    listener <- liftEffect $ eventListener \e -> alone $ listenerJelly e
-    liftEffect $ addEventListener (EventType name) listener false $
-      toEventTarget element
+setProp :: forall r. Element -> Prop r -> Jelly r Unit
+setProp element prop = do
+  { context } <- ask
+  case prop of
+    PropAttribute name valueJelly -> do
+      launchJelly_ do
+        value <- valueJelly
+        liftEffect $ setAttribute name value element
+    PropListener name listenerJelly -> do
+      listener <-
+        liftEffect $ eventListener \e -> alone context $ listenerJelly e
 
-addChild :: Node -> Component -> Jelly Unit
+      liftEffect $ addEventListener (EventType name) listener false $
+        toEventTarget element
+
+addChild :: forall r. Node -> Component r -> Jelly r Unit
 addChild parentNode nodeJelly = do
   oldNodeRef <- liftEffect $ new Nothing
 
@@ -48,7 +53,7 @@ addChild parentNode nodeJelly = do
         removeChild oldNode parentNode
     liftEffect $ write (Just newNode) oldNodeRef
 
-el :: String -> Array Prop -> Array Component -> Component
+el :: forall r. String -> Array (Prop r) -> Array (Component r) -> Component r
 el tagName props children = do
   element <- liftEffect $ createElement tagName <<< toDocument =<< document =<<
     window
@@ -56,22 +61,22 @@ el tagName props children = do
   for_ children $ addChild $ toNode element
   pure $ toNode element
 
-el_ :: String -> Array Component -> Component
+el_ :: forall r. String -> Array (Component r) -> Component r
 el_ tagName children = el tagName [] children
 
-emptyEl :: Component
+emptyEl :: forall r. Component r
 emptyEl = text $ pure ""
 
-whenEl :: Jelly Boolean -> Component -> Component
+whenEl :: forall r. Jelly r Boolean -> Component r -> Component r
 whenEl conditionJelly childJelly = do
   condition <- conditionJelly
   if condition then childJelly
   else emptyEl
 
-ifEl :: Jelly Boolean -> Component -> Component -> Component
+ifEl :: forall r. Jelly r Boolean -> Component r -> Component r -> Component r
 ifEl = ifM
 
-text :: Jelly String -> Component
+text :: forall r. Jelly r String -> Component r
 text txtJelly = do
   node <- liftEffect $ Text.toNode <$>
     ( createTextNode "" <<< toDocument
