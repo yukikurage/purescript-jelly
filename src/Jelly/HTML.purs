@@ -12,7 +12,7 @@ import Jelly.Data.Jelly (Jelly, alone)
 import Jelly.Data.Props (Prop(..))
 import Jelly.Hooks.UseJelly (useJelly)
 import Web.DOM (Element, Node)
-import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.Element (setAttribute, toEventTarget, toNode)
 import Web.DOM.Node (appendChild, insertBefore, removeChild, setTextContent)
 import Web.DOM.Text as Text
@@ -67,9 +67,28 @@ el tagName props children = do
   for_ children $ addChild $ toNode element
   pure $ toNode element
 
+elNS
+  :: forall r
+   . String
+  -> String
+  -> Array Prop
+  -> Array (Component r)
+  -> Component r
+elNS ns tagName props children = do
+  element <- liftEffect $ createElementNS (Just ns) tagName <<< toDocument
+    =<< document
+    =<<
+      window
+  for_ props $ setProp element
+  for_ children $ addChild $ toNode element
+  pure $ toNode element
+
 -- | Create element without props
 el_ :: forall r. String -> Array (Component r) -> Component r
 el_ tagName children = el tagName [] children
+
+elNS_ :: forall r. String -> String -> Array (Component r) -> Component r
+elNS_ ns tagName children = elNS ns tagName [] children
 
 -- | Create empty element (== text $ pure "")
 emptyEl :: forall r. Component r

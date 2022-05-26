@@ -19,6 +19,8 @@ on = PropListener
 attr :: String -> Jelly String -> Prop
 attr = PropAttribute
 
+infix 5 attr as @=
+
 -- | Make class attribute from Array.
 classes :: Array (Jelly String) -> Prop
 classes arr = attr "class" $ joinWith " " <$> sequence arr
