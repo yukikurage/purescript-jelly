@@ -4,14 +4,13 @@ import Prelude
 
 import Control.Monad.Reader (class MonadAsk, ReaderT(..), runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
-import Data.Maybe (Maybe)
 import Effect.Class (class MonadEffect)
 import Jelly.Data.Jelly (Jelly)
 import Jelly.Data.Jelly.Class (class MonadJelly)
-import Web.DOM (Node)
+import Jelly.Data.Place (Place)
 
 type HooksInternal r =
-  { contexts :: r, parentNode :: Node, anchorNode :: Maybe Node }
+  { contexts :: r, parentPlace :: Place }
 
 newtype Hooks r a = Hooks (ReaderT (HooksInternal r) Jelly a)
 
