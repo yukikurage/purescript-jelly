@@ -3,9 +3,13 @@ module Jelly.Hooks.UseState where
 import Prelude
 
 import Data.Tuple.Nested (type (/\))
-import Jelly.Data.Hooks (Hooks)
+import Effect.Class (class MonadEffect)
 import Jelly.Data.Jelly (Jelly, newJelly)
 
 useState
-  :: forall r a. Eq a => a -> Hooks r (Jelly a /\ ((a -> a) -> Jelly Unit))
+  :: forall m a
+   . MonadEffect m
+  => Eq a
+  => a
+  -> m (Jelly a /\ ((a -> a) -> Jelly Unit))
 useState = newJelly
