@@ -91,19 +91,19 @@ elNS_ :: forall r. String -> String -> Array (Component r) -> Component r
 elNS_ ns tagName children = elNS ns tagName [] children
 
 -- | Create empty element (== text $ pure "")
-emptyEl :: forall r. Component r
-emptyEl = text $ pure ""
+elEmpty :: forall r. Component r
+elEmpty = text $ pure ""
 
 -- | Display components only when conditions are met
-whenEl :: forall r. Jelly Boolean -> Component r -> Component r
-whenEl conditionJelly childJelly = do
+elWhen :: forall r. Jelly Boolean -> Component r -> Component r
+elWhen conditionJelly childJelly = do
   condition <- liftJelly conditionJelly
   if condition then childJelly
-  else emptyEl
+  else elEmpty
 
 -- | Equal to `ifM`
-ifEl :: forall r. Jelly Boolean -> Component r -> Component r -> Component r
-ifEl a x y = do
+elIf :: forall r. Jelly Boolean -> Component r -> Component r -> Component r
+elIf a x y = do
   condition <- liftJelly a
   if condition then x else y
 
