@@ -5,9 +5,8 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Jelly.Data.Hooks (runHooks)
-import Jelly.Data.Jelly (alone)
-import Jelly.HTML (Component)
-import Web.DOM.Node (appendChild)
+import Jelly.Data.Jelly (launchJelly_)
+import Jelly.HTML (Component, addChildrenJelly)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (body)
 import Web.HTML.HTMLElement (toNode)
@@ -18,8 +17,8 @@ runComponent :: forall r. r -> Component r -> Effect Unit
 runComponent r component = do
   bodyMaybe <- body =<< document =<< window
 
-  node <- alone $ runHooks r component
+  { nodesJelly } <- runHooks r component
 
   case bodyMaybe of
-    Just b -> appendChild node (toNode b)
+    Just b -> launchJelly_ $ addChildrenJelly (toNode b) nodesJelly
     Nothing -> pure unit

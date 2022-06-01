@@ -12,7 +12,8 @@ to generate this file without the comments in this block.
 -}
 { name = "jelly"
 , dependencies =
-  [ "effect"
+  [ "arrays"
+  , "effect"
   , "foldable-traversable"
   , "maybe"
   , "prelude"
