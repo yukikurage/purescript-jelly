@@ -26,17 +26,19 @@ let upstream = ...
 in  upstream
   with jelly =
     { dependencies =
-      [ "effect"
+     { dependencies =
+      [ "arrays"
+      , "effect"
       , "foldable-traversable"
+      , "foreign-object"
       , "maybe"
       , "prelude"
       , "refs"
       , "safely"
+      , "st"
       , "strings"
       , "tailrec"
       , "transformers"
-      , "tuples"
-      , "unfoldable"
       , "web-dom"
       , "web-events"
       , "web-html"
@@ -44,7 +46,7 @@ in  upstream
     , repo =
         "https://github.com/yukikurage/purescript-jelly"
     , version =
-        "v0.2.0"
+        ""
     }
 ...
 ```
