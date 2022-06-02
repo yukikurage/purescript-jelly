@@ -3,20 +3,28 @@ module Jelly.HTML where
 import Prelude
 
 import Control.Monad.Reader (ask)
+import Control.Monad.Rec.Class (whileJust)
+import Control.Monad.ST.Global (toEffect)
 import Control.Safely (for_)
-import Data.Maybe (Maybe(..))
-import Effect.Class (class MonadEffect, liftEffect)
+import Data.Array.ST as AST
+import Data.Maybe (Maybe(..), isJust)
+import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Ref (new, read, write)
+import Foreign.Object (empty, freezeST, thawST)
+import Foreign.Object.ST (delete, peek)
+import Foreign.Object.ST as OST
 import Jelly.Data.Hooks (Hooks, runHooks)
 import Jelly.Data.Jelly (Jelly, alone)
-import Jelly.Data.Jelly.Class (liftJelly)
-import Jelly.Data.Place (appendNodeToPlace, appendPlace, appendPlaceToNode, newPlace, removeNodeFromPlace)
+import Jelly.Data.Jelly as J
 import Jelly.Data.Props (Prop(..))
 import Jelly.Hooks.UseJelly (useJelly)
+import Jelly.Hooks.UseNodesJelly (useNodeJelly, useNodesJelly)
 import Jelly.Hooks.UseUnmountJelly (useUnmountJelly)
 import Web.DOM (Element, Node)
 import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.Element (setAttribute, toEventTarget, toNode)
-import Web.DOM.Node (setTextContent)
+import Web.DOM.Node (appendChild, firstChild, insertBefore, nextSibling, removeChild, setTextContent)
 import Web.DOM.Text as Text
 import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (addEventListener, eventListener)
@@ -24,10 +32,12 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument (toDocument)
 import Web.HTML.Window (document)
 
+foreign import nodeEq :: Node -> Node -> Effect Boolean
+
 type Component r = Hooks r Unit
 
 -- | [Internal] Set prop to element.
-setProp :: forall r. Element -> Prop -> Hooks r Unit
+setProp :: forall r. Element -> Prop -> Component r
 setProp element prop = do
   case prop of
     PropAttribute name valueJelly -> do
@@ -41,49 +51,58 @@ setProp element prop = do
       liftEffect $ addEventListener (EventType name) listener false $
         toEventTarget element
 
-addNode :: forall r. Node -> Component r
-addNode node = do
-  { parentPlace } <- ask
+-- | [Internal] Add child to element.
+addChildrenJelly :: Node -> Jelly (Array Node) -> Jelly Unit
+addChildrenJelly parentNode nodesJelly = do
+  nodes <- nodesJelly
 
-  liftEffect $ appendNodeToPlace node parentPlace
+  liftEffect do
+    anchorNodeRef <- new =<< firstChild parentNode
 
-  -- Add Unmount Effect
-  useUnmountJelly $ liftEffect $ removeNodeFromPlace node parentPlace
+    for_ nodes \node -> do
+      anchorNode <- read anchorNodeRef
 
-elBase
-  :: forall r
-   . Element
-  -> Array Prop
-  -> Component r
-  -> Component r
-elBase element props childComponent = do
-  -- Set Props
+      case anchorNode of
+        Nothing ->
+          appendChild node parentNode
+        Just anchor -> do
+          isEq <- nodeEq anchor node
+          if isEq then do
+            next <- nextSibling anchor
+            write next anchorNodeRef
+          else insertBefore node anchor parentNode
+
+    -- Remove all nodes after anchor node.
+    whileJust do
+      anchorNode <- read anchorNodeRef
+      case anchorNode of
+        Nothing -> pure $ Nothing
+        Just anchor -> do
+          next <- nextSibling anchor
+          removeChild anchor parentNode
+          write next anchorNodeRef
+          pure $ Just unit
+
+elBase :: forall r. Element -> Array Prop -> Component r -> Component r
+elBase element props childrenComponent = do
   for_ props $ setProp element
 
-  { contexts } <- ask
+  { context } <- ask
+  { nodesJelly, unmountEffect } <- liftEffect $ runHooks context
+    childrenComponent
+  useUnmountJelly $ liftEffect unmountEffect
+  useJelly $ addChildrenJelly (toNode element) nodesJelly
 
-  -- Add Node to Parent Node
-  addNode $ toNode element
-
-  place <- liftEffect newPlace
-
-  liftEffect $ appendPlaceToNode place $ toNode element
-
-  -- Add Children
-  liftJelly $ runHooks
-    { parentPlace: place, contexts }
-    childComponent
+  useNodeJelly $ pure $ toNode element
 
 -- | Create element
 el :: forall r. String -> Array Prop -> Component r -> Component r
-el tagName props childComponent = do
-  -- Create Element
+el tagName props childrenComponent = do
   element <- liftEffect $ createElement tagName <<< toDocument =<< document =<<
     window
 
-  elBase element props childComponent
+  elBase element props childrenComponent
 
--- | Create element with namespace
 elNS
   :: forall r
    . String
@@ -91,93 +110,141 @@ elNS
   -> Array Prop
   -> Component r
   -> Component r
-elNS ns tagName props childComponent = do
+elNS ns tagName props childrenComponent = do
   element <- liftEffect $ createElementNS (Just ns) tagName <<< toDocument
     =<< document
     =<<
       window
 
-  elBase element props childComponent
+  elBase element props childrenComponent
 
--- | Create element without props
+-- -- | Create element without props
 el_ :: forall r. String -> Component r -> Component r
 el_ tagName = el tagName []
 
 elNS_ :: forall r. String -> String -> Component r -> Component r
 elNS_ ns tagName = elNS ns tagName []
 
--- | Create empty element (== text $ pure "")
+-- -- | Create empty element (== text $ pure "")
 elEmpty :: forall r. Component r
 elEmpty = pure unit
+
+elIf :: forall r. Jelly Boolean -> Component r -> Component r -> Component r
+elIf conditionJelly firstComponent secondComponent = do
+  unmountEffectRef <- liftEffect $ new Nothing
+
+  useUnmountJelly $ liftEffect do
+    unmountEffect <- read unmountEffectRef
+    case unmountEffect of
+      Just x -> x
+      Nothing -> pure unit
+
+  { context } <- ask
+
+  useNodesJelly do
+    unmountEffectPrev <- liftEffect $ read unmountEffectRef
+    case unmountEffectPrev of
+      Just x -> liftEffect x
+      Nothing -> pure unit
+
+    condition <- conditionJelly
+    { nodesJelly, unmountEffect } <- liftEffect $ runHooks context
+      if condition then
+        firstComponent
+      else
+        secondComponent
+
+    liftEffect $ write (Just unmountEffect) unmountEffectRef
+
+    nodesJelly
 
 -- | Display components only when conditions are met
 elWhen :: forall r. Jelly Boolean -> Component r -> Component r
 elWhen conditionJelly childJelly = elIf conditionJelly childJelly elEmpty
 
-emptyTextNode :: forall m. MonadEffect m => m Node
-emptyTextNode = liftEffect $ Text.toNode <$>
-  ( createTextNode "" <<< toDocument
-      =<< document
-      =<< window
-  )
+elFor
+  :: forall r a
+   . Eq a
+  => Jelly (Array a)
+  -> (a -> Maybe String)
+  -> (Jelly a -> Component r)
+  -> Component r
+elFor arrJelly getKey getComponent = do
+  { context } <- ask
 
-elIf :: forall r. Jelly Boolean -> Component r -> Component r -> Component r
-elIf conditionJelly firstChildComponent secondChildComponent = do
-  -- Copy without anchor node
-  { parentPlace, contexts } <- ask
+  -- | Save Previous node list and unmount Effect
+  -- | Ref (Object ({unmountEffect :: Effect Unit, nodesJelly :: J.Jelly (Array Node), dependentJellyRef :: J.JellyRef a}))
+  prevNodesObjRef <- liftEffect $ new $ empty
 
-  place <- liftEffect newPlace
+  useNodesJelly do
+    arr <- arrJelly
 
-  liftEffect $ appendPlace place parentPlace
+    prevNodesObjST <- liftEffect $ toEffect <<< thawST =<< read prevNodesObjRef
 
-  let hooksInternal = { parentPlace: place, contexts }
+    -- Result
+    newNodesObjST <- liftEffect $ toEffect $ OST.new
 
-  useJelly do
-    -- Ref condition
-    condition <- conditionJelly
+    newNodesST <- liftEffect $ toEffect $ AST.new
 
-    if condition then runHooks hooksInternal firstChildComponent
-    else runHooks hooksInternal secondChildComponent
+    for_ arr \a -> do
+      let
+        keyMaybe = getKey a
+      prevNodesMaybe <- case keyMaybe of
+        Just key -> do
+          prevNodesMaybe <- liftEffect $ toEffect $ peek key prevNodesObjST
+          when (isJust prevNodesMaybe) $ liftEffect $ toEffect $
+            delete key prevNodesObjST *> pure unit
+          pure prevNodesMaybe
+        Nothing -> pure Nothing
 
--- elFor
---   :: forall r a
---    . Jelly (Array a)
---   -> (a -> Maybe String)
---   -> (Jelly a -> Component r)
---   -> Component r
--- elFor arrJelly getKeyFunc getComponentFunc = do
---   -- Create Anchor Node, which will be used to insert element
---   anchorNode <- emptyTextNode
+      { nodesJelly, unmountEffect, dependentJellyRef } <- case prevNodesMaybe of
+        Nothing -> do
+          dependentJellyRef <- J.new a
+          { nodesJelly, unmountEffect } <- liftEffect $ runHooks context
+            $ getComponent
+            $ J.read dependentJellyRef
+          pure { nodesJelly, unmountEffect, dependentJellyRef }
+        Just x -> pure x
 
---   -- Add Anchor Node to parent Node
---   addNode anchorNode
+      nodes <- nodesJelly
+      _ <- liftEffect $ toEffect $ AST.pushAll nodes newNodesST
 
---   -- Save Previous Nodes
---   prevComponentsObj <- liftEffect $ toEffect $ new
+      J.set dependentJellyRef a
 
---   liftJelly do
---     -- when array updated
---     arr <- arrJelly
+      case keyMaybe of
+        Just key -> liftEffect $ toEffect $
+          OST.poke key
+            { nodesJelly, unmountEffect, dependentJellyRef }
+            newNodesObjST *> pure unit
+        Nothing -> pure unit
 
---     for_ arr \a -> do
---       let
---         keyMaybe = getKeyFunc a
---       prevComponentMaybe <- liftEffect $ case keyMaybe of
---         Nothing -> pure Nothing
---         Just key -> toEffect $ peek key prevComponentsObj
+    -- Remove all nodes remained
+    prevNodesObj <- liftEffect $ toEffect $ freezeST prevNodesObjST
+    for_ prevNodesObj \{ unmountEffect } -> liftEffect unmountEffect
 
---       pure unit
+    -- Replace old node Object
+    newNodeObj <- liftEffect $ toEffect $ freezeST newNodesObjST
+    liftEffect $ write newNodeObj prevNodesObjRef
 
---   pure unit
+    liftEffect $ toEffect $ AST.freeze newNodesST
+
+  -- when unmount
+  useUnmountJelly do
+    prevNodesObj <- liftEffect $ read prevNodesObjRef
+    for_ prevNodesObj \{ unmountEffect } -> liftEffect unmountEffect
 
 -- | Create text node
 text :: forall r. Jelly String -> Component r
 text txtJelly = do
-  node <- emptyTextNode
+  node <- liftEffect $ Text.toNode <$>
+    ( createTextNode "" <<< toDocument
+        =<< document
+        =<< window
+    )
 
   useJelly do
     txt <- txtJelly
     liftEffect $ setTextContent txt node
     pure unit
 
-  addNode node
+  useNodeJelly $ pure node
