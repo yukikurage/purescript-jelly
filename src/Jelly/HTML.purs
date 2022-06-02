@@ -4,13 +4,19 @@ import Prelude
 
 import Control.Monad.Reader (ask)
 import Control.Monad.Rec.Class (whileJust)
+import Control.Monad.ST.Global (toEffect)
 import Control.Safely (for_)
-import Data.Maybe (Maybe(..))
+import Data.Array.ST as AST
+import Data.Maybe (Maybe(..), isJust)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (new, read, write)
+import Foreign.Object (empty, freezeST, thawST)
+import Foreign.Object.ST (delete, peek)
+import Foreign.Object.ST as OST
 import Jelly.Data.Hooks (Hooks, runHooks)
 import Jelly.Data.Jelly (Jelly, alone)
+import Jelly.Data.Jelly as J
 import Jelly.Data.Props (Prop(..))
 import Jelly.Hooks.UseJelly (useJelly)
 import Jelly.Hooks.UseNodesJelly (useNodeJelly, useNodesJelly)
@@ -70,10 +76,10 @@ addChildrenJelly parentNode nodesJelly = do
     whileJust do
       anchorNode <- read anchorNodeRef
       case anchorNode of
-        Nothing -> pure Nothing
+        Nothing -> pure $ Nothing
         Just anchor -> do
-          removeChild anchor parentNode
           next <- nextSibling anchor
+          removeChild anchor parentNode
           write next anchorNodeRef
           pure $ Just unit
 
@@ -155,6 +161,77 @@ elIf conditionJelly firstComponent secondComponent = do
 -- | Display components only when conditions are met
 elWhen :: forall r. Jelly Boolean -> Component r -> Component r
 elWhen conditionJelly childJelly = elIf conditionJelly childJelly elEmpty
+
+elFor
+  :: forall r a
+   . Eq a
+  => Jelly (Array a)
+  -> (a -> Maybe String)
+  -> (Jelly a -> Component r)
+  -> Component r
+elFor arrJelly getKey getComponent = do
+  { context } <- ask
+
+  -- | Save Previous node list and unmount Effect
+  -- | Ref (Object ({unmountEffect :: Effect Unit, nodesJelly :: J.Jelly (Array Node), dependentJellyRef :: J.JellyRef a}))
+  prevNodesObjRef <- liftEffect $ new $ empty
+
+  useNodesJelly do
+    arr <- arrJelly
+
+    prevNodesObjST <- liftEffect $ toEffect <<< thawST =<< read prevNodesObjRef
+
+    -- Result
+    newNodesObjST <- liftEffect $ toEffect $ OST.new
+
+    newNodesST <- liftEffect $ toEffect $ AST.new
+
+    for_ arr \a -> do
+      let
+        keyMaybe = getKey a
+      prevNodesMaybe <- case keyMaybe of
+        Just key -> do
+          prevNodesMaybe <- liftEffect $ toEffect $ peek key prevNodesObjST
+          when (isJust prevNodesMaybe) $ liftEffect $ toEffect $
+            delete key prevNodesObjST *> pure unit
+          pure prevNodesMaybe
+        Nothing -> pure Nothing
+
+      { nodesJelly, unmountEffect, dependentJellyRef } <- case prevNodesMaybe of
+        Nothing -> do
+          dependentJellyRef <- J.new a
+          { nodesJelly, unmountEffect } <- liftEffect $ runHooks context
+            $ getComponent
+            $ J.read dependentJellyRef
+          pure { nodesJelly, unmountEffect, dependentJellyRef }
+        Just x -> pure x
+
+      nodes <- nodesJelly
+      _ <- liftEffect $ toEffect $ AST.pushAll nodes newNodesST
+
+      J.set dependentJellyRef a
+
+      case keyMaybe of
+        Just key -> liftEffect $ toEffect $
+          OST.poke key
+            { nodesJelly, unmountEffect, dependentJellyRef }
+            newNodesObjST *> pure unit
+        Nothing -> pure unit
+
+    -- Remove all nodes remained
+    prevNodesObj <- liftEffect $ toEffect $ freezeST prevNodesObjST
+    for_ prevNodesObj \{ unmountEffect } -> liftEffect unmountEffect
+
+    -- Replace old node Object
+    newNodeObj <- liftEffect $ toEffect $ freezeST newNodesObjST
+    liftEffect $ write newNodeObj prevNodesObjRef
+
+    liftEffect $ toEffect $ AST.freeze newNodesST
+
+  -- when unmount
+  useUnmountJelly do
+    prevNodesObj <- liftEffect $ read prevNodesObjRef
+    for_ prevNodesObj \{ unmountEffect } -> liftEffect unmountEffect
 
 -- | Create text node
 text :: forall r. Jelly String -> Component r
