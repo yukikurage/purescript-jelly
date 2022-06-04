@@ -7,6 +7,4 @@ import Jelly.Data.Jelly (Jelly, launchJelly, stopJelly)
 import Jelly.Hooks.UseUnmountJelly (useUnmountJelly)
 
 useJelly :: forall r. Jelly Unit -> Hooks r Unit
-useJelly x = do
-  jellyId <- launchJelly x
-  useUnmountJelly $ stopJelly jellyId
+useJelly jelly = useUnmountJelly <<< stopJelly =<< launchJelly jelly
