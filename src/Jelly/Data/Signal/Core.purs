@@ -1,4 +1,4 @@
-module Jelly.Data.Jelly.Core where
+module Jelly.Data.Signal.Core where
 
 import Prelude
 
