@@ -1,103 +1,50 @@
 "use strict";
 
-/*
-Signal は時間変動する変数。変更された時に Observer に通知を送る。
-*/
+export const connect = (observer) => (atom) => () => {
+  observer.atoms.add(atom);
+  atom.observers.add(observer);
+};
 
-export const newSignalImpl = (value /* a */) => () => ({
+export const disconnect = (observer) => (atom) => () => {
+  observer.atoms.delete(atom);
+  atom.observers.delete(observer);
+};
+
+export const newAtom = (value /* a */) => () => ({
   observers: new Set(),
   value,
 });
 
-export const newObserverImpl =
-  (effect /* :: Observer -> Effect (Effect Unit) */) => () => {
-    // 初期化
-    const observer = {
-      signals: new Set(),
-    };
-
-    observer.effect = effect(observer);
-
-    // 依存関係、callback の更新
-    observer.callback = observer.effect();
-
-    return observer;
-  };
-
-/**
- * Observer を親 Observer から切り離す
- * つまり、更新されなくなる
- * update によって再接続が可能
- */
-export const disconnectObserverImpl = (observer /* :: Observer */) => () => {
-  observer.signals.map((signal) => {
-    disconnect(observer, signal);
+export const newObserver =
+  (signal /* :: Observer -> Effect (Effect Unit) */) => () => ({
+    atoms: new Set(),
+    signal,
+    callbacks: new Set(),
   });
-};
 
-// Signal を接続
-const connect = (observer, signal) => {
-  observer.signals.add(signal);
-  signal.observers.add(observer);
-};
+export const getAtoms = (observer /* :: Observer */) => () =>
+  [...observer.atoms];
 
-// Signal を切断
-const disconnect = (observer, signal) => {
-  observer.signals.delete(signal);
-  signal.observers.delete(observer);
-};
+export const getObservers = (atom /* :: Atom a */) => () =>
+  [...atom.observers];
 
-export const readSignalImpl =
-  (observer /* :: Observer */) => (signal /* :: Signal a */) => () => {
-    connect(observer, signal);
-    return signal.value;
+export const getAtomValue = (atom /* :: Atom a */) => () => atom.value;
+
+export const setAtomValue =
+  (atom /* :: Atom a */) => (value /* a */) => () => {
+    atom.value = value;
   };
 
-export const modifySignalImpl =
-  (eq /* :: a -> a -> Boolean */) =>
-  (signal /* :: Signal a */) =>
-  (modifyFunction /* :: a -> a */) => {
-    const oldValue = signal.value;
+export const getObserverSignal = (observer /* :: Observer */) => () =>
+  observer.signal;
 
-    const newValue = modifyFunction(oldValue);
+export const getObserverCallbacks = (observer /* :: Observer */) => () =>
+  [...observer.callbacks];
 
-    const oldObservers = [...signal.observers];
+export const addObserverCallback = (observer /* :: Observer */) => (callback) => () => {
+  observer.callbacks.add(callback);
+}
 
-    if (!eq(oldValue)(newValue)) {
-      // 値が変化した場合
-      // callback を呼び出す
-      oldObservers.map((observer) => {
-        observer.callback();
-      });
-      // 値を書き換える
-      signal.value = newValue;
-      oldObservers.map((observer) => {
-        // 古い依存関係を破棄する
-        disconnectObserverImpl(observer)();
-        // 依存関係と callback を更新する
-        observer.callback = observer.effect();
-      });
-    }
-  };
-
-export const memoImpl =
-  (eq /* :: a -> a -> Boolean */) =>
-  (signalM /* :: Observer -> Effect {value :: a, callback :: Effect Unit }*/) =>
-  () => {
-    let state = undefined;
-
-    const effect = (obs) => {
-      const { value, callback } = signalM(obs)();
-      if(state === undefined) {
-        state = {
-          observers: new Set(),
-          value,
-        }
-      } else {
-        modifySignalImpl(eq)(state)(() => value);
-      }
-      return callback;
-    }
-
-    return newObserverImpl(effect)();
-  };
+export const clearObserverCallbacks = (observer /* :: Observer */) => () => {
+  observer.callbacks.clear();
+}

@@ -3,88 +3,98 @@ module Jelly.Data.Signal where
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
-import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT)
 import Control.Safely (for_)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
+import Unsafe.Coerce (unsafeCoerce)
 
-foreign import data Signal :: Type -> Type
-
+foreign import data Atom :: Type -> Type
+foreign import data GenericAtom :: Type
 foreign import data Observer :: Type
 
-foreign import newSignalImpl
-  :: forall a
-   . a
-  -> Effect (Signal a)
+newtype Signal a = Signal (ReaderT Observer Effect a)
 
-foreign import newObserverImpl
-  :: forall a
-   . (Observer -> Effect a)
-  -> Effect Observer
+derive newtype instance Functor Signal
+derive newtype instance Apply Signal
+derive newtype instance Applicative Signal
+derive newtype instance Bind Signal
+derive newtype instance Monad Signal
+derive newtype instance MonadEffect Signal
+derive newtype instance MonadReader Observer Signal
+derive newtype instance MonadAsk Observer Signal
 
-foreign import disconnectObserverImpl :: Observer -> Effect Unit
+foreign import connect :: Observer -> GenericAtom -> Effect Unit
+foreign import disconnect :: Observer -> GenericAtom -> Effect Unit
+foreign import newAtom :: forall a. a -> Effect (Atom a)
+foreign import newObserver :: (Observer -> Effect Unit) -> Effect Observer
+foreign import getAtoms :: Observer -> Effect (Array GenericAtom)
+foreign import getObservers :: GenericAtom -> Effect (Array Observer)
+foreign import getAtomValue :: forall a. Atom a -> Effect a
+foreign import setAtomValue :: forall a. Atom a -> a -> Effect Unit
+foreign import getObserverSignal :: Observer -> Effect (Observer -> Effect Unit)
+foreign import getObserverCallbacks :: Observer -> Effect (Array (Effect Unit))
+foreign import addObserverCallback :: Observer -> Effect Unit -> Effect Unit
+foreign import clearObserverCallbacks :: Observer -> Effect Unit
 
-foreign import readSignalImpl
-  :: forall a. Observer -> Signal a -> Effect a
+toGenericAtom :: forall a. Atom a -> GenericAtom
+toGenericAtom = unsafeCoerce
 
-foreign import modifySignalImpl
-  :: forall a. (a -> a -> Boolean) -> Signal a -> (a -> a) -> Effect Unit
+emptyObserver :: Effect Observer
+emptyObserver = newObserver $ const $ pure unit
 
--- | SignalM モナドは Signal の値を更新するためのモナド
--- | 基本的には Effect だが、Reader モナドによりいつでも更新対象の Signal をとってくることができる
--- | したがって、動的な依存関係の自動解決が可能となっている
-newtype SignalM a = SignalM
-  (ReaderT Observer (WriterT (Array (Effect Unit)) Effect) a)
+deferEffect :: Effect Unit -> Signal Unit
+deferEffect callback = do
+  obs <- ask
+  liftEffect $ addObserverCallback obs callback
 
-derive newtype instance Functor SignalM
-derive newtype instance Applicative SignalM
-derive newtype instance Apply SignalM
-derive newtype instance Bind SignalM
-derive newtype instance Monad SignalM
-derive newtype instance MonadAsk Observer SignalM
-derive newtype instance MonadReader Observer SignalM
-derive newtype instance MonadRec SignalM
-derive newtype instance MonadTell (Array (Effect Unit)) SignalM
-derive newtype instance MonadWriter (Array (Effect Unit)) SignalM
-derive newtype instance MonadEffect SignalM
+launchSignal :: Signal Unit -> Effect Observer
+launchSignal (Signal signal) = do
+  obs <- newObserver $ runReaderT signal
+  runReaderT signal obs
+  pure obs
 
-runSignalM
-  :: forall a. SignalM a -> Observer -> Effect (Tuple a (Effect Unit))
-runSignalM (SignalM m) obs = do
-  Tuple a callbacks <- runWriterT (runReaderT m obs)
-  pure $ Tuple a do
-    for_ callbacks identity
+launchSignal_ :: Signal Unit -> Effect Unit
+launchSignal_ signal = launchSignal signal $> unit
 
-newSignal :: forall a. a -> Effect (Signal a)
-newSignal = newSignalImpl
+stopObserver :: Observer -> Effect Unit
+stopObserver obs = do
+  atoms <- getAtoms obs
+  for_ atoms \atom -> do
+    disconnect obs atom
 
-launchSignalM :: SignalM Unit -> Effect Observer
-launchSignalM signalM = do
+newSignal
+  :: forall a. a -> Effect (Tuple (Signal a) ((a -> a) -> Effect Unit))
+newSignal init = do
+  atom <- newAtom init
+
   let
-    effect = \observer -> do
-      Tuple _ callback <- runSignalM signalM observer
-      pure callback
-  newObserverImpl effect
+    signal = do
+      obs <- ask
 
-disconnectObserver :: Observer -> Effect Unit
-disconnectObserver = disconnectObserverImpl
+      liftEffect $ connect obs $ toGenericAtom atom
+      deferEffect $ disconnect obs $ toGenericAtom atom
 
-modifySignal
-  :: forall a. Eq a => Signal a -> (a -> a) -> Effect Unit
-modifySignal signal f = modifySignalImpl eq signal f
+      liftEffect $ getAtomValue atom
 
-modifySignalForce :: forall a. Signal a -> (a -> a) -> Effect Unit
-modifySignalForce signal f = modifySignalImpl (\_ _ -> false) signal f
+    mod f = do
+      observers <- getObservers $ toGenericAtom atom
 
-writeSignal :: forall a. Eq a => Signal a -> a -> Effect Unit
-writeSignal signal a = modifySignal signal (const a)
+      for_ observers \obs -> do
+        callbacks <- getObserverCallbacks obs
+        for_ callbacks identity
+        clearObserverCallbacks obs
 
-writeSignalForce :: forall a. Signal a -> a -> Effect Unit
-writeSignalForce signal a = modifySignalForce signal (const a)
+      v <- getAtomValue atom
+      setAtomValue atom $ f v
 
-readSignal :: forall a. Signal a -> SignalM a
-readSignal signal = do
-  observer <- ask
-  liftEffect $ readSignalImpl observer signal
+      for_ observers \obs -> do
+        sig <- getObserverSignal obs
+        sig obs
+
+  pure $ Tuple signal mod
+
+stackSignal :: Signal Unit -> Signal Unit
+stackSignal signal = do
+  obs <- liftEffect $ launchSignal signal
+  deferEffect $ stopObserver obs
