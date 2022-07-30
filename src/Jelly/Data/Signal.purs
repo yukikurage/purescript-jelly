@@ -7,10 +7,8 @@ import Control.Safely (for_)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Unsafe.Coerce (unsafeCoerce)
 
 foreign import data Atom :: Type -> Type
-foreign import data GenericAtom :: Type
 foreign import data Observer :: Type
 
 newtype Signal a = Signal (ReaderT Observer Effect a)
@@ -24,12 +22,11 @@ derive newtype instance MonadEffect Signal
 derive newtype instance MonadReader Observer Signal
 derive newtype instance MonadAsk Observer Signal
 
-foreign import connect :: Observer -> GenericAtom -> Effect Unit
-foreign import disconnect :: Observer -> GenericAtom -> Effect Unit
+foreign import connect :: forall a. Observer -> Atom a -> Effect Unit
+foreign import disconnect :: forall a. Observer -> Atom a -> Effect Unit
 foreign import newAtom :: forall a. a -> Effect (Atom a)
 foreign import newObserver :: (Observer -> Effect Unit) -> Effect Observer
-foreign import getAtoms :: Observer -> Effect (Array GenericAtom)
-foreign import getObservers :: GenericAtom -> Effect (Array Observer)
+foreign import getObservers :: forall a. Atom a -> Effect (Array Observer)
 foreign import getAtomValue :: forall a. Atom a -> Effect a
 foreign import setAtomValue :: forall a. Atom a -> a -> Effect Unit
 foreign import getObserverSignal :: Observer -> Effect (Observer -> Effect Unit)
@@ -37,64 +34,57 @@ foreign import getObserverCallbacks :: Observer -> Effect (Array (Effect Unit))
 foreign import addObserverCallback :: Observer -> Effect Unit -> Effect Unit
 foreign import clearObserverCallbacks :: Observer -> Effect Unit
 
-toGenericAtom :: forall a. Atom a -> GenericAtom
-toGenericAtom = unsafeCoerce
+detach :: forall a. Signal a -> Effect a
+detach (Signal sig) = runReaderT sig =<<
+  (newObserver $ const $ pure unit)
 
-emptyObserver :: Effect Observer
-emptyObserver = newObserver $ const $ pure unit
-
-deferEffect :: Effect Unit -> Signal Unit
-deferEffect callback = do
+defer :: Effect Unit -> Signal Unit
+defer callback = do
   obs <- ask
   liftEffect $ addObserverCallback obs callback
 
-launchSignal :: Signal Unit -> Effect Observer
-launchSignal (Signal signal) = do
-  obs <- newObserver $ runReaderT signal
-  runReaderT signal obs
-  pure obs
+launch :: Signal Unit -> Effect (Effect Unit)
+launch (Signal sig) = do
+  obs <- newObserver $ runReaderT sig
+  runReaderT sig obs
+  pure do
+    callbacks <- getObserverCallbacks obs
+    for_ callbacks identity
+    clearObserverCallbacks obs
 
-launchSignal_ :: Signal Unit -> Effect Unit
-launchSignal_ signal = launchSignal signal $> unit
+launch_ :: Signal Unit -> Effect Unit
+launch_ sig = launch sig $> unit
 
-stopObserver :: Observer -> Effect Unit
-stopObserver obs = do
-  atoms <- getAtoms obs
-  for_ atoms \atom -> do
-    disconnect obs atom
-
-newSignal
-  :: forall a. a -> Effect (Tuple (Signal a) ((a -> a) -> Effect Unit))
-newSignal init = do
+signal
+  :: forall m a
+   . MonadEffect m
+  => a
+  -> m (Tuple (Signal a) ((a -> a) -> Effect Unit))
+signal init = liftEffect do
   atom <- newAtom init
 
   let
-    signal = do
+    sig = do
       obs <- ask
-
-      liftEffect $ connect obs $ toGenericAtom atom
-      deferEffect $ disconnect obs $ toGenericAtom atom
-
+      liftEffect $ connect obs atom
+      defer $ disconnect obs atom
       liftEffect $ getAtomValue atom
 
     mod f = do
-      observers <- getObservers $ toGenericAtom atom
-
+      observers <- getObservers atom
       for_ observers \obs -> do
         callbacks <- getObserverCallbacks obs
         for_ callbacks identity
         clearObserverCallbacks obs
 
-      v <- getAtomValue atom
-      setAtomValue atom $ f v
+      setAtomValue atom <<< f =<< getAtomValue atom
 
       for_ observers \obs -> do
-        sig <- getObserverSignal obs
-        sig obs
+        s <- getObserverSignal obs
+        s obs
 
-  pure $ Tuple signal mod
+  pure $ Tuple sig mod
 
-stackSignal :: Signal Unit -> Signal Unit
-stackSignal signal = do
-  obs <- liftEffect $ launchSignal signal
-  deferEffect $ stopObserver obs
+pile :: forall a. Signal a -> Signal a
+pile signal = do
+  liftEffect

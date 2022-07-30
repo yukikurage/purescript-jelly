@@ -2,50 +2,41 @@ module Jelly.HTML where
 
 import Prelude
 
-import Control.Monad.Rec.Class (whileJust)
 import Control.Safely (for_)
-import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Ref (new, read, write)
+import Jelly.Data.Hook (Hook, runHookWithCurrentContext)
+import Jelly.Data.Signal (Signal)
+import Jelly.Hooks.UseDeferSignal (useDeferSignal)
+import Jelly.Hooks.UseSignal (useSignal)
 import Web.DOM (Element, Node)
+import Web.DOM.Document (createElement)
 import Web.DOM.Element (setAttribute)
-import Web.DOM.Node (appendChild, firstChild, insertBefore, nextSibling, removeChild)
+import Web.HTML (window)
+import Web.HTML.HTMLDocument (toDocument)
+import Web.HTML.Window (document)
 
-foreign import nodeEq :: Node -> Node -> Effect Boolean
+foreign import updateNodeChildren :: Node -> Array Node -> Effect Unit
 
--- newAttributeSignal :: Element -> String -> Signal String -> Effect (Signal Unit)
--- newAttributeSignal element attr signal = newSignal do
---   val <- readSignal signal
---   liftEffect $ setAttribute attr val element
+attributeSignal
+  :: Element
+  -> String
+  -> Signal String
+  -> Signal Unit
+attributeSignal element attr signal = do
+  val <- signal
+  liftEffect $ setAttribute attr val element
 
--- newChildrenSignal :: Node -> Signal (Array Node) -> Effect (Signal Unit)
--- newChildrenSignal parentNode nodesSignal = newSignal $ do
---   nodes <- readSignal nodesSignal
+el :: forall r. String -> Hook r Unit -> Hook r Unit
+el tag hook = do
+  elem <- liftEffect $ createElement tag <<< toDocument =<< document =<< window
 
---   liftEffect do
---     itrNodeRef <- new =<< firstChild parentNode
+  { childNodes, attributes, deferEffect } <- runHookWithCurrentContext hook
 
---     for_ nodes \node -> do
---       anchorNode <- read itrNodeRef
+  for_ attributes \(attr /\ signal) -> useSignal $ attributeSignal elem attr
+    signal
 
---       case anchorNode of
---         Nothing ->
---           appendChild node parentNode
---         Just anchor -> do
---           isEq <- nodeEq anchor node
---           if isEq then do
---             next <- nextSibling anchor
---             write next itrNodeRef
---           else insertBefore node anchor parentNode
+  useDeferSignal $ liftEffect deferEffect
 
---     -- Remove all nodes after anchor node.
---     whileJust do
---       anchorNode <- read itrNodeRef
---       case anchorNode of
---         Nothing -> pure $ Nothing
---         Just anchor -> do
---           next <- nextSibling anchor
---           removeChild anchor parentNode
---           write next itrNodeRef
---           pure $ Just unit
+  pure unit

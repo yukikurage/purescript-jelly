@@ -5,18 +5,18 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
-import Jelly.Data.Signal (launchSignal_, newSignal, stackSignal)
+import Jelly.Data.Signal (launch_, pile, signal)
 
 main :: Effect Unit
 main = do
-  sig0 /\ mod0 <- newSignal 0
-  sig1 /\ mod1 <- newSignal "Hello"
+  sig0 /\ mod0 <- signal 0
+  sig1 /\ mod1 <- signal "Hello"
 
-  launchSignal_ do
+  launch_ do
     num <- sig0
     log $ "num: " <> show num
 
-    stackSignal do
+    pile do
       str <- sig1
       log $ "stacked num: " <> show num
       log $ "stacked str: " <> str
@@ -26,3 +26,6 @@ main = do
 
   log "mod1 World"
   mod1 $ const "World"
+
+  log "mod0 2"
+  mod0 $ const 2

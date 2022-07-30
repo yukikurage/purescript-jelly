@@ -22,9 +22,6 @@ export const newObserver =
     callbacks: new Set(),
   });
 
-export const getAtoms = (observer /* :: Observer */) => () =>
-  [...observer.atoms];
-
 export const getObservers = (atom /* :: Atom a */) => () =>
   [...atom.observers];
 
