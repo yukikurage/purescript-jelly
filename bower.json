@@ -14,17 +14,17 @@
         "output"
     ],
     "dependencies": {
-        "purescript-arrays": "https://github.com/purescript/purescript-arrays.git#v7.0.0",
-        "purescript-effect": "https://github.com/purescript/purescript-effect.git#v4.0.0",
-        "purescript-maybe": "https://github.com/purescript/purescript-maybe.git#v6.0.0",
-        "purescript-prelude": "https://github.com/purescript/purescript-prelude.git#v6.0.0",
-        "purescript-safely": "https://github.com/paf31/purescript-safely.git#v4.0.1",
-        "purescript-st": "https://github.com/purescript/purescript-st.git#v6.0.0",
-        "purescript-tailrec": "https://github.com/purescript/purescript-tailrec.git#v6.0.0",
-        "purescript-transformers": "https://github.com/purescript/purescript-transformers.git#v6.0.0",
-        "purescript-tuples": "https://github.com/purescript/purescript-tuples.git#v7.0.0",
-        "purescript-web-dom": "https://github.com/purescript-web/purescript-web-dom.git#v6.0.0",
-        "purescript-web-events": "https://github.com/purescript-web/purescript-web-events.git#v4.0.0",
-        "purescript-web-html": "https://github.com/purescript-web/purescript-web-html.git#v4.0.0"
+        "purescript-arrays": "^v7.0.0",
+        "purescript-effect": "^v4.0.0",
+        "purescript-maybe": "^v6.0.0",
+        "purescript-prelude": "^v6.0.0",
+        "purescript-safely": "^v4.0.1",
+        "purescript-st": "^v6.0.0",
+        "purescript-tailrec": "^v6.0.0",
+        "purescript-transformers": "^v6.0.0",
+        "purescript-tuples": "^v7.0.0",
+        "purescript-web-dom": "^v6.0.0",
+        "purescript-web-events": "^v4.0.0",
+        "purescript-web-html": "^v4.0.0"
     }
 }
