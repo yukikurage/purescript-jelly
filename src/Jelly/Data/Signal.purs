@@ -84,7 +84,3 @@ signal init = liftEffect do
         s obs
 
   pure $ Tuple sig mod
-
-pile :: forall a. Signal a -> Signal a
-pile signal = do
-  liftEffect

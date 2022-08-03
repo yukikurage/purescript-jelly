@@ -4,28 +4,39 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Jelly.Data.Signal (launch_, pile, signal)
+import Effect.Timer (clearInterval, setInterval)
+import Jelly.Data.Hook (Hook)
+import Jelly.Data.Signal (launch_, signal)
+import Jelly.HTML (el, txt)
+import Jelly.Hooks.Attr (attr)
+import Jelly.Hooks.UseDeferSignal (useDeferSignal)
+import Jelly.LaunchApp (launchApp)
+
+type Context = Unit
 
 main :: Effect Unit
-main = do
-  sig0 /\ mod0 <- signal 0
-  sig1 /\ mod1 <- signal "Hello"
+main = launchApp root unit
 
-  launch_ do
-    num <- sig0
-    log $ "num: " <> show num
+root :: Hook Context Unit
+root = do
+  txt $ pure "Hello, Jelly"
 
-    pile do
-      str <- sig1
-      log $ "stacked num: " <> show num
-      log $ "stacked str: " <> str
+  el "div" do
+    attr "class" $ pure "test"
 
-  log "mod0 1"
-  mod0 $ const 1
+    txt $ pure "This is Jelly test"
 
-  log "mod1 World"
-  mod1 $ const "World"
+  el "div" do
+    countSig /\ countMod <- signal 0
 
-  log "mod0 2"
-  mod0 $ const 2
+    intervalId <- liftEffect $ setInterval 1000 $ do
+      log "Count up"
+      countMod (_ + 1)
+
+    useDeferSignal $ liftEffect $ clearInterval intervalId
+
+    txt do
+      count <- countSig
+      pure $ "This is Counter: " <> show count

@@ -13,11 +13,13 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Jelly.Data.Signal (Signal)
 import Web.DOM (Node)
+import Web.Event.Internal.Types (Event)
 
--- | anchorNode is the node after which the hook will be inserted.
 type HookInternal r =
-  { parentNode :: Node
-  , anchorNode :: Node
+  { childNodesRef :: STArray Global (Signal (Array Node))
+  , propsRef :: STArray Global (Tuple String (Signal String))
+  , handlersRef :: STArray Global (Tuple String (Event -> Signal String))
+  , unmountEffectsRef :: STArray Global (Effect Unit)
   , context :: r
   }
 
@@ -37,9 +39,29 @@ derive newtype instance MonadRec (Hook r)
 runHook
   :: forall r a
    . Hook r a
-  -> HookInternal r
-  -> Effect a
-runHook (Hook f) hookInternal = runReaderT f hookInternal
+  -> r
+  -> Effect
+       { return :: a
+       , childNodes :: Signal (Array Node)
+       , props :: Array (Tuple String (Signal String))
+       , handlers :: Array (Tuple String (Event -> Signal String))
+       , unmountEffect :: Effect Unit
+       }
+runHook (Hook f) context = do
+  childNodesRef <- toEffect $ new
+  propsRef <- toEffect $ new
+  handlersRef <- toEffect $ new
+  unmountEffectsRef <- toEffect $ new
+  return <- runReaderT f
+    { childNodesRef, propsRef, handlersRef, unmountEffectsRef, context }
+  childNodesArr <- toEffect $ freeze childNodesRef
+  props <- toEffect $ freeze propsRef
+  handlers <- toEffect $ freeze handlersRef
+  unmountEffects <- toEffect $ freeze unmountEffectsRef
+  let
+    childNodes = join <$> sequence childNodesArr
+    unmountEffect = for_ unmountEffects identity
+  pure { return, childNodes, unmountEffect, props, handlers }
 
 runHookWithCurrentContext
   :: forall r a
@@ -47,8 +69,9 @@ runHookWithCurrentContext
   -> Hook r
        { return :: a
        , childNodes :: Signal (Array Node)
-       , attributes :: Array (Tuple String (Signal String))
-       , deferEffect :: Effect Unit
+       , props :: Array (Tuple String (Signal String))
+       , handlers :: Array (Tuple String (Event -> Signal String))
+       , unmountEffect :: Effect Unit
        }
 runHookWithCurrentContext hook = do
   { context } <- ask
