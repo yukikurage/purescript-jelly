@@ -5,9 +5,9 @@ import Prelude
 import Effect.Class (liftEffect)
 import Jelly.Data.Hook (Hook)
 import Jelly.Data.Signal (Signal, launch)
-import Jelly.Hooks.UseDeferSignal (useDeferSignal)
+import Jelly.Hooks.UseUnmountSignal (useUnmountSignal)
 
-useSignal :: forall t11. Signal Unit -> Hook t11 Unit
+useSignal :: forall r. Signal Unit -> Hook r Unit
 useSignal signal = do
   stop <- liftEffect $ launch signal
-  useDeferSignal $ liftEffect stop
+  useUnmountSignal $ liftEffect stop

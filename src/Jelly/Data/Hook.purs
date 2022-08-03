@@ -2,23 +2,18 @@ module Jelly.Data.Hook where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.ST.Global (Global, toEffect)
 import Control.Safely (for_)
 import Data.Array.ST (STArray, freeze, new)
-import Data.Traversable (sequence)
-import Data.Tuple (Tuple)
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Jelly.Data.Signal (Signal)
-import Web.DOM (Node)
-import Web.Event.Internal.Types (Event)
+import Effect.Class (class MonadEffect)
+import Web.DOM (Element)
 
 type HookInternal r =
-  { childNodesRef :: STArray Global (Signal (Array Node))
-  , propsRef :: STArray Global (Tuple String (Signal String))
-  , handlersRef :: STArray Global (Tuple String (Event -> Signal String))
+  { parentElement :: Element
   , unmountEffectsRef :: STArray Global (Effect Unit)
   , context :: r
   }
@@ -40,39 +35,13 @@ runHook
   :: forall r a
    . Hook r a
   -> r
-  -> Effect
-       { return :: a
-       , childNodes :: Signal (Array Node)
-       , props :: Array (Tuple String (Signal String))
-       , handlers :: Array (Tuple String (Event -> Signal String))
-       , unmountEffect :: Effect Unit
-       }
-runHook (Hook f) context = do
-  childNodesRef <- toEffect $ new
-  propsRef <- toEffect $ new
-  handlersRef <- toEffect $ new
+  -> Element
+  -> Effect (a /\ Effect Unit)
+runHook (Hook f) context parentElement = do
   unmountEffectsRef <- toEffect $ new
   return <- runReaderT f
-    { childNodesRef, propsRef, handlersRef, unmountEffectsRef, context }
-  childNodesArr <- toEffect $ freeze childNodesRef
-  props <- toEffect $ freeze propsRef
-  handlers <- toEffect $ freeze handlersRef
+    { parentElement, unmountEffectsRef, context }
   unmountEffects <- toEffect $ freeze unmountEffectsRef
   let
-    childNodes = join <$> sequence childNodesArr
     unmountEffect = for_ unmountEffects identity
-  pure { return, childNodes, unmountEffect, props, handlers }
-
-runHookWithCurrentContext
-  :: forall r a
-   . Hook r a
-  -> Hook r
-       { return :: a
-       , childNodes :: Signal (Array Node)
-       , props :: Array (Tuple String (Signal String))
-       , handlers :: Array (Tuple String (Event -> Signal String))
-       , unmountEffect :: Effect Unit
-       }
-runHookWithCurrentContext hook = do
-  { context } <- ask
-  liftEffect $ runHook hook context
+  pure $ return /\ unmountEffect

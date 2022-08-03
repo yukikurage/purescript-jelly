@@ -3,6 +3,7 @@ module Jelly.Data.Signal where
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Rec.Class (class MonadRec)
 import Control.Safely (for_)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -21,6 +22,7 @@ derive newtype instance Monad Signal
 derive newtype instance MonadEffect Signal
 derive newtype instance MonadReader Observer Signal
 derive newtype instance MonadAsk Observer Signal
+derive newtype instance MonadRec Signal
 
 foreign import connect :: forall a. Observer -> Atom a -> Effect Unit
 foreign import disconnect :: forall a. Observer -> Atom a -> Effect Unit
@@ -58,6 +60,7 @@ launch_ sig = launch sig $> unit
 signal
   :: forall m a
    . MonadEffect m
+  => Eq a
   => a
   -> m (Tuple (Signal a) ((a -> a) -> Effect Unit))
 signal init = liftEffect do
@@ -71,16 +74,21 @@ signal init = liftEffect do
       liftEffect $ getAtomValue atom
 
     mod f = do
-      observers <- getObservers atom
-      for_ observers \obs -> do
-        callbacks <- getObserverCallbacks obs
-        for_ callbacks identity
-        clearObserverCallbacks obs
+      atomValue <- getAtomValue atom
+      let
+        newAtomValue = f atomValue
 
-      setAtomValue atom <<< f =<< getAtomValue atom
+      when (newAtomValue /= atomValue) $ do
+        observers <- getObservers atom
+        for_ observers \obs -> do
+          callbacks <- getObserverCallbacks obs
+          for_ callbacks identity
+          clearObserverCallbacks obs
 
-      for_ observers \obs -> do
-        s <- getObserverSignal obs
-        s obs
+        setAtomValue atom newAtomValue
+
+        for_ observers \obs -> do
+          s <- getObserverSignal obs
+          s obs
 
   pure $ Tuple sig mod

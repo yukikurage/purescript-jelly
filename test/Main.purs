@@ -7,11 +7,11 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Timer (clearInterval, setInterval)
-import Jelly.Data.Hook (Hook)
-import Jelly.Data.Signal (launch_, signal)
-import Jelly.HTML (el, txt)
-import Jelly.Hooks.Attr (attr)
-import Jelly.Hooks.UseDeferSignal (useDeferSignal)
+import Jelly.Data.Component (Component, el, text)
+import Jelly.Data.Signal (signal)
+import Jelly.Hooks.Ch (ch)
+import Jelly.Hooks.Prop (prop)
+import Jelly.Hooks.UseUnmountSignal (useUnmountSignal)
 import Jelly.LaunchApp (launchApp)
 
 type Context = Unit
@@ -19,24 +19,26 @@ type Context = Unit
 main :: Effect Unit
 main = launchApp root unit
 
-root :: Hook Context Unit
-root = do
-  txt $ pure "Hello, Jelly"
+root :: Component Context
+root = el "div" do
+  prop "id" $ pure "root"
 
-  el "div" do
-    attr "class" $ pure "test"
+  ch $ text $ pure "Hello, Jelly"
 
-    txt $ pure "This is Jelly test"
+  ch $ el "div" do
+    prop "class" $ pure "test"
 
-  el "div" do
+    ch $ text $ pure "This is Jelly test"
+
+  ch $ el "div" do
     countSig /\ countMod <- signal 0
 
     intervalId <- liftEffect $ setInterval 1000 $ do
       log "Count up"
       countMod (_ + 1)
 
-    useDeferSignal $ liftEffect $ clearInterval intervalId
+    useUnmountSignal $ liftEffect $ clearInterval intervalId
 
-    txt do
+    ch $ text do
       count <- countSig
       pure $ "This is Counter: " <> show count

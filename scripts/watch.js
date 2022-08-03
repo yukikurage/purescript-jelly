@@ -7,7 +7,7 @@ esbuild
     outfile: "public/index.js",
     minify: false,
     sourcemap: true,
-    target: ["chrome70", "firefox57", "safari11", "edge16"],
+    target: ["chrome70", "firefox57", "safari11", "edge18"],
     watch: true,
     logLevel: "info",
   })
