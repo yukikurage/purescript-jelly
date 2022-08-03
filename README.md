@@ -26,7 +26,6 @@ let upstream = ...
 in  upstream
   with jelly =
     { dependencies =
-     { dependencies =
       [ "arrays"
       , "effect"
       , "maybe"
