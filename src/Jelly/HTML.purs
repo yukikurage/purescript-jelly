@@ -8,16 +8,17 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Hook (Hook, runHookWithCurrentContext)
 import Jelly.Data.Signal (Signal)
+import Jelly.Hooks.UseChildNodes (useChildNodes)
 import Jelly.Hooks.UseDeferSignal (useDeferSignal)
 import Jelly.Hooks.UseSignal (useSignal)
 import Web.DOM (Element, Node)
-import Web.DOM.Document (createElement)
-import Web.DOM.Element (setAttribute)
+import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM.Element (setAttribute, toNode)
+import Web.DOM.Node (setNodeValue)
+import Web.DOM.Text as Text
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toDocument)
 import Web.HTML.Window (document)
-
-foreign import updateNodeChildren :: Node -> Array Node -> Effect Unit
 
 attributeSignal
   :: Element
@@ -39,4 +40,14 @@ el tag hook = do
 
   useDeferSignal $ liftEffect deferEffect
 
-  pure unit
+  useSignal $ liftEffect <<< updateNodeChildren (toNode elem) =<< childNodes
+
+  useChildNodes $ pure [ toNode elem ]
+
+txt :: forall r. Signal String -> Hook r Unit
+txt sig = do
+  t <- liftEffect $ createTextNode "" <<< toDocument =<< document =<< window
+
+  useSignal $ liftEffect <<< flip setNodeValue (Text.toNode t) =<< sig
+
+  useChildNodes $ pure [ Text.toNode t ]
