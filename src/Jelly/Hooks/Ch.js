@@ -104,16 +104,13 @@ export const updateNodeChildren =
         // itr が 存在するなら、新しい Node を挿入する場所は itr の直前である。
         if (itr === node) {
           // ただし、itr が Node と同じだった場合、itr は次の Node に移動して、新しく挿入することはない (レンダーコスト低減のため)
-          console.log("node render skip");
           itr = itr.nextSibling;
         } else {
           parentElement.insertBefore(node, itr);
-          console.log("node render not skip");
         }
       } else {
         // itr が存在しないなら、新しい Node を挿入する場所は parentNode の最後である。
         parentElement.appendChild(node);
-        console.log("node render not skip no itr");
       }
     });
 

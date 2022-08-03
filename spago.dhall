@@ -13,9 +13,7 @@ to generate this file without the comments in this block.
 { name = "jelly"
 , dependencies =
   [ "arrays"
-  , "console"
   , "effect"
-  , "js-timers"
   , "maybe"
   , "prelude"
   , "safely"
