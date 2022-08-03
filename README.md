@@ -43,7 +43,7 @@ in  upstream
     , repo =
         "https://github.com/yukikurage/purescript-jelly"
     , version =
-        "v0.3.0"
+        "v0.3.1"
     }
 ...
 ```
