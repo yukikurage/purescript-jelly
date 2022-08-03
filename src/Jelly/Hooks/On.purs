@@ -11,7 +11,7 @@ import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.Event.Internal.Types (Event)
 
-on :: forall r. String -> (Event -> Signal String) -> Hook r Unit
+on :: forall r. String -> (Event -> Signal Unit) -> Hook r Unit
 on eventType listenerSig = do
   { parentElement } <- ask
 

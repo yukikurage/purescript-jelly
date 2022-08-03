@@ -39,9 +39,7 @@ export const updateNodeChildren =
 
     const willUnmountNodes = new Set(nodeToUnmountEffectMap.keys()); // 最終的に Unmount される Node の一覧。適宜削除する
 
-    let itr = anchorNode.nextSibling;
-
-    items.map((item) => {
+    const newNodes = items.map((item) => {
       // item を key に変換
       const maybeKey = itemToKey(item);
       const key = fromMaybe(undefined)(maybeKey); //: undefined | string
@@ -50,16 +48,16 @@ export const updateNodeChildren =
       let node;
       let mod;
 
-      if (key !== undefined && keyToNodeMap.has(key)) {
+      if (key !== undefined && keyToNodeModMap.has(key)) {
         // key が存在する場合は、既存の Node を使いまわす
         const nodeMod = keyToNodeModMap.get(key); // {node, mod} を取得
 
-        node = nodeMod.node
+        node = nodeMod.node;
         mod = nodeMod.mod;
 
         willUnmountNodes.delete(node); // Node が Unmount されないようにする
 
-        newKeyToNodeModMap.set(key, node); // key と node のマップに追加
+        newKeyToNodeModMap.set(key, { node, mod }); // key と node のマップに追加
       } else {
         // それ以外の場合、新しい Node を作成する。
 
@@ -74,33 +72,52 @@ export const updateNodeChildren =
         const unmountEffect = snd(node_unmountEffect);
 
         nodeToUnmountEffectMap.set(node, unmountEffect); // Unmount Effect 一覧に追加
-        key !== undefined && newKeyToNodeModMap.set(key, {node, mod}); // {node, mod} をマップに追加 (key が存在する場合のみ)
+        key !== undefined && newKeyToNodeModMap.set(key, { node, mod }); // {node, mod} をマップに追加 (key が存在する場合のみ)
       }
 
       mod(item)(); // Mod に item を適用 (ここで Signal の更新処理をする)
 
-      // 以下 作成、または前回から引き継いだ node を目的の場所に移動する処理
+      return node;
+    });
+
+    let itr = anchorNode.nextSibling;
+
+    // itr を削除されない Node まで進める関数
+    const proceedItrUntilNotUnmounted = () => {
+      while (willUnmountNodes.has(itr)) {
+        // 進めるときについでに削除する
+        const node = itr;
+        itr = itr.nextSibling;
+
+        const unmountEffect = nodeToUnmountEffectMap.get(node); // 先に unmount Effect を取得しておく
+        nodeToUnmountEffectMap.delete(node); // nodeToUnmountEffectMap から対象の Node を削除
+        unmountEffect(); // Unmount Effect を実行
+        node.remove(); // Node を削除
+      }
+    };
+
+    // 以下作成、または前回から引き継いだ node を目的の場所に移動する処理
+    newNodes.map((node) => {
+      // まずは proceedItrUntilNotUnmounted を呼ぶ
+      proceedItrUntilNotUnmounted();
       if (itr !== null) {
         // itr が 存在するなら、新しい Node を挿入する場所は itr の直前である。
         if (itr === node) {
           // ただし、itr が Node と同じだった場合、itr は次の Node に移動して、新しく挿入することはない (レンダーコスト低減のため)
+          console.log("node render skip");
           itr = itr.nextSibling;
         } else {
           parentElement.insertBefore(node, itr);
+          console.log("node render not skip");
         }
       } else {
         // itr が存在しないなら、新しい Node を挿入する場所は parentNode の最後である。
         parentElement.appendChild(node);
+        console.log("node render not skip no itr");
       }
     });
 
-    // Node を削除する処理
-    willUnmountNodes.forEach((node) => {
-      const unmountEffect = nodeToUnmountEffectMap.get(node); // 先に unmount Effect を取得しておく
-      nodeToUnmountEffectMap.delete(node); // nodeToUnmountEffectMap から対象の Node を削除
-      unmountEffect(); // Unmount Effect を実行
-      node.remove(); // Node を削除
-    });
+    proceedItrUntilNotUnmounted(); // 最後にも Unmount するべき Node が残っていることがある
 
     useChildComponentsState.keyToNodeModMap = newKeyToNodeModMap; // keyToNodeModMap を更新
   };

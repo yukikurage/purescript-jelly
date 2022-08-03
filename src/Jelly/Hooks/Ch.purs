@@ -48,14 +48,14 @@ foreign import updateNodeChildren
 -- | 同じキーを持つ子コンポーネントがすでにある場合、そのコンポーネントを使いまわす。
 -- | それ以外の場合、Component r を使って、新しい Node を作成し、子コンポーネントとして埋め込む
 -- | 削除された子コンポーネントの Unmount Effect を実行する
-chsMap
+chsFor
   :: forall r a
    . Eq a
-  => (a -> Maybe String)
+  => Signal (Array a)
+  -> (a -> Maybe String)
   -> (Signal a -> Component r)
-  -> Signal (Array a)
   -> Hook r Unit
-chsMap itemToKey itemSignalToComponent itemsSignal = do
+chsFor itemsSignal itemToKey itemSignalToComponent = do
   { context, parentElement } <- ask
 
   let
