@@ -14,6 +14,7 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "arrays"
   , "effect"
+  , "js-timers"
   , "maybe"
   , "prelude"
   , "safely"
