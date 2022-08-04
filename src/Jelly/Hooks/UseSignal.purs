@@ -5,9 +5,7 @@ import Prelude
 import Effect.Class (liftEffect)
 import Jelly.Data.Hook (Hook)
 import Jelly.Data.Signal (Signal, launch)
-import Jelly.Hooks.UseUnmountSignal (useUnmountSignal)
+import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
 useSignal :: forall r. Signal Unit -> Hook r Unit
-useSignal signal = do
-  stop <- liftEffect $ launch signal
-  useUnmountSignal $ liftEffect stop
+useSignal signal = useUnmountEffect =<< liftEffect (launch signal)

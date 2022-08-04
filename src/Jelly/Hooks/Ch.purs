@@ -14,7 +14,7 @@ import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Hook (Hook)
 import Jelly.Data.Signal (Signal, defer, signal)
 import Jelly.Hooks.UseSignal (useSignal)
-import Jelly.Hooks.UseUnmountSignal (useUnmountSignal)
+import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM (Element, Node)
 import Web.DOM.Document (createTextNode)
 import Web.DOM.Element (toNode)
@@ -81,8 +81,7 @@ chsFor itemsSignal itemToKey itemSignalToComponent = do
       items
 
   -- | 親ノードが Unmount したとき子ノードの Unmount Effect も全部走らせる
-  useUnmountSignal do
-    liftEffect $ runUnmountEffectAll useChildNodeState
+  useUnmountEffect $ runUnmountEffectAll useChildNodeState
 
 ch :: forall r. Component r -> Hook r Unit
 ch component = chSig $ pure component

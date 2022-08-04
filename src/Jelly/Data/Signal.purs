@@ -36,8 +36,8 @@ foreign import getObserverCallbacks :: Observer -> Effect (Array (Effect Unit))
 foreign import addObserverCallback :: Observer -> Effect Unit -> Effect Unit
 foreign import clearObserverCallbacks :: Observer -> Effect Unit
 
-detach :: forall a. Signal a -> Effect a
-detach (Signal sig) = runReaderT sig =<<
+readSignal :: forall a. Signal a -> Effect a
+readSignal (Signal sig) = runReaderT sig =<<
   (newObserver $ const $ pure unit)
 
 defer :: Effect Unit -> Signal Unit
