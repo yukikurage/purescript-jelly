@@ -20,9 +20,9 @@ root :: Component Context
 root = el "div" do
   "id" := pure "root"
 
-  ch $ text $ pure "Hello, Jelly"
+  ch $ text $ pure "Hello, Jelly! "
 
-  ch $ text $ pure "This is Jelly test"
+  ch $ text $ pure "This is Jelly test."
 
   ch $ el "div" do
     countSig /\ countMod <- signal 0

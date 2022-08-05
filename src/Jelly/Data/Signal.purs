@@ -51,8 +51,8 @@ launch (Signal sig) = do
   runReaderT sig obs
   pure do
     callbacks <- getObserverCallbacks obs
-    for_ callbacks identity
     clearObserverCallbacks obs
+    for_ callbacks identity
 
 launch_ :: Signal Unit -> Effect Unit
 launch_ sig = launch sig $> unit
@@ -82,8 +82,8 @@ signal init = liftEffect do
         observers <- getObservers atom
         for_ observers \obs -> do
           callbacks <- getObserverCallbacks obs
-          for_ callbacks identity
           clearObserverCallbacks obs
+          for_ callbacks identity
 
         setAtomValue atom newAtomValue
 
