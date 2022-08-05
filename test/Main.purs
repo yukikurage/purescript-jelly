@@ -2,11 +2,14 @@ module Test.Main where
 
 import Prelude
 
+import Data.Array (filter)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Jelly.Data.Component (Component, el, text)
-import Jelly.Data.Signal (modifyAtom_, signal)
-import Jelly.Hooks.Ch (ch)
+import Jelly.Data.Signal (modifyAtom_, readSignal, signal)
+import Jelly.Hooks.Ch (ch, chsFor)
+import Jelly.Hooks.On (on)
 import Jelly.Hooks.Prop ((:=))
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.LaunchApp (launchApp)
@@ -32,3 +35,32 @@ root = el "div" do
     ch $ text do
       c <- count
       pure $ "Count: " <> show c
+
+  ch $ todoList
+
+initTasks
+  :: Array
+       { id :: String
+       , title :: String
+       }
+initTasks =
+  [ { id: "1", title: "Todo 1" }
+  , { id: "2", title: "Todo 2" }
+  , { id: "3", title: "Todo 3" }
+  ]
+
+todoList :: Component Context
+todoList = el "div" do
+  tasks /\ tasksAtom <- signal initTasks
+
+  chsFor tasks (_.id >>> Just) \task -> el "div" do
+    ch $ text $ _.title <$> task
+
+    ch $ el "button" do
+      "type" := pure "button"
+
+      on "click" $ \_ -> do
+        t <- readSignal task
+        modifyAtom_ tasksAtom $ filter $ \t' -> t'.id /= t.id
+
+      ch $ text $ pure "Delete"
