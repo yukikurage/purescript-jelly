@@ -3,17 +3,32 @@ module Jelly.Hooks.Prop where
 import Prelude
 
 import Control.Monad.Reader (ask)
+import Control.Monad.ST.Global (toEffect)
+import Data.Maybe (Maybe(..))
 import Effect.Class (liftEffect)
+import Foreign.Object.ST as FOST
 import Jelly.Data.Hook (Hook)
 import Jelly.Data.Signal (Signal)
-import Jelly.Hooks.UseSignal (useSignal)
-import Web.DOM.Element (setAttribute)
 
-prop :: forall r. String -> Signal String -> Hook r Unit
-prop key valueSig = do
-  { parentElement } <- ask
-  useSignal do
-    value <- valueSig
-    liftEffect $ setAttribute key value parentElement
+setProp :: forall r. String -> Signal String -> Hook r Unit
+setProp key valueSig = do
+  { propsRef } <- ask
+  _ <- liftEffect $ toEffect $ FOST.poke key [ valueSig ] propsRef
+  pure unit
 
-infix 1 prop as :=
+infix 1 setProp as :=
+
+appendProp :: forall r. String -> Signal String -> Hook r Unit
+appendProp key valueSig = do
+  { propsRef } <- ask
+  currentMaybe <- liftEffect $ toEffect $ FOST.peek key propsRef
+  case currentMaybe of
+    Nothing -> do
+      _ <- liftEffect $ toEffect $ FOST.poke key [ valueSig ] propsRef
+      pure unit
+    Just current -> do
+      _ <- liftEffect $ toEffect $ FOST.poke key (current <> [ valueSig ])
+        propsRef
+      pure unit
+
+infix 1 appendProp as :+

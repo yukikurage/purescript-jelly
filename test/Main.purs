@@ -10,7 +10,7 @@ import Jelly.Data.Component (Component, el, text)
 import Jelly.Data.Signal (modifyAtom_, readSignal, signal)
 import Jelly.Hooks.Ch (ch, chsFor)
 import Jelly.Hooks.On (on)
-import Jelly.Hooks.Prop ((:=))
+import Jelly.Hooks.Prop ((:+), (:=))
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.LaunchApp (launchApp)
 
@@ -28,6 +28,10 @@ root = el "div" do
   ch $ text $ pure "This is Jelly test."
 
   ch $ el "div" do
+    "class" :+ pure " class1"
+
+    "class" :+ pure " class2"
+
     count /\ countAtom <- signal 0
 
     useInterval 1000 $ modifyAtom_ countAtom $ (_ + 1)
