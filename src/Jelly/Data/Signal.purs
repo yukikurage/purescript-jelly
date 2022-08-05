@@ -1,11 +1,22 @@
-module Jelly.Data.Signal where
+module Jelly.Data.Signal
+  ( Atom
+  , Signal
+  , defer
+  , launch
+  , launch_
+  , modifyAtom
+  , modifyAtom_
+  , readSignal
+  , signal
+  , writeAtom
+  ) where
 
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Safely (for_)
-import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 
@@ -62,7 +73,7 @@ signal
    . MonadEffect m
   => Eq a
   => a
-  -> m (Tuple (Signal a) ((a -> a) -> Effect Unit))
+  -> m (Signal a /\ Atom a)
 signal init = liftEffect do
   atom <- newAtom init
 
@@ -73,22 +84,32 @@ signal init = liftEffect do
       defer $ disconnect obs atom
       liftEffect $ getAtomValue atom
 
-    mod f = do
-      atomValue <- getAtomValue atom
-      let
-        newAtomValue = f atomValue
+  pure $ sig /\ atom
 
-      when (newAtomValue /= atomValue) $ do
-        observers <- getObservers atom
-        for_ observers \obs -> do
-          callbacks <- getObserverCallbacks obs
-          clearObserverCallbacks obs
-          for_ callbacks identity
+modifyAtom :: forall a. Eq a => Atom a -> (a -> a) -> Effect a
+modifyAtom atom f = do
+  atomValue <- getAtomValue atom
 
-        setAtomValue atom newAtomValue
+  let
+    newAtomValue = f atomValue
 
-        for_ observers \obs -> do
-          s <- getObserverSignal obs
-          s obs
+  when (newAtomValue /= atomValue) $ do
+    observers <- getObservers atom
+    for_ observers \obs -> do
+      callbacks <- getObserverCallbacks obs
+      clearObserverCallbacks obs
+      for_ callbacks identity
 
-  pure $ Tuple sig mod
+    setAtomValue atom newAtomValue
+
+    for_ observers \obs -> do
+      s <- getObserverSignal obs
+      s obs
+
+  pure newAtomValue
+
+modifyAtom_ :: forall a. Eq a => Atom a -> (a -> a) -> Effect Unit
+modifyAtom_ atom f = modifyAtom atom f $> unit
+
+writeAtom :: forall a. Eq a => Atom a -> a -> Effect Unit
+writeAtom atom v = modifyAtom_ atom $ const v

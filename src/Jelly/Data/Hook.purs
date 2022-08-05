@@ -39,9 +39,11 @@ runHook
   -> Effect (a /\ Effect Unit)
 runHook (Hook f) context parentElement = do
   unmountEffectsRef <- toEffect $ new
+
   return <- runReaderT f
     { parentElement, unmountEffectsRef, context }
   unmountEffects <- toEffect $ freeze unmountEffectsRef
   let
     unmountEffect = for_ unmountEffects identity
+
   pure $ return /\ unmountEffect

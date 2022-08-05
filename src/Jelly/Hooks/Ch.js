@@ -8,7 +8,7 @@ export const newUseChildComponentsState = (parentElement) => () => {
 
   return {
     anchorNode,
-    keyToNodeModMap: new Map(), // key から Node, Sig, Mod へのマップ。
+    keyToNodeModMap: new Map(), // key から Node, Mod へのマップ。
     nodeToUnmountEffectMap: new Map(), // Node から Unmount 関数へのマップ
   };
 };
@@ -80,26 +80,18 @@ export const updateNodeChildren =
       return node;
     });
 
-    let itr = anchorNode.nextSibling;
-
-    // itr を削除されない Node まで進める関数
-    const proceedItrUntilNotUnmounted = () => {
-      while (willUnmountNodes.has(itr)) {
-        // 進めるときについでに削除する
-        const node = itr;
-        itr = itr.nextSibling;
-
-        const unmountEffect = nodeToUnmountEffectMap.get(node); // 先に unmount Effect を取得しておく
-        nodeToUnmountEffectMap.delete(node); // nodeToUnmountEffectMap から対象の Node を削除
-        unmountEffect(); // Unmount Effect を実行
-        node.remove(); // Node を削除
-      }
-    };
+    // ノードを削除
+    willUnmountNodes.forEach((node) => {
+      const unmountEffect = nodeToUnmountEffectMap.get(node); // 先に unmount Effect を取得しておく
+      nodeToUnmountEffectMap.delete(node); // nodeToUnmountEffectMap から対象の Node を削除
+      unmountEffect(); // Unmount Effect を実行
+      node.remove(); // Node を削除
+    });
 
     // 以下作成、または前回から引き継いだ node を目的の場所に移動する処理
+
+    let itr = anchorNode.nextSibling;
     newNodes.map((node) => {
-      // まずは proceedItrUntilNotUnmounted を呼ぶ
-      proceedItrUntilNotUnmounted();
       if (itr !== null) {
         // itr が 存在するなら、新しい Node を挿入する場所は itr の直前である。
         if (itr === node) {
@@ -113,8 +105,6 @@ export const updateNodeChildren =
         parentElement.appendChild(node);
       }
     });
-
-    proceedItrUntilNotUnmounted(); // 最後にも Unmount するべき Node が残っていることがある
 
     useChildComponentsState.keyToNodeModMap = newKeyToNodeModMap; // keyToNodeModMap を更新
   };

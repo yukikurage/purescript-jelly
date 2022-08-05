@@ -5,7 +5,7 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Jelly.Data.Component (Component, el, text)
-import Jelly.Data.Signal (signal)
+import Jelly.Data.Signal (modifyAtom_, signal)
 import Jelly.Hooks.Ch (ch)
 import Jelly.Hooks.Prop ((:=))
 import Jelly.Hooks.UseInterval (useInterval)
@@ -25,10 +25,10 @@ root = el "div" do
   ch $ text $ pure "This is Jelly test."
 
   ch $ el "div" do
-    countSig /\ countMod <- signal 0
+    count /\ countAtom <- signal 0
 
-    useInterval 1000 $ countMod $ (_ + 1)
+    useInterval 1000 $ modifyAtom_ countAtom $ (_ + 1)
 
     ch $ text do
-      count <- countSig
-      pure $ "Count: " <> show count
+      c <- count
+      pure $ "Count: " <> show c

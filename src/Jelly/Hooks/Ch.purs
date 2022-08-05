@@ -1,4 +1,12 @@
-module Jelly.Hooks.Ch where
+module Jelly.Hooks.Ch
+  ( ch
+  , chIf
+  , chSig
+  , chWhen
+  , chs
+  , chsFor
+  , chsSig
+  ) where
 
 import Prelude
 
@@ -12,7 +20,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Hook (Hook)
-import Jelly.Data.Signal (Signal, defer, signal)
+import Jelly.Data.Signal (Signal, defer, signal, writeAtom)
 import Jelly.Hooks.UseSignal (useSignal)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM (Element, Node)
@@ -61,8 +69,8 @@ chsFor itemsSignal itemToKey itemSignalToComponent = do
   let
     runComponentWithCurrentContext c = runComponent c context
     newSignal a = do
-      signal /\ mod <- signal a
-      pure $ signal /\ (mod <<< const)
+      signal /\ atom <- signal a
+      pure $ signal /\ writeAtom atom
 
   useChildNodeState <- liftEffect $ newUseChildComponentsState parentElement
 
