@@ -15,3 +15,5 @@ prop key valueSig = do
   useSignal do
     value <- valueSig
     liftEffect $ setAttribute key value parentElement
+
+infix 1 prop as :=
