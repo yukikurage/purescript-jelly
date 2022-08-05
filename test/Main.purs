@@ -2,19 +2,14 @@ module Test.Main where
 
 import Prelude
 
-import Data.Int (floor, fromNumber)
-import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Jelly.Data.Component (Component, el, text)
 import Jelly.Data.Signal (signal)
 import Jelly.Hooks.Ch (ch)
-import Jelly.Hooks.On (on)
 import Jelly.Hooks.Prop ((:=))
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.LaunchApp (launchApp)
-import Web.Event.Event (currentTarget)
-import Web.HTML.HTMLInputElement as HTMLInputElement
 
 type Context = Unit
 

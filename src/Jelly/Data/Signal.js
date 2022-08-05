@@ -1,12 +1,10 @@
 "use strict";
 
 export const connect = (observer) => (atom) => () => {
-  observer.atoms.add(atom);
   atom.observers.add(observer);
 };
 
 export const disconnect = (observer) => (atom) => () => {
-  observer.atoms.delete(atom);
   atom.observers.delete(observer);
 };
 
@@ -17,7 +15,6 @@ export const newAtom = (value /* a */) => () => ({
 
 export const newObserver =
   (signal /* :: Observer -> Effect (Effect Unit) */) => () => ({
-    atoms: new Set(),
     signal,
     callbacks: new Set(),
   });
