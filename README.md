@@ -28,6 +28,9 @@ in  upstream
     { dependencies =
       [ "arrays"
       , "effect"
+      , "foldable-traversable"
+      , "foreign-object"
+      , "js-timers"
       , "maybe"
       , "prelude"
       , "safely"
