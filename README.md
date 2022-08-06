@@ -28,11 +28,11 @@ in  upstream
     { dependencies =
       [ "arrays"
       , "effect"
-      , "foldable-traversable"
       , "foreign-object"
       , "js-timers"
       , "maybe"
       , "prelude"
+      , "refs"
       , "safely"
       , "st"
       , "tailrec"
@@ -45,7 +45,7 @@ in  upstream
     , repo =
         "https://github.com/yukikurage/purescript-jelly"
     , version =
-        "v0.4.0"
+        "v0.4.1"
     }
 ...
 ```
