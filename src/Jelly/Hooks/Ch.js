@@ -44,40 +44,38 @@ export const updateNodeChildren =
       const maybeKey = itemToKey(item);
       const key = fromMaybe(undefined)(maybeKey); //: undefined | string
 
-      // 以下 Node を対応する Node と Mod (Signal に 値を適用する関数)を取得する処理
-      let node;
-      let mod;
-
       if (key !== undefined && keyToNodeModMap.has(key)) {
         // key が存在する場合は、既存の Node を使いまわす
         const nodeMod = keyToNodeModMap.get(key); // {node, mod} を取得
 
-        node = nodeMod.node;
-        mod = nodeMod.mod;
+        const node = nodeMod.node;
+        const mod = nodeMod.mod;
 
         willUnmountNodes.delete(node); // Node が Unmount されないようにする
 
         newKeyToNodeModMap.set(key, { node, mod }); // key と node のマップに追加
+
+        mod(item)(); // Mod に item を適用 (ここで Signal の更新処理をする)
+
+        return node;
       } else {
         // それ以外の場合、新しい Node を作成する。
 
         const sig_mod = newSignal(item)(); // 新しい Signal と Mod の組を作成
         const sig = fst(sig_mod); // Signal は Component に渡す時にしか使わない
-        mod = snd(sig_mod); // Mod は 外の let で宣言したものに代入しておく
+        const mod = snd(sig_mod); // Mod は 外の let で宣言したものに代入しておく
 
         const component = itemSigToComponent(sig); // Signal から Component を作成
 
         const node_unmountEffect = runComponent(component)(); // Component の初期化処理を走らせて node と unmountEffect を取得
-        node = fst(node_unmountEffect); // let で宣言した node に代入
+        const node = fst(node_unmountEffect); // let で宣言した node に代入
         const unmountEffect = snd(node_unmountEffect);
 
         nodeToUnmountEffectMap.set(node, unmountEffect); // Unmount Effect 一覧に追加
         key !== undefined && newKeyToNodeModMap.set(key, { node, mod }); // {node, mod} をマップに追加 (key が存在する場合のみ)
+
+        return node;
       }
-
-      mod(item)(); // Mod に item を適用 (ここで Signal の更新処理をする)
-
-      return node;
     });
 
     // ノードを削除
