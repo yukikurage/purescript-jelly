@@ -4,20 +4,43 @@ import Prelude
 
 import Data.Array (filter)
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Jelly.Data.Component (Component, el, text)
-import Jelly.Data.Signal (modifyAtom_, readSignal, signal)
+import Jelly.Data.Signal (Atom, Signal, modifyAtom_, readSignal, signal)
 import Jelly.Hooks.Ch (ch, chsFor)
 import Jelly.Hooks.On (on)
 import Jelly.Hooks.Prop ((:=))
+import Jelly.Hooks.UseContext (useContext)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.LaunchApp (launchApp)
 
-type Context = Unit
+type Context = { count :: Signal Int /\ Atom Int }
 
 main :: Effect Unit
-main = launchApp root unit
+main = do
+  count <- signal 0
+  launchApp root $ { count }
+  launchApp contextExample $ { count }
+
+contextExample :: Component Context
+contextExample = el "div" do
+  ch $ component1
+  ch $ component2
+
+component1 :: Component Context
+component1 = el "div" do
+  { count: countSig /\ _ } <- useContext
+
+  ch $ text $ show <$> countSig
+
+component2 :: Component Context
+component2 = el "button" do
+  { count: _ /\ countAtom } <- useContext
+
+  on "click" \_ -> modifyAtom_ countAtom (_ + 1)
+
+  ch $ text $ pure "Increment"
 
 root :: Component Context
 root = el "div" do
