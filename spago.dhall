@@ -14,11 +14,11 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "arrays"
   , "effect"
-  , "foldable-traversable"
   , "foreign-object"
   , "js-timers"
   , "maybe"
   , "prelude"
+  , "refs"
   , "safely"
   , "st"
   , "tailrec"

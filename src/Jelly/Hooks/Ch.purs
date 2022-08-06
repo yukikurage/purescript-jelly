@@ -10,7 +10,6 @@ module Jelly.Hooks.Ch
 
 import Prelude
 
-import Control.Monad.Reader (ask)
 import Control.Safely (for_)
 import Data.Array (singleton)
 import Data.Maybe (Maybe, fromMaybe)
@@ -19,10 +18,9 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, runComponent)
-import Jelly.Data.Hook (Hook)
+import Jelly.Data.Hook (Hook, useContext, useRef, useUnmountEffect)
 import Jelly.Data.Signal (Signal, defer, signal, writeAtom)
 import Jelly.Hooks.UseSignal (useSignal)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM (Element, Node)
 import Web.DOM.Document (createTextNode)
 import Web.DOM.Element (toNode)
@@ -64,7 +62,8 @@ chsFor
   -> (Signal a -> Component r)
   -> Hook r Unit
 chsFor itemsSignal itemToKey itemSignalToComponent = do
-  { context, parentElement } <- ask
+  parentElement <- useRef
+  context <- useContext
 
   let
     runComponentWithCurrentContext c = runComponent c context
@@ -104,7 +103,8 @@ chSig componentSig = chsSig $ singleton <$> componentSig
 -- | Signal が更新されるたび、子コンポーネントの配列を置換する
 chsSig :: forall r. Signal (Array (Component r)) -> Hook r Unit
 chsSig componentsSig = do
-  { parentElement, context } <- ask
+  parentElement <- useRef
+  context <- useContext
 
   textNode <- liftEffect $ createTextNode "" <<< toDocument =<< document =<<
     window

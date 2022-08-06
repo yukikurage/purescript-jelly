@@ -4,8 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Jelly.Data.Hook (Hook)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Data.Hook (Hook, useUnmountEffect)
 import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (EventTarget, addEventListener, addEventListenerWithOptions, eventListener, removeEventListener)
 import Web.Event.Internal.Types (Event)

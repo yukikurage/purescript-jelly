@@ -25,7 +25,7 @@ el :: forall r. String -> Hook r Unit -> Component r
 el tag hook = Component \context -> do
   elem <- createElement tag <<< toDocument =<< document =<< window
 
-  _ /\ unmountEffect <- runHook hook context elem
+  unmountEffect <- runHook hook context elem
 
   pure $ (toNode elem) /\ unmountEffect
 

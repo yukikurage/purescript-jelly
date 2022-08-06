@@ -5,8 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Timer (clearInterval, setInterval)
-import Jelly.Data.Hook (Hook)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Data.Hook (Hook, useUnmountEffect)
 
 useInterval :: forall r. Int -> Effect Unit -> Hook r Unit
 useInterval time effect = do
