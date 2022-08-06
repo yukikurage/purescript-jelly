@@ -16,11 +16,11 @@
     "dependencies": {
         "purescript-arrays": "^v7.0.0",
         "purescript-effect": "^v4.0.0",
-        "purescript-foldable-traversable": "^v6.0.0",
         "purescript-foreign-object": "^v4.0.0",
         "purescript-js-timers": "^v6.1.0",
         "purescript-maybe": "^v6.0.0",
         "purescript-prelude": "^v6.0.0",
+        "purescript-refs": "^v6.0.0",
         "purescript-safely": "^v4.0.1",
         "purescript-st": "^v6.0.0",
         "purescript-tailrec": "^v6.0.0",
