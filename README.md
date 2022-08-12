@@ -1,20 +1,12 @@
 # Jelly
 
-Jelly は非常に軽量な Web Application Framework です。
+Jelly is a very lightweight Web Application Framework.
 
-_Jelly is a very lightweight Web Application Framework._
+It does not use a virtual DOM, but has a mechanism that allows redrawing only where the state has been updated.
 
-仮想 DOM を用いていませんが、状態が更新された箇所のみを再描画できる仕組みを持っています。
+It is similar to reactivity, but made very simple and, conversely, not so abstract.
 
-_It does not use a virtual DOM, but has a mechanism that allows redrawing only where the state has been updated._
-
-リアクティビティに似ていますが、とても簡単にされていて、逆に言うとそれほど抽象化はされていません。
-
-_It is similar to reactivity, but made very simple and, conversely, not so abstract._
-
-これは Web UI を組む際にそれほど抽象化は必要ないと判断したからです。
-
-_This is because I decided that I don't need such abstraction when we build a Web UI._
+This is because I decided that I don't need such abstraction when we build a Web UI.
 
 ## Installation
 
