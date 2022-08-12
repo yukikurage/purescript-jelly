@@ -47,8 +47,8 @@ foreign import getObserverCallbacks :: Observer -> Effect (Array (Effect Unit))
 foreign import addObserverCallback :: Observer -> Effect Unit -> Effect Unit
 foreign import clearObserverCallbacks :: Observer -> Effect Unit
 
-readSignal :: forall a. Signal a -> Effect a
-readSignal (Signal sig) = runReaderT sig =<<
+readSignal :: forall m a. MonadEffect m => Signal a -> m a
+readSignal (Signal sig) = liftEffect $ runReaderT sig =<<
   (newObserver $ const $ pure unit)
 
 defer :: Effect Unit -> Signal Unit
@@ -56,8 +56,8 @@ defer callback = do
   obs <- ask
   liftEffect $ addObserverCallback obs callback
 
-launch :: Signal Unit -> Effect (Effect Unit)
-launch (Signal sig) = do
+launch :: forall m. MonadEffect m => Signal Unit -> m (Effect Unit)
+launch (Signal sig) = liftEffect $ do
   obs <- newObserver $ runReaderT sig
   runReaderT sig obs
   pure do
@@ -65,8 +65,8 @@ launch (Signal sig) = do
     clearObserverCallbacks obs
     for_ callbacks identity
 
-launch_ :: Signal Unit -> Effect Unit
-launch_ sig = launch sig $> unit
+launch_ :: forall m. MonadEffect m => Signal Unit -> m Unit
+launch_ sig = liftEffect $ launch sig $> unit
 
 signal
   :: forall m a
@@ -86,8 +86,8 @@ signal init = liftEffect do
 
   pure $ sig /\ atom
 
-modifyAtom :: forall a. Eq a => Atom a -> (a -> a) -> Effect a
-modifyAtom atom f = do
+modifyAtom :: forall m a. MonadEffect m => Eq a => Atom a -> (a -> a) -> m a
+modifyAtom atom f = liftEffect $ do
   atomValue <- getAtomValue atom
 
   let
@@ -108,8 +108,9 @@ modifyAtom atom f = do
 
   pure newAtomValue
 
-modifyAtom_ :: forall a. Eq a => Atom a -> (a -> a) -> Effect Unit
+modifyAtom_
+  :: forall m a. MonadEffect m => Eq a => Atom a -> (a -> a) -> m Unit
 modifyAtom_ atom f = modifyAtom atom f $> unit
 
-writeAtom :: forall a. Eq a => Atom a -> a -> Effect Unit
+writeAtom :: forall m a. MonadEffect m => Eq a => Atom a -> a -> m Unit
 writeAtom atom v = modifyAtom_ atom $ const v
