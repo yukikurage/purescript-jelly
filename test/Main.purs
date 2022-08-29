@@ -6,7 +6,7 @@ import Data.Array (filter)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Jelly (Component, el, text, Atom, Signal, modifyAtom_, readSignal, signal, ch, chsFor, on, useContext, useInterval, (:=), launchApp)
+import Jelly (Atom, Component, Signal, ch, chsFor, el, launchApp, modifyAtom_, on, readSignal, signal, text, useContext, useInterval, (:=))
 
 type Context = { count :: Signal Int /\ Atom Int }
 
