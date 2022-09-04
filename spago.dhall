@@ -14,19 +14,15 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "arrays"
   , "effect"
-  , "foreign-object"
-  , "js-timers"
+  , "foldable-traversable"
   , "maybe"
   , "prelude"
-  , "refs"
   , "safely"
-  , "st"
   , "tailrec"
   , "transformers"
   , "tuples"
   , "web-dom"
   , "web-events"
-  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
