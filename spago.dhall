@@ -23,6 +23,7 @@ to generate this file without the comments in this block.
   , "tuples"
   , "web-dom"
   , "web-events"
+  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

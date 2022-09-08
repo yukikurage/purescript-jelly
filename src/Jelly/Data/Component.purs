@@ -8,7 +8,7 @@ import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Signal (Signal, launch, readSignal)
-import Web.DOM (Element)
+import Web.DOM (Element, Node)
 import Web.DOM.Document (createElement)
 import Web.DOM.Element (removeAttribute, setAttribute)
 import Web.DOM.Element as Element
@@ -22,18 +22,22 @@ data Prop
   = PropAttribute String (Signal (Maybe String))
   | PropHandler EventType (Event -> Effect Unit)
 
-type ElementSpec =
-  { tagName :: String
-  , props :: Array Prop
-  , children :: Signal (Array ComponentInstance)
-  , unmountEffect :: Effect Unit
-  }
+data NodeSpec
+  = NodeSpecElement
+      { tagName :: String
+      , props :: Array Prop
+      , children :: Signal (Array ComponentInstance)
+      , unmountEffect :: Effect Unit
+      }
+  | NodeSpecText
+      { text :: Signal String
+      , unmountEffect :: Effect Unit
 
-data ComponentInstance
-  = ComponentInstanceElement
-      (Maybe { realElement :: Element, unregister :: Effect Unit })
-      ElementSpec
-  | ComponentInstanceText String
+      }
+
+data ComponentInstance = ComponentInstance
+  (Maybe { realNode :: Node, unregister :: Effect Unit })
+  NodeSpec
 
 justPropAttribute :: String -> Signal String -> Prop
 justPropAttribute name = PropAttribute name <<< map Just
@@ -44,9 +48,7 @@ infix 0 justPropAttribute as :=
 on :: EventType -> (Event -> Effect Unit) -> Prop
 on = PropHandler
 
-data Component
-  = ComponentElement (Effect ElementSpec)
-  | ComponentText String
+newtype Component = Component (Effect NodeSpec)
 
 ------------
 -- Render --
@@ -65,27 +67,25 @@ renderProp = case _ of
       Just value -> pure $ " " <> name <> "=\"" <> value <> "\""
   PropHandler _ _ -> pure $ ""
 
-renderElementSpec :: ElementSpec -> Effect String
-renderElementSpec { tagName, props, children } = do
-  crn <- readSignal children
-  childrenRendered <- fold <$> traverse renderComponentInstance crn
+renderNodeSpec :: NodeSpec -> Effect String
+renderNodeSpec = case _ of
+  NodeSpecElement { tagName, props, children } -> do
+    crn <- readSignal children
+    childrenRendered <- fold <$> traverse renderComponentInstance crn
 
-  attributesRendered <- fold <$> traverse renderProp props
-  pure $ "<" <> tagName <> attributesRendered <> ">"
-    <> childrenRendered
-    <> "</"
-    <> tagName
-    <> ">"
+    attributesRendered <- fold <$> traverse renderProp props
+    pure $ "<" <> tagName <> attributesRendered <> ">"
+      <> childrenRendered
+      <> "</"
+      <> tagName
+      <> ">"
+  NodeSpecText { text } -> readSignal text
 
 renderComponentInstance :: ComponentInstance -> Effect String
-renderComponentInstance = case _ of
-  ComponentInstanceElement _ spec -> renderElementSpec spec
-  ComponentInstanceText text -> pure text
+renderComponentInstance (ComponentInstance _ spec) = renderNodeSpec spec
 
 render :: Component -> Effect String
-render component = case component of
-  ComponentElement init -> renderElementSpec =<< init
-  ComponentText signal -> pure $ signal
+render (Component init) = renderNodeSpec =<< init
 
 -----------------
 -- Create Node --
@@ -110,17 +110,16 @@ registerProp elem = case _ of
       elem
     pure $ removeEventListener eventType el false $ Element.toEventTarget elem
 
--- TODO: children の変更を監視する
-createElementFromSpec :: ElementSpec -> Effect Element
-createElementFromSpec { tagName, props, children } = do
-  doc <- HTMLDocument.toDocument <$> (document =<< window)
-  elem <- createElement tagName doc
-  pure elem
+-- -- TODO: children の変更を監視する
+-- createNodeFromSpec :: NodeSpec -> Effect Element
+-- createNodeFromSpec { tagName, props, children } = do
+--   doc <- HTMLDocument.toDocument <$> (document =<< window)
+--   elem <- createElementFromSpec tagName doc
+--   pure elem
 
--- TODO: realElement を渡す
+-- TODO: realNode を渡す
 instantiate :: Component -> Effect ComponentInstance
 instantiate = case _ of
-  ComponentElement init -> do
+  Component init -> do
     spec <- init
-    pure $ ComponentInstanceElement Nothing spec
-  ComponentText text -> pure $ ComponentInstanceText text
+    pure $ ComponentInstance Nothing spec

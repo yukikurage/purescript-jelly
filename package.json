@@ -6,12 +6,11 @@
     "test": "test"
   },
   "scripts": {
-    "watch": "npx spago build && node ./scripts/watch.js",
-    "build": "npx spago build && node ./scripts/build.js",
+    "watch": "npx spago bundle-app --main Test.Main --to public/index.js --watch",
+    "build": "npx spago bundle-app --main Test.Main --to public/index.js",
     "test": "npx spago test"
   },
   "devDependencies": {
-    "esbuild": "^0.14.53",
     "pulp": "^16.0.2",
     "purescript": "^0.15.4",
     "purs": "^0.3.0",
