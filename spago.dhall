@@ -12,9 +12,13 @@ to generate this file without the comments in this block.
 -}
 { name = "jelly"
 , dependencies =
-  [ "arrays"
+  [ "aff"
+  , "arrays"
+  , "console"
   , "effect"
+  , "either"
   , "foldable-traversable"
+  , "js-timers"
   , "maybe"
   , "prelude"
   , "safely"

@@ -34,6 +34,8 @@ derive newtype instance MonadEffect Signal
 derive newtype instance MonadReader Observer Signal
 derive newtype instance MonadAsk Observer Signal
 derive newtype instance MonadRec Signal
+derive newtype instance Semigroup a => Semigroup (Signal a)
+derive newtype instance Monoid a => Monoid (Signal a)
 
 foreign import connect :: forall a. Observer -> Atom a -> Effect Unit
 foreign import disconnect :: forall a. Observer -> Atom a -> Effect Unit
@@ -71,7 +73,6 @@ launch_ sig = liftEffect $ launch sig $> unit
 signal
   :: forall m a
    . MonadEffect m
-  => Eq a
   => a
   -> m (Signal a /\ Atom a)
 signal init = liftEffect do
@@ -86,31 +87,30 @@ signal init = liftEffect do
 
   pure $ sig /\ atom
 
-modifyAtom :: forall m a. MonadEffect m => Eq a => Atom a -> (a -> a) -> m a
+modifyAtom :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m a
 modifyAtom atom f = liftEffect $ do
   atomValue <- getAtomValue atom
 
   let
     newAtomValue = f atomValue
 
-  when (newAtomValue /= atomValue) $ do
-    observers <- getObservers atom
-    for_ observers \obs -> do
-      callbacks <- getObserverCallbacks obs
-      clearObserverCallbacks obs
-      for_ callbacks identity
+  observers <- getObservers atom
+  for_ observers \obs -> do
+    callbacks <- getObserverCallbacks obs
+    clearObserverCallbacks obs
+    for_ callbacks identity
 
-    setAtomValue atom newAtomValue
+  setAtomValue atom newAtomValue
 
-    for_ observers \obs -> do
-      s <- getObserverSignal obs
-      s obs
+  for_ observers \obs -> do
+    s <- getObserverSignal obs
+    s obs
 
   pure newAtomValue
 
 modifyAtom_
-  :: forall m a. MonadEffect m => Eq a => Atom a -> (a -> a) -> m Unit
+  :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m Unit
 modifyAtom_ atom f = modifyAtom atom f $> unit
 
-writeAtom :: forall m a. MonadEffect m => Eq a => Atom a -> a -> m Unit
+writeAtom :: forall m a. MonadEffect m => Atom a -> a -> m Unit
 writeAtom atom v = modifyAtom_ atom $ const v
