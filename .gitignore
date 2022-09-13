@@ -8,6 +8,7 @@
 /.purs*
 /.psa*
 /.spago
-/public/
-!/public/index.html
+/public/index.js
+/public/index.js.map
 /src/**/*.js
+/purescript-dependency-graph
