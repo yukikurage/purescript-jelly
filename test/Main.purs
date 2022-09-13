@@ -41,7 +41,7 @@ rootComponent = el_ "div" do
   withTitle (pure "Mount / Unmount") mount
 
 withTitle :: Signal String -> Component Context -> Component Context
-withTitle titleSig component = el "div" [] do
+withTitle titleSig component = el_ "div" do
   el_ "h2" $ text titleSig
   component
 
