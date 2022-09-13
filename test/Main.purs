@@ -2,100 +2,57 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (filter)
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested (type (/\), (/\))
+import Control.Safely (traverse_)
+import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Jelly (Atom, Component, Signal, ch, chsFor, el, launchApp, modifyAtom_, on, readSignal, signal, text, useContext, useInterval, (:=))
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Aff (awaitQuerySelector)
+import Jelly.Data.Component (Component)
+import Jelly.Data.Hooks (makeComponent)
+import Jelly.Data.Prop (on)
+import Jelly.Data.Signal (Signal, modifyAtom_, signal)
+import Jelly.El (el, el_, embed, text)
+import Jelly.Hooks.UseInterval (useInterval)
+import Web.DOM.ParentNode (QuerySelector(..))
+import Web.HTML.Event.EventTypes (click)
 
-type Context = { count :: Signal Int /\ Atom Int }
+foreign import setBodyInnerHTML :: String -> Effect Unit
+
+type Context = Unit
 
 main :: Effect Unit
-main = do
-  count <- signal 0
-  launchApp root $ { count }
-  launchApp contextExample $ { count }
+main = launchAff_ do
+  elem <- awaitQuerySelector $ QuerySelector "#root"
+  liftEffect $ traverse_ (embed rootComponent unit) elem
 
-contextExample :: Component Context
-contextExample = el "div" do
-  ch $ component1
-  ch $ component2
+rootComponent :: Component Context
+rootComponent = el_ "div" do
+  el_ "h1" do
+    text $ pure "Hello, Jelly!🍮"
+  el_ "p" do
+    text $ pure "This is a Jelly test."
+  withTitle (pure "Timer") timer
+  withTitle (pure "Counter") counter
 
-component1 :: Component Context
-component1 = el "div" do
-  { count: countSig /\ _ } <- useContext
+withTitle :: Signal String -> Component Context -> Component Context
+withTitle titleSig component = el "div" [] do
+  el_ "h2" $ text titleSig
+  component
 
-  ch $ text $ show <$> countSig
+timer :: Component Context
+timer = makeComponent do
+  timeSig /\ timeAtom <- signal 0
 
-component2 :: Component Context
-component2 = el "button" do
-  { count: _ /\ countAtom } <- useContext
+  useInterval 1000 $ modifyAtom_ timeAtom (_ + 1)
 
-  on "click" \_ -> modifyAtom_ countAtom (_ + 1)
+  pure $ text $ show <$> timeSig
 
-  ch $ text $ pure "Increment"
-
-root :: Component Context
-root = el "div" do
-  "id" := pure "root"
-
-  ch $ text $ pure "Hello, Jelly! "
-
-  ch $ text $ pure "This is Jelly test."
-
-  ch $ counter
-
-  ch $ timer
-
-  ch $ todoList
-
-counter :: forall r. Component r
-counter = el "div" do
+counter :: Component Context
+counter = makeComponent do
   countSig /\ countAtom <- signal 0
 
-  ch $ text do
-    count <- countSig
-    pure $ "Counter: " <> show count
-
-  ch $ el "button" do
-    on "click" \_ -> do
-      modifyAtom_ countAtom (_ + 1)
-
-    ch $ text $ pure "Increment"
-
-timer :: forall r. Component r
-timer = el "div" do
-  countSig /\ countAtom <- signal 0
-
-  useInterval 1000 $ modifyAtom_ countAtom $ (_ + 1)
-
-  ch $ text do
-    count <- countSig
-    pure $ "Timer: " <> show count
-
-initTasks
-  :: Array
-       { id :: String
-       , title :: String
-       }
-initTasks =
-  [ { id: "1", title: "Todo 1" }
-  , { id: "2", title: "Todo 2" }
-  , { id: "3", title: "Todo 3" }
-  ]
-
-todoList :: Component Context
-todoList = el "div" do
-  tasks /\ tasksAtom <- signal initTasks
-
-  chsFor tasks (_.id >>> Just) \task -> el "div" do
-    ch $ text $ _.title <$> task
-
-    ch $ el "button" do
-      "type" := pure "button"
-
-      on "click" $ \_ -> do
-        t <- readSignal task
-        modifyAtom_ tasksAtom $ filter $ \t' -> t'.id /= t.id
-
-      ch $ text $ pure "Delete"
+  pure $ el_ "div" do
+    el "button" [ on click \_ -> modifyAtom_ countAtom (_ + 1) ] do
+      text $ pure "Increment"
+    text $ show <$> countSig

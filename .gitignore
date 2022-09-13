@@ -10,3 +10,4 @@
 /.spago
 /public/
 !/public/index.html
+/src/**/*.js

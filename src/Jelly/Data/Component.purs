@@ -2,42 +2,36 @@ module Jelly.Data.Component where
 
 import Prelude
 
-import Data.Tuple.Nested (type (/\), (/\))
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, runReaderT)
+import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT)
+import Data.Tuple (snd)
 import Effect (Effect)
-import Effect.Class (liftEffect)
-import Jelly.Data.Hook (Hook, runHook)
-import Jelly.Data.Signal (Signal, launch)
+import Effect.Class (class MonadEffect)
+import Jelly.Data.Emitter (Emitter)
+import Jelly.Data.Signal (Signal)
 import Web.DOM (Node)
-import Web.DOM.Document (createElement, createTextNode)
-import Web.DOM.Element (toNode)
-import Web.DOM.Node (setNodeValue)
-import Web.DOM.Text as TXT
-import Web.HTML (window)
-import Web.HTML.HTMLDocument (toDocument)
-import Web.HTML.Window (document)
 
-newtype Component r = Component (r -> Effect (Node /\ Effect Unit))
+type ComponentInternal context = { unmountEmitter :: Emitter, context :: context }
 
-runComponent :: forall r. Component r -> r -> Effect (Node /\ Effect Unit)
-runComponent (Component f) = f
+newtype ComponentM context a = Component
+  (ReaderT (ComponentInternal context) (WriterT (Signal (Array Node)) Effect) a)
 
-el :: forall r. String -> Hook r Unit -> Component r
-el tag hook = Component \context -> do
-  elem <- createElement tag <<< toDocument =<< document =<< window
+derive newtype instance Functor (ComponentM context)
+derive newtype instance Apply (ComponentM context)
+derive newtype instance Applicative (ComponentM context)
+derive newtype instance Bind (ComponentM context)
+derive newtype instance Monad (ComponentM context)
+derive newtype instance MonadAsk (ComponentInternal context) (ComponentM context)
+derive newtype instance MonadReader (ComponentInternal context) (ComponentM context)
+derive newtype instance MonadTell (Signal (Array Node)) (ComponentM context)
+derive newtype instance MonadWriter (Signal (Array Node)) (ComponentM context)
+derive newtype instance MonadEffect (ComponentM context)
+derive newtype instance Semigroup a => Semigroup (ComponentM context a)
+derive newtype instance Monoid a => Monoid (ComponentM context a)
 
-  unmountEffect <- runHook hook context elem
+type Component context = ComponentM context Unit
 
-  pure $ (toNode elem) /\ unmountEffect
-
-text :: forall r. Signal String -> Component r
-text contentSig = Component \_ -> do
-  textNode <- createTextNode "" <<< toDocument =<< document =<< window
-
-  let
-    node = TXT.toNode textNode
-
-  unmountEffect <- launch do
-    content <- contentSig
-    liftEffect $ setNodeValue content node
-
-  pure $ node /\ unmountEffect
+runComponent
+  :: forall context. Component context -> ComponentInternal context -> Effect (Signal (Array Node))
+runComponent (Component m) internal = do
+  snd <$> runWriterT (runReaderT m internal)
