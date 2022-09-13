@@ -20,7 +20,7 @@ import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.Event.EventTypes (change, click)
+import Web.HTML.Event.EventTypes (change, click, input)
 import Web.HTML.HTMLSelectElement as Select
 
 foreign import setBodyInnerHTML :: String -> Effect Unit
@@ -89,20 +89,17 @@ mount = makeComponent do
 
   pure $ el_ "div" do
     el_ "div" do
-      el "select" [ on change handleChange ] do
+      el "select" [ on input handleChange ] do
         el "option" [ on click \_ -> writeAtom cmpNameAtom "timer" ] do
           text $ pure "Timer"
         el "option" [ on click \_ -> writeAtom cmpNameAtom "counter" ] do
           text $ pure "Counter"
-        el "option" [ on click \_ -> writeAtom cmpNameAtom "mount" ] do
-          text $ pure "Mount / Unmount"
     el "div" [ "style" := pure "border: 1px solid #ccc;padding: 10px" ] do
       signalC do
         cmpName <- cmpNameSig
         pure $ case cmpName of
           "timer" -> withUnmountMessage (pure "Timer") timer
           "counter" -> withUnmountMessage (pure "Counter") counter
-          "mount" -> withUnmountMessage (pure "Mount / Unmount") mount
           _ -> mempty
     el_ "pre" do
       text logTextSig
