@@ -3,6 +3,7 @@ module Test.Main where
 import Prelude
 
 import Control.Safely (traverse_)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -11,11 +12,14 @@ import Jelly.Aff (awaitQuerySelector)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on)
-import Jelly.Data.Signal (Signal, modifyAtom_, signal)
-import Jelly.El (el, el_, embed, text)
+import Jelly.Data.Signal (Signal, modifyAtom_, signal, writeAtom)
+import Jelly.El (el, el_, embed, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Web.DOM.ParentNode (QuerySelector(..))
-import Web.HTML.Event.EventTypes (click)
+import Web.Event.Event (target)
+import Web.Event.Internal.Types (Event)
+import Web.HTML.Event.EventTypes (change, click)
+import Web.HTML.HTMLSelectElement as Select
 
 foreign import setBodyInnerHTML :: String -> Effect Unit
 
@@ -34,6 +38,7 @@ rootComponent = el_ "div" do
     text $ pure "This is a Jelly test."
   withTitle (pure "Timer") timer
   withTitle (pure "Counter") counter
+  withTitle (pure "Mount / Unmount") mount
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el "div" [] do
@@ -55,4 +60,29 @@ counter = makeComponent do
   pure $ el_ "div" do
     el "button" [ on click \_ -> modifyAtom_ countAtom (_ + 1) ] do
       text $ pure "Increment"
-    text $ show <$> countSig
+    el_ "div" do
+      text $ show <$> countSig
+
+mount :: Component Context
+mount = makeComponent do
+  cmpNameSig /\ cmpNameAtom <- signal "timer"
+
+  let
+    handleChange :: Event -> Effect Unit
+    handleChange e = case Select.fromEventTarget =<< target e of
+      Nothing -> pure unit
+      Just select -> writeAtom cmpNameAtom =<< Select.value select
+
+  pure $ el_ "div" do
+    el_ "div" do
+      el "select" [ on change handleChange ] do
+        el "option" [ on click \_ -> writeAtom cmpNameAtom "timer" ] do
+          text $ pure "Timer"
+        el "option" [ on click \_ -> writeAtom cmpNameAtom "counter" ] do
+          text $ pure "Counter"
+    signalC do
+      cmpName <- cmpNameSig
+      pure $ case cmpName of
+        "timer" -> timer
+        "counter" -> counter
+        _ -> mempty
