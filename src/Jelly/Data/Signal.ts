@@ -8,6 +8,7 @@ type Observer = {
 type Atom<T> = {
   observers: Set<Observer>;
   value: T;
+  eq: (a: T) => (b: T) => boolean;
 };
 
 export const connect =
@@ -25,10 +26,12 @@ export const disconnect =
   };
 
 export const newAtom =
-  <T>(value: T) =>
+  <T>(eq: (a: T) => (b: T) => boolean) =>
+  (value: T) =>
   (): Atom<T> => ({
     observers: new Set(),
     value,
+    eq,
   });
 
 export const newObserver =
@@ -53,6 +56,8 @@ export const setAtomValue =
   () => {
     atom.value = value;
   };
+
+export const getEq = <T>(atom: Atom<T>) => atom.eq;
 
 export const getObserverSignal = (observer: Observer) => () => observer.signal;
 

@@ -11,7 +11,7 @@ import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
 import Jelly.Data.Prop (Prop, registerProps)
-import Jelly.Data.Signal (Signal, defer, launch, signal, writeAtom)
+import Jelly.Data.Signal (Signal, defer, launch, signal, signalWithoutEq, writeAtom)
 import Web.DOM (Element, Node, Text)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.Element as Element
@@ -73,7 +73,7 @@ fragment = fold
 signalC :: forall context. Signal (Component context) -> Component context
 signalC cmpSig = do
   { context, unmountEmitter } <- ask
-  nodesSig /\ nodesAtom <- signal $ pure []
+  nodesSig /\ nodesAtom <- signalWithoutEq $ pure []
   liftEffect $ addListener unmountEmitter =<< launch do
     cmp <- cmpSig
     ue <- liftEffect newEmitter

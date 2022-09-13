@@ -8,6 +8,7 @@ module Jelly.Data.Signal
   , modifyAtom_
   , readSignal
   , signal
+  , signalWithoutEq
   , writeAtom
   ) where
 
@@ -39,7 +40,7 @@ derive newtype instance Monoid a => Monoid (Signal a)
 
 foreign import connect :: forall a. Observer -> Atom a -> Effect Unit
 foreign import disconnect :: forall a. Observer -> Atom a -> Effect Unit
-foreign import newAtom :: forall a. a -> Effect (Atom a)
+foreign import newAtom :: forall a. (a -> a -> Boolean) -> a -> Effect (Atom a)
 foreign import newObserver :: (Observer -> Effect Unit) -> Effect Observer
 foreign import getObservers :: forall a. Atom a -> Effect (Array Observer)
 foreign import getAtomValue :: forall a. Atom a -> Effect a
@@ -48,6 +49,7 @@ foreign import getObserverSignal :: Observer -> Effect (Observer -> Effect Unit)
 foreign import getObserverCallbacks :: Observer -> Effect (Array (Effect Unit))
 foreign import addObserverCallback :: Observer -> Effect Unit -> Effect Unit
 foreign import clearObserverCallbacks :: Observer -> Effect Unit
+foreign import getEq :: forall a. Atom a -> a -> a -> Boolean
 
 readSignal :: forall m a. MonadEffect m => Signal a -> m a
 readSignal (Signal sig) = liftEffect $ runReaderT sig =<<
@@ -73,10 +75,24 @@ launch_ sig = liftEffect $ launch sig $> unit
 signal
   :: forall m a
    . MonadEffect m
+  => Eq a
   => a
   -> m (Signal a /\ Atom a)
 signal init = liftEffect do
-  atom <- newAtom init
+  atom <- newAtom eq init
+
+  let
+    sig = do
+      obs <- ask
+      liftEffect $ connect obs atom
+      defer $ disconnect obs atom
+      liftEffect $ getAtomValue atom
+
+  pure $ sig /\ atom
+
+signalWithoutEq :: forall m a. MonadEffect m => a -> m (Signal a /\ Atom a)
+signalWithoutEq init = liftEffect do
+  atom <- newAtom (const $ const false) init
 
   let
     sig = do
@@ -94,17 +110,18 @@ modifyAtom atom f = liftEffect $ do
   let
     newAtomValue = f atomValue
 
-  observers <- getObservers atom
-  for_ observers \obs -> do
-    callbacks <- getObserverCallbacks obs
-    clearObserverCallbacks obs
-    for_ callbacks identity
+  when (not $ getEq atom atomValue newAtomValue) do
+    observers <- getObservers atom
+    for_ observers \obs -> do
+      callbacks <- getObserverCallbacks obs
+      clearObserverCallbacks obs
+      for_ callbacks identity
 
-  setAtomValue atom newAtomValue
+    setAtomValue atom newAtomValue
 
-  for_ observers \obs -> do
-    s <- getObserverSignal obs
-    s obs
+    for_ observers \obs -> do
+      s <- getObserverSignal obs
+      s obs
 
   pure newAtomValue
 

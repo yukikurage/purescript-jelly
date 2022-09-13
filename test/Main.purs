@@ -8,13 +8,15 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Jelly.Aff (awaitQuerySelector)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
-import Jelly.Data.Prop (on)
-import Jelly.Data.Signal (Signal, modifyAtom_, signal, writeAtom)
+import Jelly.Data.Prop (on, (:=))
+import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
 import Jelly.El (el, el_, embed, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
+import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
@@ -43,7 +45,7 @@ rootComponent = el_ "div" do
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
   el_ "h2" $ text titleSig
-  component
+  el "div" [ "style" := pure "padding: 10px" ] component
 
 timer :: Component Context
 timer = makeComponent do
@@ -66,12 +68,24 @@ counter = makeComponent do
 mount :: Component Context
 mount = makeComponent do
   cmpNameSig /\ cmpNameAtom <- signal "timer"
+  logTextSig /\ logTextAtom <- signal ""
 
   let
     handleChange :: Event -> Effect Unit
     handleChange e = case Select.fromEventTarget =<< target e of
       Nothing -> pure unit
       Just select -> writeAtom cmpNameAtom =<< Select.value select
+
+    withUnmountMessage :: Signal String -> Component Context -> Component Context
+    withUnmountMessage nameSig component = makeComponent do
+      useUnmountEffect do
+        name <- readSignal nameSig
+        modifyAtom_ logTextAtom \text -> text <> name <> " unmounted" <> "\n"
+
+      pure component
+
+  useUnmountEffect do
+    log "Unmounted: Mount / Unmount"
 
   pure $ el_ "div" do
     el_ "div" do
@@ -80,9 +94,15 @@ mount = makeComponent do
           text $ pure "Timer"
         el "option" [ on click \_ -> writeAtom cmpNameAtom "counter" ] do
           text $ pure "Counter"
-    signalC do
-      cmpName <- cmpNameSig
-      pure $ case cmpName of
-        "timer" -> timer
-        "counter" -> counter
-        _ -> mempty
+        el "option" [ on click \_ -> writeAtom cmpNameAtom "mount" ] do
+          text $ pure "Mount / Unmount"
+    el "div" [ "style" := pure "border: 1px solid #ccc;padding: 10px" ] do
+      signalC do
+        cmpName <- cmpNameSig
+        pure $ case cmpName of
+          "timer" -> withUnmountMessage (pure "Timer") timer
+          "counter" -> withUnmountMessage (pure "Counter") counter
+          "mount" -> withUnmountMessage (pure "Mount / Unmount") mount
+          _ -> mempty
+    el_ "pre" do
+      text logTextSig
