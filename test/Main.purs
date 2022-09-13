@@ -71,16 +71,27 @@ mount = makeComponent do
   logTextSig /\ logTextAtom <- signal ""
 
   let
+    addLog :: String -> Effect Unit
+    addLog str = modifyAtom_ logTextAtom \logText ->
+      logText <> str <> "\n"
+
     handleChange :: Event -> Effect Unit
     handleChange e = case Select.fromEventTarget =<< target e of
       Nothing -> pure unit
-      Just select -> writeAtom cmpNameAtom =<< Select.value select
+      Just select -> do
+        v <- Select.value select
+        addLog $ "input: " <> v
+        writeAtom cmpNameAtom =<< Select.value select
 
-    withUnmountMessage :: Signal String -> Component Context -> Component Context
-    withUnmountMessage nameSig component = makeComponent do
+    withMountMessage :: Signal String -> Component Context -> Component Context
+    withMountMessage nameSig component = makeComponent do
+      liftEffect do
+        name <- readSignal nameSig
+        addLog $ "mount: " <> name
+
       useUnmountEffect do
         name <- readSignal nameSig
-        modifyAtom_ logTextAtom \text -> text <> name <> " unmounted" <> "\n"
+        addLog $ "unmounted: " <> name
 
       pure component
 
@@ -90,16 +101,16 @@ mount = makeComponent do
   pure $ el_ "div" do
     el_ "div" do
       el "select" [ on input handleChange ] do
-        el "option" [ on click \_ -> writeAtom cmpNameAtom "timer" ] do
+        el "option" [ "value" := pure "timer" ] do
           text $ pure "Timer"
-        el "option" [ on click \_ -> writeAtom cmpNameAtom "counter" ] do
+        el "option" [ "value" := pure "counter" ] do
           text $ pure "Counter"
-    el "div" [ "style" := pure "border: 1px solid #ccc;padding: 10px" ] do
+    el "div" [ "style" := pure "border: 1px solid #ccc; padding: 10px; height: 50px;" ] do
       signalC do
         cmpName <- cmpNameSig
         pure $ case cmpName of
-          "timer" -> withUnmountMessage (pure "Timer") timer
-          "counter" -> withUnmountMessage (pure "Counter") counter
+          "timer" -> withMountMessage (pure "Timer") timer
+          "counter" -> withMountMessage (pure "Counter") counter
           _ -> mempty
     el_ "pre" do
       text logTextSig
