@@ -21,6 +21,7 @@ foreign import setAttribute :: String -> String -> Instance -> Effect Unit
 foreign import removeAttribute :: String -> Instance -> Effect Unit
 foreign import updateChildren :: Array Instance -> Instance -> Effect Unit
 foreign import toHTMLImpl :: Instance -> Effect String
+foreign import setInnerHTML :: String -> Instance -> Effect Unit
 
 foreign import addEventListenerImpl
   :: String -> (Event -> Effect Unit) -> Instance -> Effect (Effect Unit)

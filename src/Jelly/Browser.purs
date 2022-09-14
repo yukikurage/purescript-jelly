@@ -1,4 +1,4 @@
-module Jelly.RunJelly where
+module Jelly.Browser where
 
 import Prelude
 

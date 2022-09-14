@@ -11,7 +11,7 @@ import Effect.Class (liftEffect)
 import Jelly.Class.Platform (class Browser)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
-import Jelly.Data.Instance (Instance, fromNode, newInstance, newTextInstance, setTextContent, updateChildren)
+import Jelly.Data.Instance (Instance, fromNode, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
 import Jelly.Data.Prop (Prop, registerProps)
 import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
 import Web.DOM (Element)
@@ -38,6 +38,21 @@ el tag props component = do
 
 el_ :: forall context. String -> Component context -> Component context
 el_ tag component = el tag [] component
+
+-- | Element which innerHTML is given string
+rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
+rawEl tag props htmlSig = do
+  inst <- liftEffect $ newInstance tag
+
+  internal <- ask
+
+  liftEffect $ registerProps props internal.unmountEmitter inst
+
+  liftEffect $ addListener internal.unmountEmitter =<< launch do
+    html <- htmlSig
+    liftEffect $ setInnerHTML html inst
+
+  tell $ pure [ inst ]
 
 registerText :: Signal String -> Emitter -> Instance -> Effect Unit
 registerText value unmountEmitter inst =

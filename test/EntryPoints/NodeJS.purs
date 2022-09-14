@@ -3,8 +3,17 @@ module Test.EntryPoints.NodeJS where
 import Prelude
 
 import Effect (Effect)
-import Jelly.Class.Platform (runNodeJSApp)
-import Test.Main (nodeJSMain)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Class.Platform (class NodeJS, runNodeJSApp)
+import Jelly.NodeJS (render, writeToFile)
+import Test.Html (html)
+import Test.Main (rootComponent)
 
 main :: Effect Unit
 main = runNodeJSApp nodeJSMain
+
+nodeJSMain :: NodeJS => Effect Unit
+nodeJSMain = launchAff_ do
+  rendered <- liftEffect $ render (html rootComponent) unit
+  writeToFile "./public/index.html" rendered

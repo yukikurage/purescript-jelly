@@ -2,43 +2,25 @@ module Test.Main where
 
 import Prelude
 
-import Control.Safely (traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Jelly.Aff (awaitQuerySelector)
-import Jelly.Class.Platform (class Browser, class NodeJS)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
-import Jelly.El (el, el_, signalC, text)
+import Jelly.El (el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
-import Jelly.Render (render)
-import Jelly.RunJelly (runJelly)
+import Test.Context (Context)
 import Web.DOM (Element)
-import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.Event.EventTypes (click, input)
 import Web.HTML.HTMLSelectElement as Select
 
-type Context = Unit
-
 foreign import setInnerHTML :: String -> Element -> Effect Unit
-
-browserMain :: Browser => Effect Unit
-browserMain = launchAff_ do
-  elem <- awaitQuerySelector $ QuerySelector "#root"
-  liftEffect $ traverse_ (runJelly rootComponent unit) elem
-
-nodeJSMain :: NodeJS => Effect Unit
-nodeJSMain = do
-  log =<< render rootComponent unit
 
 rootComponent :: Component Context
 rootComponent = el_ "div" do
@@ -49,6 +31,7 @@ rootComponent = el_ "div" do
   withTitle (pure "Timer") timer
   withTitle (pure "Counter") counter
   withTitle (pure "Mount / Unmount") mount
+  withTitle (pure "Raw") raw
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
@@ -119,3 +102,6 @@ mount = makeComponent do
           _ -> mempty
     el_ "pre" do
       text logTextSig
+
+raw :: Component Context
+raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"

@@ -119,3 +119,12 @@ export const setTextContent = (text: string) => (instance: Instance) => () => {
     (instance as NodeJSTextInstance).text = text;
   }
 };
+
+export const setInnerHTML = (html: string) => (instance: Instance) => () => {
+  if (isBrowser && instance instanceof Element) {
+    instance.innerHTML = html;
+  }
+  if (!isBrowser && !("text" in instance)) {
+    (instance as NodeJSElementInstance).children = [{ text: html }];
+  }
+};
