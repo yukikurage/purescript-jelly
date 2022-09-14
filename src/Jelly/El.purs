@@ -28,6 +28,7 @@ registerChildNodes nodesSig unmountEmitter parentNode = addListener unmountEmitt
   nodes <- nodesSig
   liftEffect $ updateChildNodes nodes parentNode
 
+-- | Create Element Component
 el :: forall context. String -> Array Prop -> Component context -> Component context
 el tag props component = do
   elem <- liftEffect $ createElement tag <<< toDocument =<< document =<< window
@@ -50,6 +51,7 @@ registerText value unmountEmitter tx =
     v <- value
     liftEffect $ setTextContent v (Text.toNode tx)
 
+-- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do
   tx <- liftEffect $ createTextNode "" <<< toDocument =<< document =<< window
@@ -60,20 +62,29 @@ text signal = do
 
   tell $ pure [ Text.toNode tx ]
 
-embed :: forall context. Component context -> context -> Element -> Effect Unit
-embed component context elem = do
-  unmountEmitter <- newEmitter
+-- | Overwrite real Element
+overwrite
+  :: forall context. Array Prop -> Component context -> context -> Emitter -> Element -> Effect Unit
+overwrite props component context unmountEmitter elem = do
+  registerProps props unmountEmitter elem
 
   childNodes <- liftEffect $ runComponent component { unmountEmitter, context }
   liftEffect $ registerChildNodes childNodes unmountEmitter $ Element.toNode elem
 
+-- | Embed real Node to Component
+embedNode :: forall context. Node -> Component context
+embedNode node = tell $ pure [ node ]
+
+-- | Fold Components
 fragment :: forall context. Array (Component context) -> Component context
 fragment = fold
 
 signalC :: forall context. Signal (Component context) -> Component context
 signalC cmpSig = do
   { context, unmountEmitter } <- ask
+
   nodesSig /\ nodesAtom <- signalWithoutEq $ pure []
+
   liftEffect $ addListener unmountEmitter =<< launch do
     cmp <- cmpSig
     ue <- liftEffect newEmitter
@@ -88,8 +99,18 @@ ifC blSig thenComponent elseComponent = signalC do
   bl <- blSig
   pure $ if bl then thenComponent else elseComponent
 
+-- | Create empty Component
 emptyC :: forall context. Component context
 emptyC = mempty
 
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
+
+-- forC
+--   :: forall context a key
+--    . Ord key
+--   => Eq a
+--   => (a -> key)
+--   -> Signal (Array a)
+--   -> (Signal a -> Component context)
+--   -> Component context

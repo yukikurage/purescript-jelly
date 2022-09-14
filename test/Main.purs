@@ -14,9 +14,10 @@ import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
-import Jelly.El (el, el_, embed, signalC, text)
+import Jelly.El (el, el_, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.RunJelly (runJelly)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
@@ -30,7 +31,7 @@ type Context = Unit
 main :: Effect Unit
 main = launchAff_ do
   elem <- awaitQuerySelector $ QuerySelector "#root"
-  liftEffect $ traverse_ (embed rootComponent unit) elem
+  liftEffect $ traverse_ (runJelly rootComponent unit) elem
 
 rootComponent :: Component Context
 rootComponent = el_ "div" do
