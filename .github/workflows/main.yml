@@ -22,8 +22,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18
-    - name: Install NPM packages
-      run: npm ci
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v3
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
     - name: Cache PureScript dependencies
       uses: actions/cache@v3
       with:
@@ -33,6 +40,8 @@ jobs:
         key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
         restore-keys: |
           ${{ runner.os }}-spago-
+    - name: Install NPM packages
+      run: npm ci
     - name: Build website
       run: npm run bundle
     - name: Upload artifact
