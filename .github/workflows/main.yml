@@ -38,7 +38,7 @@ jobs:
           output
         key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
     - name: Install NPM packages
-      if: steps.node-cache.outputs.cache-hit != 'true'
+      if: steps.cache-npm.outputs.cache-hit != 'true'
       run: npm ci
     - name: Build website
       run: npm run bundle
