@@ -14,7 +14,8 @@
     "bundle-browser": "npm-run-all bundle-browser:*",
     "run-node:tsc": "tsc",
     "run-node:spago": "npx spago run --main Test.EntryPoints.NodeJS",
-    "run-node": "npm-run-all run-node:*"
+    "run-node": "npm-run-all run-node:*",
+    "bundle": "npm-run-all run-node bundle-browser"
   },
   "devDependencies": {
     "pulp": "^16.0.2",
