@@ -41,7 +41,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spago-
     - name: Install NPM packages
-      run: npm install
+      run: npm ci
     - name: Build website
       run: npm run bundle
     - name: Upload artifact
