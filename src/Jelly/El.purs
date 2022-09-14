@@ -60,7 +60,7 @@ registerText value unmountEmitter inst =
     v <- value
     liftEffect $ setTextContent v inst
 
--- -- | Create Text Component
+-- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do
   inst <- liftEffect $ newTextInstance ""
@@ -71,7 +71,7 @@ text signal = do
 
   tell $ pure [ inst ]
 
--- -- | Overwrite real Element
+-- | Overwrite real Element
 overwrite
   :: forall context
    . Browser
@@ -90,7 +90,7 @@ overwrite props component context unmountEmitter elem = do
   childNodes <- liftEffect $ runComponent component { unmountEmitter, context }
   liftEffect $ registerChildNodes childNodes unmountEmitter inst
 
--- -- | Fold Components
+-- | Fold Components
 fragment :: forall context. Array (Component context) -> Component context
 fragment = fold
 

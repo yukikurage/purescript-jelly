@@ -41,7 +41,9 @@ jobs:
       if: steps.cache-npm.outputs.cache-hit != 'true'
       run: npm ci
     - name: Build website
-      run: npm run bundle
+      run: |
+        npm run run-node
+        npm run bundle-browser
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
       with:
