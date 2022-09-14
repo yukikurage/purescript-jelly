@@ -8,74 +8,74 @@ import Data.Array (fold)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Jelly.Class.Platform (class Browser)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
+import Jelly.Data.Instance (Instance, fromNode, newInstance, newTextInstance, setTextContent, updateChildren)
 import Jelly.Data.Prop (Prop, registerProps)
 import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
-import Web.DOM (Element, Node, Text)
-import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM (Element)
 import Web.DOM.Element as Element
-import Web.DOM.Node (setTextContent)
-import Web.DOM.Text as Text
-import Web.HTML (window)
-import Web.HTML.HTMLDocument (toDocument)
-import Web.HTML.Window (document)
 
-foreign import updateChildNodes :: Array Node -> Node -> Effect Unit
-
-registerChildNodes :: Signal (Array Node) -> Emitter -> Node -> Effect Unit
-registerChildNodes nodesSig unmountEmitter parentNode = addListener unmountEmitter =<< launch do
+registerChildNodes :: Signal (Array Instance) -> Emitter -> Instance -> Effect Unit
+registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<< launch do
   nodes <- nodesSig
-  liftEffect $ updateChildNodes nodes parentNode
+  liftEffect $ updateChildren nodes inst
 
 -- | Create Element Component
 el :: forall context. String -> Array Prop -> Component context -> Component context
 el tag props component = do
-  elem <- liftEffect $ createElement tag <<< toDocument =<< document =<< window
+  inst <- liftEffect $ newInstance tag
 
   internal <- ask
 
-  liftEffect $ registerProps props internal.unmountEmitter elem
+  liftEffect $ registerProps props internal.unmountEmitter inst
 
   childNodes <- liftEffect $ runComponent component internal
-  liftEffect $ registerChildNodes childNodes internal.unmountEmitter $ Element.toNode elem
+  liftEffect $ registerChildNodes childNodes internal.unmountEmitter inst
 
-  tell $ pure [ Element.toNode elem ]
+  tell $ pure [ inst ]
 
 el_ :: forall context. String -> Component context -> Component context
 el_ tag component = el tag [] component
 
-registerText :: Signal String -> Emitter -> Text -> Effect Unit
-registerText value unmountEmitter tx =
+registerText :: Signal String -> Emitter -> Instance -> Effect Unit
+registerText value unmountEmitter inst =
   addListener unmountEmitter =<< launch do
     v <- value
-    liftEffect $ setTextContent v (Text.toNode tx)
+    liftEffect $ setTextContent v inst
 
--- | Create Text Component
+-- -- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do
-  tx <- liftEffect $ createTextNode "" <<< toDocument =<< document =<< window
+  inst <- liftEffect $ newTextInstance ""
 
   internal <- ask
 
-  liftEffect $ registerText signal internal.unmountEmitter tx
+  liftEffect $ registerText signal internal.unmountEmitter inst
 
-  tell $ pure [ Text.toNode tx ]
+  tell $ pure [ inst ]
 
--- | Overwrite real Element
+-- -- | Overwrite real Element
 overwrite
-  :: forall context. Array Prop -> Component context -> context -> Emitter -> Element -> Effect Unit
+  :: forall context
+   . Browser
+  => Array Prop
+  -> Component context
+  -> context
+  -> Emitter
+  -> Element
+  -> Effect Unit
 overwrite props component context unmountEmitter elem = do
-  registerProps props unmountEmitter elem
+  let
+    inst = fromNode $ Element.toNode elem
+
+  registerProps props unmountEmitter inst
 
   childNodes <- liftEffect $ runComponent component { unmountEmitter, context }
-  liftEffect $ registerChildNodes childNodes unmountEmitter $ Element.toNode elem
+  liftEffect $ registerChildNodes childNodes unmountEmitter inst
 
--- | Embed real Node to Component
-embedNode :: forall context. Node -> Component context
-embedNode node = tell $ pure [ node ]
-
--- | Fold Components
+-- -- | Fold Components
 fragment :: forall context. Array (Component context) -> Component context
 fragment = fold
 
@@ -106,6 +106,7 @@ emptyC = mempty
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
 
+-- TODO
 -- forC
 --   :: forall context a key
 --    . Ord key

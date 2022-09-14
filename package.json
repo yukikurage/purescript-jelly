@@ -6,12 +6,15 @@
     "test": "test"
   },
   "scripts": {
-    "watch:tsc": "tsc -w",
-    "watch:spago": "npx spago bundle-app --main Test.Main --to public/index.js --watch",
-    "watch": "npm-run-all -p watch:*",
-    "bundle:tsc": "tsc",
-    "bundle:spago": "npx spago bundle-app --main Test.Main --to public/index.js",
-    "bundle": "npm-run-all bundle:*"
+    "watch-browser:tsc": "tsc -w",
+    "watch-browser:spago": "npx spago bundle-app --main Test.EntryPoints.Browser --to public/index.js --watch",
+    "watch-browser": "npm-run-all -p watch-browser:*",
+    "bundle-browser:tsc": "tsc",
+    "bundle-browser:spago": "npx spago bundle-app --main Test.EntryPoints.Browser --to public/index.js",
+    "bundle-browser": "npm-run-all bundle-browser:*",
+    "run-node:tsc": "tsc",
+    "run-node:spago": "npx spago run --main Test.EntryPoints.NodeJS",
+    "run-node": "npm-run-all run-node:*"
   },
   "devDependencies": {
     "pulp": "^16.0.2",

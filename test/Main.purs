@@ -8,35 +8,37 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Jelly.Aff (awaitQuerySelector)
+import Jelly.Class.Platform (class Browser, class NodeJS)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
-import Jelly.El (el, el_, embedNode, signalC, text)
+import Jelly.El (el, el_, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Render (render)
 import Jelly.RunJelly (runJelly)
 import Web.DOM (Element)
-import Web.DOM.Document (createElement)
-import Web.DOM.Element (toNode)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
-import Web.HTML (window)
 import Web.HTML.Event.EventTypes (click, input)
-import Web.HTML.HTMLDocument (toDocument)
 import Web.HTML.HTMLSelectElement as Select
-import Web.HTML.Window (document)
 
 type Context = Unit
 
 foreign import setInnerHTML :: String -> Element -> Effect Unit
 
-main :: Effect Unit
-main = launchAff_ do
+browserMain :: Browser => Effect Unit
+browserMain = launchAff_ do
   elem <- awaitQuerySelector $ QuerySelector "#root"
   liftEffect $ traverse_ (runJelly rootComponent unit) elem
+
+nodeJSMain :: NodeJS => Effect Unit
+nodeJSMain = do
+  log =<< render rootComponent unit
 
 rootComponent :: Component Context
 rootComponent = el_ "div" do
@@ -46,7 +48,6 @@ rootComponent = el_ "div" do
     text $ pure "This is a Jelly test."
   withTitle (pure "Timer") timer
   withTitle (pure "Counter") counter
-  withTitle (pure "Embed") embed
   withTitle (pure "Mount / Unmount") mount
 
 withTitle :: Signal String -> Component Context -> Component Context
@@ -71,13 +72,6 @@ counter = makeComponent do
       text $ pure "Increment"
     el_ "div" do
       text $ show <$> countSig
-
-embed :: Component Context
-embed = makeComponent do
-  elem <- liftEffect $ createElement "div" <<< toDocument =<< document =<< window
-  liftEffect $ setInnerHTML "<p>Hello from embedded component</p>" elem
-
-  pure $ embedNode $ toNode elem
 
 mount :: Component Context
 mount = makeComponent do
@@ -116,15 +110,12 @@ mount = makeComponent do
           text $ pure "Timer"
         el "option" [ "value" := pure "counter" ] do
           text $ pure "Counter"
-        el "option" [ "value" := pure "embed" ] do
-          text $ pure "Embed"
     el "div" [ "style" := pure "border: 1px solid #ccc; padding: 10px; height: 50px;" ] do
       signalC do
         cmpName <- cmpNameSig
         pure $ case cmpName of
           "timer" -> withMountMessage (pure "Timer") timer
           "counter" -> withMountMessage (pure "Counter") counter
-          "embed" -> withMountMessage (pure "Embed") embed
           _ -> mempty
     el_ "pre" do
       text logTextSig

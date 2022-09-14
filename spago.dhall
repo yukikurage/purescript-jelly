@@ -25,6 +25,7 @@ to generate this file without the comments in this block.
   , "tailrec"
   , "transformers"
   , "tuples"
+  , "unsafe-coerce"
   , "web-dom"
   , "web-events"
   , "web-html"
