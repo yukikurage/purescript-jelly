@@ -20,7 +20,7 @@ import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.DOM.ParentNode (QuerySelector(..))
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
-import Web.HTML.Event.EventTypes (change, click, input)
+import Web.HTML.Event.EventTypes (click, input)
 import Web.HTML.HTMLSelectElement as Select
 
 foreign import setBodyInnerHTML :: String -> Effect Unit
@@ -35,7 +35,7 @@ main = launchAff_ do
 rootComponent :: Component Context
 rootComponent = el_ "div" do
   el_ "h1" do
-    text $ pure "Hello, Jelly!🍮"
+    text $ pure "🍮Hello, Jelly!"
   el_ "p" do
     text $ pure "This is a Jelly test."
   withTitle (pure "Timer") timer

@@ -11,7 +11,7 @@ import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
 import Jelly.Data.Prop (Prop, registerProps)
-import Jelly.Data.Signal (Signal, defer, launch, signal, signalWithoutEq, writeAtom)
+import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
 import Web.DOM (Element, Node, Text)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.Element as Element
