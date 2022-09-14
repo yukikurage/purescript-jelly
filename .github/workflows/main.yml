@@ -37,8 +37,6 @@ jobs:
           .spago
           output
         key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
-        restore-keys: |
-          ${{ runner.os }}-spago-
     - name: Install NPM packages
       if: steps.node-cache.outputs.cache-hit != 'true'
       run: npm ci
