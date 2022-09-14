@@ -26,8 +26,7 @@ jobs:
       id: cache-npm
       uses: actions/cache@v3
       with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: ~/.npm
+        path: node_modules
         key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
@@ -41,6 +40,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spago-
     - name: Install NPM packages
+      if: steps.node-cache.outputs.cache-hit != 'true'
       run: npm ci
     - name: Build website
       run: npm run bundle
