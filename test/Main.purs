@@ -8,7 +8,6 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Jelly.Aff (awaitQuerySelector)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
@@ -109,9 +108,6 @@ mount = makeComponent do
         addLog $ "unmounted: " <> name
 
       pure component
-
-  useUnmountEffect do
-    log "Unmounted: Mount / Unmount"
 
   pure $ el_ "div" do
     el_ "div" do
