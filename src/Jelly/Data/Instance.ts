@@ -1,4 +1,7 @@
-type NodeJSInstance = NodeJSElementInstance | NodeJSTextInstance;
+type NodeJSInstance =
+  | NodeJSElementInstance
+  | NodeJSTextInstance
+  | NodeJSHtmlDocTypeInstance;
 
 type NodeJSElementInstance = {
   tagName: string;
@@ -8,9 +11,11 @@ type NodeJSElementInstance = {
 
 type NodeJSTextInstance = { text: string };
 
+type NodeJSHtmlDocTypeInstance = { type: "DocType" };
+
 const isBrowser = typeof window !== "undefined";
 
-type BrowserInstance = Element | Text;
+type BrowserInstance = Element | Text | DocumentType;
 
 type Instance = NodeJSInstance | BrowserInstance;
 
@@ -32,12 +37,23 @@ export const newTextInstance = (text: string) => (): Instance => {
   return { text };
 };
 
+export const newDocTypeInstance = (): Instance => {
+  if (isBrowser) {
+    return document.implementation.createDocumentType(
+      "html",
+      "",
+      ""
+    ) as DocumentType;
+  }
+  return { type: "DocType" };
+};
+
 export const setAttribute =
   (name: string) => (value: string) => (instance: Instance) => () => {
     if (isBrowser && instance instanceof Element) {
       instance.setAttribute(name, value);
     }
-    if (!isBrowser && !("text" in instance)) {
+    if (!isBrowser && "tagName" in instance) {
       (instance as NodeJSElementInstance).attributes[name] = value;
     }
   };
@@ -46,7 +62,7 @@ export const removeAttribute = (name: string) => (instance: Instance) => () => {
   if (isBrowser && instance instanceof Element) {
     instance.removeAttribute(name);
   }
-  if (!isBrowser && !("text" in instance)) {
+  if (!isBrowser && "tagName" in instance) {
     delete (instance as NodeJSElementInstance).attributes[name];
   }
 };
@@ -76,7 +92,7 @@ export const updateChildren =
       }
       return;
     }
-    if (!isBrowser && !("text" in instance)) {
+    if (!isBrowser && "tagName" in instance) {
       (instance as NodeJSElementInstance).children =
         children as NodeJSInstance[];
     }
@@ -86,7 +102,7 @@ export const toHTMLImpl = (instance: Instance) => (): string => {
   if (isBrowser) {
     throw new Error("Not implemented");
   }
-  if (!isBrowser && !("text" in instance)) {
+  if (!isBrowser && "tagName" in instance) {
     const node = instance as NodeJSElementInstance;
     const attributes = Object.entries(node.attributes)
       .map(([name, value]) => ` ${name}="${value}"`)
@@ -94,7 +110,10 @@ export const toHTMLImpl = (instance: Instance) => (): string => {
     const children = node.children.map((inst) => toHTMLImpl(inst)()).join("");
     return `<${node.tagName}${attributes}>${children}</${node.tagName}>`;
   }
-  return (instance as NodeJSTextInstance).text;
+  if (!isBrowser && "text" in instance) {
+    return (instance as NodeJSTextInstance).text;
+  }
+  return "<!DOCTYPE html>";
 };
 
 export const addEventListenerImpl =
@@ -124,7 +143,7 @@ export const setInnerHTML = (html: string) => (instance: Instance) => () => {
   if (isBrowser && instance instanceof Element) {
     instance.innerHTML = html;
   }
-  if (!isBrowser && !("text" in instance)) {
+  if (!isBrowser && "tagName" in instance) {
     (instance as NodeJSElementInstance).children = [{ text: html }];
   }
 };

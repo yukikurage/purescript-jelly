@@ -5,34 +5,82 @@ import Prelude
 import Control.Monad.Reader (ask)
 import Control.Monad.Writer (tell)
 import Data.Array (fold)
-import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe(..))
+import Data.String (toUpper)
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Jelly.Class.Platform (class Browser)
-import Jelly.Data.Component (Component, runComponent)
+import Effect.Ref (new, read, write)
+import Jelly.Class.Platform (class Browser, runBrowserApp)
+import Jelly.Data.Component (Component, ComponentM, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
-import Jelly.Data.Instance (Instance, fromNode, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
+import Jelly.Data.Instance (Instance, fromNode, newDocTypeInstance, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
+import Jelly.Data.Instance as Instance
 import Jelly.Data.Prop (Prop, registerProps)
 import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
-import Web.DOM (Element)
+import Web.DOM (Node)
+import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
+import Web.DOM.Node (firstChild, nextSibling)
+import Web.DOM.Text as Text
 
 registerChildNodes :: Signal (Array Instance) -> Emitter -> Instance -> Effect Unit
 registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<< launch do
   nodes <- nodesSig
   liftEffect $ updateChildren nodes inst
 
+newInstanceWithRealNode :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
+newInstanceWithRealNode tag = do
+  { realNodeRef } <- ask
+  realNode <- liftEffect $ read realNodeRef
+  case realNode of
+    Just node | Just elem <- Element.fromNode node, Element.tagName elem == toUpper tag ->
+      liftEffect $ do
+        maybeNextNode <- nextSibling node
+        write maybeNextNode realNodeRef
+        maybeFc <- firstChild node
+        pure $ runBrowserApp (Instance.fromNode node) /\ maybeFc
+    _ -> liftEffect do
+      inst <- newInstance tag
+      pure $ inst /\ Nothing
+
+newTextInstanceWithRealNode :: forall context. String -> ComponentM context Instance
+newTextInstanceWithRealNode txt = do
+  { realNodeRef } <- ask
+  realNode <- liftEffect $ read realNodeRef
+  case realNode of
+    Just node | Just _ <- Text.fromNode node -> liftEffect $ do
+      maybeNextNode <- nextSibling node
+      write maybeNextNode realNodeRef
+      pure $ runBrowserApp $ Instance.fromNode node
+    _ -> liftEffect $ newTextInstance txt
+
+newDocTypeInstanceWithRealNode :: forall context. ComponentM context Instance
+newDocTypeInstanceWithRealNode = do
+  { realNodeRef } <- ask
+  realNode <- liftEffect $ read realNodeRef
+  case realNode of
+    Just node | Just _ <- DocumentType.fromNode node -> liftEffect $ do
+      maybeNextNode <- nextSibling node
+      write maybeNextNode realNodeRef
+      pure $ runBrowserApp $ Instance.fromNode node
+    _ -> liftEffect newDocTypeInstance
+
 -- | Create Element Component
 el :: forall context. String -> Array Prop -> Component context -> Component context
 el tag props component = do
-  inst <- liftEffect $ newInstance tag
+  inst /\ fc <- newInstanceWithRealNode tag
 
   internal <- ask
 
   liftEffect $ registerProps props internal.unmountEmitter inst
 
-  childNodes <- liftEffect $ runComponent component internal
+  realNodeRef <- liftEffect $ new fc
+
+  childNodes <- liftEffect $ runComponent component $ internal { realNodeRef = realNodeRef }
   liftEffect $ registerChildNodes childNodes internal.unmountEmitter inst
+
+  liftEffect $ write Nothing realNodeRef
 
   tell $ pure [ inst ]
 
@@ -42,7 +90,7 @@ el_ tag component = el tag [] component
 -- | Element which innerHTML is given string
 rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
 rawEl tag props htmlSig = do
-  inst <- liftEffect $ newInstance tag
+  inst /\ _ <- newInstanceWithRealNode tag
 
   internal <- ask
 
@@ -63,7 +111,7 @@ registerText value unmountEmitter inst =
 -- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do
-  inst <- liftEffect $ newTextInstance ""
+  inst <- newTextInstanceWithRealNode ""
 
   internal <- ask
 
@@ -71,23 +119,28 @@ text signal = do
 
   tell $ pure [ inst ]
 
--- | Overwrite real Element
+docTypeHTML :: forall context. Component context
+docTypeHTML = do
+  inst <- newDocTypeInstanceWithRealNode
+
+  tell $ pure [ inst ]
+
+-- -- | Overwrite real Node
 overwrite
   :: forall context
    . Browser
-  => Array Prop
-  -> Component context
+  => Component context
   -> context
   -> Emitter
-  -> Element
+  -> Node
   -> Effect Unit
-overwrite props component context unmountEmitter elem = do
+overwrite component context unmountEmitter node = do
   let
-    inst = fromNode $ Element.toNode elem
+    inst = fromNode node
 
-  registerProps props unmountEmitter inst
+  realNodeRef <- liftEffect $ new =<< firstChild node
 
-  childNodes <- liftEffect $ runComponent component { unmountEmitter, context }
+  childNodes <- liftEffect $ runComponent component { unmountEmitter, context, realNodeRef }
   liftEffect $ registerChildNodes childNodes unmountEmitter inst
 
 -- | Fold Components
@@ -96,14 +149,14 @@ fragment = fold
 
 signalC :: forall context. Signal (Component context) -> Component context
 signalC cmpSig = do
-  { context, unmountEmitter } <- ask
+  { context, unmountEmitter, realNodeRef } <- ask
 
   nodesSig /\ nodesAtom <- signalWithoutEq $ pure []
 
   liftEffect $ addListener unmountEmitter =<< launch do
     cmp <- cmpSig
     ue <- liftEffect newEmitter
-    cmpNodes <- liftEffect $ runComponent cmp { unmountEmitter: ue, context }
+    cmpNodes <- liftEffect $ runComponent cmp { unmountEmitter: ue, context, realNodeRef }
     writeAtom nodesAtom cmpNodes
     defer $ emit ue
   tell $ join nodesSig

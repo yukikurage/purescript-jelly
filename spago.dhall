@@ -14,7 +14,6 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "aff"
   , "arrays"
-  , "console"
   , "effect"
   , "either"
   , "foldable-traversable"
@@ -25,7 +24,9 @@ to generate this file without the comments in this block.
   , "node-path"
   , "node-process"
   , "prelude"
+  , "refs"
   , "safely"
+  , "strings"
   , "tailrec"
   , "transformers"
   , "tuples"

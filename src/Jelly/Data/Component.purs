@@ -4,14 +4,18 @@ import Prelude
 
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, runReaderT)
 import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT)
+import Data.Maybe (Maybe)
 import Data.Tuple (snd)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+import Effect.Ref (Ref)
 import Jelly.Data.Emitter (Emitter)
 import Jelly.Data.Instance (Instance)
 import Jelly.Data.Signal (Signal)
+import Web.DOM (Node)
 
-type ComponentInternal context = { unmountEmitter :: Emitter, context :: context }
+type ComponentInternal context =
+  { unmountEmitter :: Emitter, context :: context, realNodeRef :: Ref (Maybe Node) }
 
 newtype ComponentM context a = Component
   (ReaderT (ComponentInternal context) (WriterT (Signal (Array Instance)) Effect) a)

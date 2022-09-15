@@ -3,9 +3,11 @@ module Jelly.NodeJS where
 import Prelude
 
 import Data.Array (fold)
+import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Ref (new)
 import Jelly.Class.Platform (class NodeJS)
 import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (newEmitter)
@@ -18,7 +20,8 @@ import Node.Path (FilePath)
 render :: forall context. NodeJS => Component context -> context -> Effect String
 render component context = do
   unmountEmitter <- newEmitter
-  insts <- readSignal =<< runComponent component { context, unmountEmitter }
+  realNodeRef <- new Nothing
+  insts <- readSignal =<< runComponent component { context, unmountEmitter, realNodeRef }
   fold <$> traverse toHTML insts
 
 writeToFile :: FilePath -> String -> Aff Unit

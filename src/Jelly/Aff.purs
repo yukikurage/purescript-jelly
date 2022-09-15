@@ -7,7 +7,8 @@ import Data.Maybe (Maybe)
 import Effect.Aff (Aff, effectCanceler, makeAff)
 import Effect.Class (liftEffect)
 import Jelly.Class.Platform (class Browser)
-import Web.DOM (Element)
+import Web.DOM (Node)
+import Web.DOM.Element as Element
 import Web.DOM.ParentNode (QuerySelector, querySelector)
 import Web.Event.EventTarget (addEventListener, eventListener, removeEventListener)
 import Web.HTML (window)
@@ -33,8 +34,15 @@ awaitDomContentLoaded = makeAff \callback -> do
       callback (Right unit)
       mempty
 
+awaitDocument :: Browser => Aff Node
+awaitDocument = do
+  awaitDomContentLoaded
+  liftEffect $ HTMLDocument.toNode <$> (document =<< window)
+
 awaitQuerySelector
-  :: Browser => QuerySelector -> Aff (Maybe Element)
+  :: Browser => QuerySelector -> Aff (Maybe Node)
 awaitQuerySelector qs = do
   awaitDomContentLoaded
-  liftEffect $ querySelector qs <<< HTMLDocument.toParentNode =<< document =<< window
+  maybeEl <- liftEffect $ querySelector qs <<< HTMLDocument.toParentNode =<< document =<<
+    window
+  pure $ Element.toNode <$> maybeEl

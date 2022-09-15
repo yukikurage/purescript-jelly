@@ -17,6 +17,7 @@ foreign import data Instance :: Type
 
 foreign import newInstance :: String -> Effect Instance
 foreign import newTextInstance :: String -> Effect Instance
+foreign import newDocTypeInstance :: Effect Instance
 foreign import setAttribute :: String -> String -> Instance -> Effect Unit
 foreign import removeAttribute :: String -> Instance -> Effect Unit
 foreign import updateChildren :: Array Instance -> Instance -> Effect Unit

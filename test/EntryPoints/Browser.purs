@@ -2,20 +2,20 @@ module Test.EntryPoints.Browser where
 
 import Prelude
 
-import Control.Safely (traverse_)
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
-import Jelly.Aff (awaitQuerySelector)
+import Jelly.Aff (awaitDocument)
 import Jelly.Browser (runJelly)
 import Jelly.Class.Platform (class Browser, runBrowserApp)
+import Test.Html (html)
 import Test.Main (rootComponent)
-import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit
 main = runBrowserApp browserMain
 
 browserMain :: Browser => Effect Unit
 browserMain = launchAff_ do
-  elem <- awaitQuerySelector $ QuerySelector "#root"
-  liftEffect $ traverse_ (runJelly rootComponent unit) elem
+  node <- awaitDocument
+  delay $ Milliseconds 1000.0
+  liftEffect $ runJelly (html rootComponent) unit node

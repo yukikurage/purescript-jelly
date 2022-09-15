@@ -4,7 +4,7 @@ import Prelude
 
 import Jelly.Data.Component (Component)
 import Jelly.Data.Prop ((:=))
-import Jelly.El (el, el_)
+import Jelly.El (docTypeHTML, el, el_)
 import Test.Context (Context)
 
 -- <html>
@@ -17,9 +17,12 @@ import Test.Context (Context)
 -- </html>
 
 html :: Component Context -> Component Context
-html component = el_ "html" do
-  el_ "head" do
-    el "script" [ "async" := pure "", "type" := pure "text/javascript", "src" := pure "./index.js" ]
-      mempty
-  el_ "body" do
-    el "div" [ "id" := pure "root" ] component
+html component = do
+  docTypeHTML
+  el_ "html" do
+    el_ "head" do
+      el "script"
+        [ "async" := pure "", "type" := pure "text/javascript", "src" := pure "./index.js" ]
+        mempty
+    el_ "body" do
+      el "div" [ "id" := pure "root" ] component

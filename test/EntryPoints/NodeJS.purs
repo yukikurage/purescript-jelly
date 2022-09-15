@@ -17,5 +17,5 @@ main = runNodeJSApp nodeJSMain
 nodeJSMain :: NodeJS => Effect Unit
 nodeJSMain = launchAff_ do
   rendered <- liftEffect $ render (html rootComponent) unit
-  writeToFile "./public/index.html" $ "<!DOCTYPE html>" <> rendered
+  writeToFile "./public/index.html" $ rendered
   liftEffect $ exit 0
