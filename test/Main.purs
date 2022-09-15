@@ -10,7 +10,7 @@ import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
-import Jelly.El (el, el_, rawEl, signalC, text)
+import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Test.Context (Context)
@@ -23,16 +23,23 @@ import Web.HTML.HTMLSelectElement as Select
 foreign import setInnerHTML :: String -> Element -> Effect Unit
 
 rootComponent :: Component Context
-rootComponent = el_ "div" do
-  el_ "h1" do
-    text $ pure "🍮Hello, Jelly!"
-  el_ "p" do
-    text $ pure "This is a Jelly test."
-  withTitle (pure "SSG") ssg
-  withTitle (pure "Timer") timer
-  withTitle (pure "Counter") counter
-  withTitle (pure "Mount / Unmount") mount
-  withTitle (pure "Raw") raw
+rootComponent = do
+  docTypeHTML
+  el_ "html" do
+    el_ "head" do
+      el "script"
+        [ "async" := pure "", "type" := pure "text/javascript", "src" := pure "./index.js" ]
+        mempty
+    el_ "body" do
+      el_ "h1" do
+        text $ pure "🍮Hello, Jelly!"
+      el_ "p" do
+        text $ pure "This is a Jelly test."
+      withTitle (pure "SSG") ssg
+      withTitle (pure "Timer") timer
+      withTitle (pure "Counter") counter
+      withTitle (pure "Mount / Unmount") mount
+      withTitle (pure "Raw") raw
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
