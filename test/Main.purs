@@ -28,6 +28,7 @@ rootComponent = el_ "div" do
     text $ pure "🍮Hello, Jelly!"
   el_ "p" do
     text $ pure "This is a Jelly test."
+  withTitle (pure "SSG") ssg
   withTitle (pure "Timer") timer
   withTitle (pure "Counter") counter
   withTitle (pure "Mount / Unmount") mount
@@ -37,6 +38,12 @@ withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
   el_ "h2" $ text titleSig
   el "div" [ "style" := pure "padding: 10px" ] component
+
+ssg :: Component Context
+ssg = do
+  el_ "p" do
+    text $ pure
+      "Jelly has SSG capabilities. This site intentionally delays client-side rendering by one second and displays server-side generated HTML for the first second. Therefore, buttons can be clicked after 1 second."
 
 timer :: Component Context
 timer = makeComponent do

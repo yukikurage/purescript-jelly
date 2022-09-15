@@ -7,15 +7,6 @@ import Jelly.Data.Prop ((:=))
 import Jelly.El (docTypeHTML, el, el_)
 import Test.Context (Context)
 
--- <html>
---     <head>
---         <script async="" type="text/javascript" src="./index.js"></script>
---     </head>
---     <body>
---         <div id="root"></div>
---     </body>
--- </html>
-
 html :: Component Context -> Component Context
 html component = do
   docTypeHTML
