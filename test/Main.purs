@@ -28,7 +28,7 @@ rootComponent = do
   el_ "html" do
     el_ "head" do
       el "script"
-        [ "async" := pure "", "type" := pure "text/javascript", "src" := pure "./index.js" ]
+        [ "async" := true, "type" := "text/javascript", "src" := "./index.js" ]
         mempty
     el_ "body" do
       el_ "h1" do
@@ -44,7 +44,7 @@ rootComponent = do
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
   el_ "h2" $ text titleSig
-  el "div" [ "style" := pure "padding: 10px" ] component
+  el "div" [ "style" := "padding: 10px" ] component
 
 ssg :: Component Context
 ssg = do
@@ -103,11 +103,11 @@ mount = makeComponent do
   pure $ el_ "div" do
     el_ "div" do
       el "select" [ on input handleChange ] do
-        el "option" [ "value" := pure "timer" ] do
+        el "option" [ "value" := "timer" ] do
           text $ pure "Timer"
-        el "option" [ "value" := pure "counter" ] do
+        el "option" [ "value" := "counter" ] do
           text $ pure "Counter"
-    el "div" [ "style" := pure "border: 1px solid #ccc; padding: 10px; height: 50px;" ] do
+    el "div" [ "style" := [ "border: 1px solid #ccc;", "padding: 10px;", "height: 50px;" ] ] do
       signalC do
         cmpName <- cmpNameSig
         pure $ case cmpName of

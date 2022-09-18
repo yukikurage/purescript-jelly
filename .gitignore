@@ -9,5 +9,4 @@
 /.psa*
 /.spago
 /public
-/src/**/*.js
 /purescript-dependency-graph

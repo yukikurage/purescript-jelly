@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 
+-- | Emits event **Once**
 foreign import data Emitter :: Type
 
 foreign import newEmitter :: Effect Emitter
