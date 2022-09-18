@@ -15,9 +15,16 @@
     "run-node:tsc": "tsc",
     "run-node:spago": "npx spago run --main Test.EntryPoints.NodeJS",
     "run-node": "npm-run-all run-node:*",
-    "bundle": "npm-run-all run-node bundle-browser"
+    "bundle": "npm-run-all run-node bundle-browser",
+    "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc && npx spago build"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run precommit"
+    }
   },
   "devDependencies": {
+    "husky": "^8.0.1",
     "pulp": "^16.0.2",
     "purescript": "^0.15.4",
     "purs": "^0.3.0",
