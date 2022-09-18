@@ -1,10 +1,10 @@
 # 04 Stateful Component
 
-Signal と Hooks を組み合わせる事で、状態を持つ Component を作成する事が出来ます。
+Signal and Hooks can be combined to create a component with state.
 
 ## Counter
 
-例えば、カウンターを作ってみます
+For example, let's create a counter
 
 ```purs
 module JellyExamples.Counter where
