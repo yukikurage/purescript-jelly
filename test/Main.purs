@@ -28,7 +28,7 @@ rootComponent = do
   el_ "html" do
     el_ "head" do
       el "script"
-        [ "async" := true, "type" := "text/javascript", "src" := "./index.js" ]
+        [ "async" := false, "type" := "text/javascript", "src" := "./index.js" ]
         mempty
     el_ "body" do
       el_ "h1" do

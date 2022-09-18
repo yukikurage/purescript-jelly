@@ -29,8 +29,10 @@ registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<<
   nodes <- nodesSig
   liftEffect $ updateChildren nodes inst
 
-newInstanceWithRealNode :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
-newInstanceWithRealNode tag = do
+-- | realNode があったなら、それを使って Node を作ろうとする
+newInstanceWithRealNode
+  :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
+newInstanceWithRealNode tag = runBrowserApp do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
@@ -39,32 +41,33 @@ newInstanceWithRealNode tag = do
         maybeNextNode <- nextSibling node
         write maybeNextNode realNodeRef
         maybeFc <- firstChild node
-        pure $ runBrowserApp (Instance.fromNode node) /\ maybeFc
+        pure $ Instance.fromNode node /\ maybeFc
     _ -> liftEffect do
       inst <- newInstance tag
       pure $ inst /\ Nothing
 
 newTextInstanceWithRealNode :: forall context. String -> ComponentM context Instance
-newTextInstanceWithRealNode txt = do
+newTextInstanceWithRealNode txt = runBrowserApp do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
     Just node | Just _ <- Text.fromNode node -> liftEffect $ do
       maybeNextNode <- nextSibling node
       write maybeNextNode realNodeRef
-      pure $ runBrowserApp $ Instance.fromNode node
+      pure $ Instance.fromNode node
     _ -> liftEffect $ newTextInstance txt
 
-newDocTypeInstanceWithRealNode :: forall context. ComponentM context Instance
-newDocTypeInstanceWithRealNode = do
+newDocTypeInstanceWithRealNode
+  :: forall context. String -> String -> String -> ComponentM context Instance
+newDocTypeInstanceWithRealNode qualifiedName publicId systemId = runBrowserApp do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
     Just node | Just _ <- DocumentType.fromNode node -> liftEffect $ do
       maybeNextNode <- nextSibling node
       write maybeNextNode realNodeRef
-      pure $ runBrowserApp $ Instance.fromNode node
-    _ -> liftEffect newDocTypeInstance
+      pure $ Instance.fromNode node
+    _ -> liftEffect $ newDocTypeInstance qualifiedName publicId systemId
 
 -- | Create Element Component
 el :: forall context. String -> Array Prop -> Component context -> Component context
@@ -119,11 +122,14 @@ text signal = do
 
   tell $ pure [ inst ]
 
-docTypeHTML :: forall context. Component context
-docTypeHTML = do
-  inst <- newDocTypeInstanceWithRealNode
+docType :: forall context. String -> String -> String -> Component context
+docType qualifiedName publicId systemId = do
+  inst <- newDocTypeInstanceWithRealNode qualifiedName publicId systemId
 
   tell $ pure [ inst ]
+
+docTypeHTML :: forall context. ComponentM context Unit
+docTypeHTML = docType "html" "" ""
 
 -- -- | Overwrite real Node
 overwrite
