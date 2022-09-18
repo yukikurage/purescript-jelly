@@ -1,12 +1,15 @@
 # Jelly
 
-Jelly is a very lightweight Web Application Framework.
+Jelly is a framework with the following features
 
-It does not use a virtual DOM, but has a mechanism that allows redrawing only where the state has been updated.
+- No virtual DOM
+- Declarative
+- State management by reactivity (not FRP)
+- Logic synthesis and reuse via Hooks
+- Simple component separation
+- SSG support
 
-It is similar to reactivity, but made very simple and, conversely, not so abstract.
-
-This is because I decided that I don't need such abstraction when we build a Web UI.
+See [docs directory](./docs) for more details.
 
 ## Installation
 
@@ -44,6 +47,6 @@ in  upstream
 
 and run `spago install jelly` (or `npx spago install jelly`)
 
-## Example
+## Examples
 
 See [Jelly Examples](https://yukikurage.github.io/purescript-jelly-examples/) and its [Repository](https://github.com/yukikurage/purescript-jelly-examples).

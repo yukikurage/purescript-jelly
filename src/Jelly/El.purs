@@ -29,7 +29,6 @@ registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<<
   nodes <- nodesSig
   liftEffect $ updateChildren nodes inst
 
--- | realNode があったなら、それを使って Node を作ろうとする
 newInstanceWithRealNode
   :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
 newInstanceWithRealNode tag = runBrowserApp do
