@@ -1,5 +1,4 @@
 module Test.Context where
 
-import Prelude
-
-type Context = Unit
+type Context :: Row Type
+type Context = ()

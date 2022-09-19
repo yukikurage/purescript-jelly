@@ -3,7 +3,6 @@ module Jelly.Data.Instance where
 import Prelude
 
 import Effect (Effect)
-import Jelly.Class.Platform (class Browser, class NodeJS)
 import Web.DOM (Node)
 import Web.Event.Event (EventType(..))
 import Web.Event.Internal.Types (Event)
@@ -35,11 +34,13 @@ foreign import fromNodeImpl :: Node -> Instance
 addEventListener :: EventType -> (Event -> Effect Unit) -> Instance -> Effect (Effect Unit)
 addEventListener (EventType name) = addEventListenerImpl name
 
-toNode :: Browser => Instance -> Node
+-- | This function only works in the browser.
+toNode :: Instance -> Node
 toNode = toNodeImpl
 
-fromNode :: Browser => Node -> Instance
+-- | This function only works in the browser.
+fromNode :: Node -> Instance
 fromNode = fromNodeImpl
 
-toHTML :: NodeJS => Instance -> Effect String
+toHTML :: Instance -> Effect String
 toHTML = toHTMLImpl

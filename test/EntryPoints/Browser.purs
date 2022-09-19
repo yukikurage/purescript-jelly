@@ -3,18 +3,8 @@ module Test.EntryPoints.Browser where
 import Prelude
 
 import Effect (Effect)
-import Effect.Aff (Milliseconds(..), delay, launchAff_)
-import Effect.Class (liftEffect)
-import Jelly.Aff (awaitDocument)
-import Jelly.Browser (runJelly)
-import Jelly.Class.Platform (class Browser, runBrowserApp)
-import Test.Main (rootComponent)
+import Jelly.SSG.Client (makeClientMain)
+import Test.RootComponent (rootComponent)
 
 main :: Effect Unit
-main = runBrowserApp browserMain
-
-browserMain :: Browser => Effect Unit
-browserMain = launchAff_ do
-  node <- awaitDocument
-  delay $ Milliseconds 1000.0
-  liftEffect $ runJelly rootComponent unit node
+main = makeClientMain rootComponent

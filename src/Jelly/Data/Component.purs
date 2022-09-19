@@ -15,7 +15,7 @@ import Jelly.Data.Signal (Signal)
 import Web.DOM (Node)
 
 type ComponentInternal context =
-  { unmountEmitter :: Emitter, context :: context, realNodeRef :: Ref (Maybe Node) }
+  { unmountEmitter :: Emitter, context :: Record context, realNodeRef :: Ref (Maybe Node) }
 
 newtype ComponentM context a = Component
   (ReaderT (ComponentInternal context) (WriterT (Signal (Array Instance)) Effect) a)

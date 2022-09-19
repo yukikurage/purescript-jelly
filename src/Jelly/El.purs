@@ -11,13 +11,14 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (new, read, write)
-import Jelly.Class.Platform (class Browser, runBrowserApp)
 import Jelly.Data.Component (Component, ComponentM, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
-import Jelly.Data.Instance (Instance, fromNode, newDocTypeInstance, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
+import Jelly.Data.Instance (Instance, newDocTypeInstance, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
 import Jelly.Data.Instance as Instance
 import Jelly.Data.Prop (Prop, registerProps)
 import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
+import Prim.Row (class Nub, class Union)
+import Record (disjointUnion)
 import Web.DOM (Node)
 import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
@@ -31,7 +32,7 @@ registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<<
 
 newInstanceWithRealNode
   :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
-newInstanceWithRealNode tag = runBrowserApp do
+newInstanceWithRealNode tag = do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
@@ -46,7 +47,7 @@ newInstanceWithRealNode tag = runBrowserApp do
       pure $ inst /\ Nothing
 
 newTextInstanceWithRealNode :: forall context. String -> ComponentM context Instance
-newTextInstanceWithRealNode txt = runBrowserApp do
+newTextInstanceWithRealNode txt = do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
@@ -58,7 +59,7 @@ newTextInstanceWithRealNode txt = runBrowserApp do
 
 newDocTypeInstanceWithRealNode
   :: forall context. String -> String -> String -> ComponentM context Instance
-newDocTypeInstanceWithRealNode qualifiedName publicId systemId = runBrowserApp do
+newDocTypeInstanceWithRealNode qualifiedName publicId systemId = do
   { realNodeRef } <- ask
   realNode <- liftEffect $ read realNodeRef
   case realNode of
@@ -130,24 +131,6 @@ docType qualifiedName publicId systemId = do
 docTypeHTML :: forall context. ComponentM context Unit
 docTypeHTML = docType "html" "" ""
 
--- -- | Overwrite real Node
-overwrite
-  :: forall context
-   . Browser
-  => Component context
-  -> context
-  -> Emitter
-  -> Node
-  -> Effect Unit
-overwrite component context unmountEmitter node = do
-  let
-    inst = fromNode node
-
-  realNodeRef <- liftEffect $ new =<< firstChild node
-
-  childNodes <- liftEffect $ runComponent component { unmountEmitter, context, realNodeRef }
-  liftEffect $ registerChildNodes childNodes unmountEmitter inst
-
 -- | Fold Components
 fragment :: forall context. Array (Component context) -> Component context
 fragment = fold
@@ -178,6 +161,20 @@ emptyC = mempty
 
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
+
+withContext
+  :: forall oldContext appendContext newContext
+   . Union oldContext appendContext newContext
+  => Nub newContext newContext
+  => Record appendContext
+  -> Component newContext
+  -> Component oldContext
+withContext appendContext component = do
+  { context, unmountEmitter, realNodeRef } <- ask
+  let newContext = disjointUnion context appendContext
+  instanceArraySig <- liftEffect $ runComponent component
+    { context: newContext, unmountEmitter, realNodeRef }
+  tell instanceArraySig
 
 -- TODO
 -- forC
