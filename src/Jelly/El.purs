@@ -162,13 +162,13 @@ emptyC = mempty
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
 
-provideContext
+contextProvider
   :: forall oldContext appendContext newContext
    . Union appendContext oldContext newContext
   => Record appendContext
   -> Component newContext
   -> Component oldContext
-provideContext appendContext component = do
+contextProvider appendContext component = do
   { context, unmountEmitter, realNodeRef } <- ask
   let newContext = union appendContext context
   instanceArraySig <- liftEffect $ runComponent component

@@ -2,6 +2,7 @@ module Test.RootComponent where
 
 import Prelude
 
+import Data.Array (snoc)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
@@ -9,11 +10,12 @@ import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
-import Jelly.Data.Router (Router, currentPage, newRouter, pushPage)
+import Jelly.Data.Router (basePath, currentPage, pushPage, routerProvider, useRouter)
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
 import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Util (makeAbsolutePath)
 import Test.Context (Context)
 import Web.DOM (Element)
 import Web.Event.Event (target)
@@ -23,31 +25,38 @@ import Web.HTML.HTMLSelectElement as Select
 
 foreign import setInnerHTML :: String -> Element -> Effect Unit
 
-rootComponent :: String -> Component Context
+rootComponent :: Array String -> Component ()
 rootComponent initPage = makeComponent do
-  router <- liftEffect $ newRouter
-    { basePath: "/purescript-jelly"
-    , initialPage: initPage
-    , toPath: identity
-    }
+  let
+    routerSettings =
+      { basePath: [ "purescript-jelly" ]
+      , initialPage: initPage
+      , toPath: identity
+      }
 
   pure do
-    docTypeHTML
-    el_ "html" do
-      el_ "head" do
-        el "script"
-          [ "defer" := true, "type" := "text/javascript", "src" := "/purescript-jelly/index.js" ]
-          mempty
-      el_ "body" do
-        el_ "h1" do
-          text $ pure "🍮Hello, Jelly!"
-        el_ "p" do
-          text $ pure "This is a Jelly test."
-        withTitle (pure "Timer") timer
-        withTitle (pure "Counter") counter
-        withTitle (pure "Mount / Unmount") mount
-        withTitle (pure "Raw") raw
-        withTitle (pure "Paging") $ paging router
+    routerProvider routerSettings do
+      docTypeHTML
+      el_ "html" do
+        el_ "head" do
+          makeComponent do
+            bp <- basePath <$> useRouter
+            pure $ el "script"
+              [ "defer" := true
+              , "type" := "text/javascript"
+              , "src" := makeAbsolutePath (bp `snoc` "index.js")
+              ]
+              mempty
+        el_ "body" do
+          el_ "h1" do
+            text $ pure "🍮Hello, Jelly!"
+          el_ "p" do
+            text $ pure "This is a Jelly test."
+          withTitle (pure "Timer") timer
+          withTitle (pure "Counter") counter
+          withTitle (pure "Mount / Unmount") mount
+          withTitle (pure "Raw") raw
+          withTitle (pure "Paging") paging
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
@@ -122,17 +131,18 @@ mount = makeComponent do
 raw :: Component Context
 raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"
 
-paging :: Router String -> Component Context
-paging router = makeComponent do
+paging :: Component Context
+paging = makeComponent do
+  router <- useRouter
   let pageSig = currentPage router
 
   pure do
     text $ pure "Paging with Router is available."
 
     el_ "div" do
-      el "button" [ on click \_ -> pushPage router "/hoge/" ] do
+      el "button" [ on click \_ -> pushPage router [ "hoge" ] ] do
         text $ pure "Hoge"
-      el "button" [ on click \_ -> pushPage router "/" ] do
+      el "button" [ on click \_ -> pushPage router [] ] do
         text $ pure "Top"
 
-    text $ ("Current page: " <> _) <$> pageSig
+    text $ ("Current page: " <> _) <<< show <$> pageSig

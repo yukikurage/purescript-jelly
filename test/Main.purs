@@ -11,7 +11,7 @@ main :: Effect Unit
 main = launchAff_ do
   generate
     { pageToPath: identity
-    , pages: [ "/", "/hoge/" ]
+    , pages: [ [ "" ], [ "hoge" ] ]
     , output: "public"
     , clientMain: "Test.ClientMain"
     , component: \page -> rootComponent page

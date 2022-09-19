@@ -1,4 +1,6 @@
 module Test.Context where
 
+import Jelly.Data.Router (RouterContext)
+
 type Context :: Row Type
-type Context = ()
+type Context = RouterContext (Array String) ()

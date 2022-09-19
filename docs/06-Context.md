@@ -13,7 +13,7 @@ import Jelly.El (el_, provideContext, text)
 import Jelly.Hooks.UseContext (useContext)
 
 componentParent :: Component ()
-componentParent = provideContext { someContext: "text" } $ el_ "div" do
+componentParent = contextProvider { someContext: "text" } $ el_ "div" do
   componentFirstChild
 
 componentFirstChild :: Component (someContext :: String)
@@ -28,6 +28,6 @@ componentSecondChild = makeComponent do
     text $ pure someContext
 ```
 
-Thus, provideContext provides a Context and useContext retrieves a Context.
+Thus, contextProvider provides a Context and useContext retrieves a Context.
 
 The argument of type Component represents the type of Context.

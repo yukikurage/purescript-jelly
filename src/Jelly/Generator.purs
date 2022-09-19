@@ -19,6 +19,7 @@ import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (emit, newEmitter)
 import Jelly.Data.Instance (toHTML)
 import Jelly.Data.Signal (readSignal)
+import Jelly.Util (makeAbsolutePath)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', writeTextFile)
@@ -79,15 +80,15 @@ generateJS output clientMain = do
   let
     jsPath = concat [ output, "index.js" ]
     cmd /\ args = bundleCommand output clientMain
-  log $ jellyPrefix <> "JS Generating: " <> jsPath
+  log $ jellyPrefix <> "Main Script Generating: " <> jsPath
   log $ jellyPrefix <> "Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   liftEffect $ logStdOut cp
   waitExit cp
-  log $ jellyPrefix <> "JS Generated: " <> jsPath
+  log $ jellyPrefix <> "Main Script Generated: " <> jsPath
 
 type GeneratorSettings page =
-  { pageToPath :: page -> String
+  { pageToPath :: page -> Array String
   , pages :: Array page
   , output :: String
   , clientMain :: String
@@ -102,7 +103,7 @@ generate { pageToPath, pages, output, clientMain, component } = do
   let
     generatePageHTML page = do
       let
-        pageOutput = concat [ output, pageToPath page ]
+        pageOutput = concat [ output, makeAbsolutePath (pageToPath page) ]
       generateHTML pageOutput $ component page
   parTraverse_ generatePageHTML pages
   generateJS output clientMain
