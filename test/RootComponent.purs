@@ -26,7 +26,7 @@ foreign import setInnerHTML :: String -> Element -> Effect Unit
 rootComponent :: String -> Component Context
 rootComponent initPage = makeComponent do
   router <- liftEffect $ newRouter
-    { basePath: "purescript-jelly"
+    { basePath: "/purescript-jelly"
     , initialPage: initPage
     , toPath: identity
     }
