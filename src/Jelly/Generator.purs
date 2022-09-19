@@ -19,7 +19,7 @@ import Jelly.Data.Component (Component, runComponent)
 import Jelly.Data.Emitter (emit, newEmitter)
 import Jelly.Data.Instance (toHTML)
 import Jelly.Data.Signal (readSignal)
-import Jelly.Util (makeAbsolutePath)
+import Jelly.Util (makeAbsoluteUrlPath)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', writeTextFile)
@@ -103,7 +103,7 @@ generate { pageToPath, pages, output, clientMain, component } = do
   let
     generatePageHTML page = do
       let
-        pageOutput = concat [ output, makeAbsolutePath (pageToPath page) ]
+        pageOutput = concat [ output, makeAbsoluteUrlPath (pageToPath page) ]
       generateHTML pageOutput $ component page
   parTraverse_ generatePageHTML pages
   generateJS output clientMain
