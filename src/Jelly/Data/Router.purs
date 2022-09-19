@@ -2,7 +2,6 @@ module Jelly.Data.Router where
 
 import Prelude
 
-import Data.Maybe (Maybe)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Foreign (unsafeToForeign)
@@ -11,24 +10,43 @@ import Web.HTML (window)
 import Web.HTML.History (DocumentTitle(..), URL(..), pushState)
 import Web.HTML.Window (history)
 
-data Router page = Router (page -> String) (String -> Maybe page) (Signal page /\ Atom page)
+data Router page = Router
+  { basePath :: String
+  , toPath :: page -> String
+  , currentPage :: Signal page /\ Atom page
+  }
 
 newRouter
   :: forall page
    . Eq page
-  => (page -> String)
-  -> (String -> Maybe page)
-  -> page
+  => { basePath :: String
+     , toPath :: page -> String
+     , initialPage :: page
+     }
   -> Effect (Router page)
-newRouter toPath fromPath initialPage = do
+newRouter { basePath, toPath, initialPage } = do
   pageSig /\ pageAtom <- signal initialPage
-  pure $ Router toPath fromPath $ pageSig /\ pageAtom
+  pure $ Router
+    { basePath
+    , toPath
+    , currentPage: pageSig /\ pageAtom
+    }
 
 currentPage :: forall page. Router page -> Signal page
-currentPage (Router _ _ (pageSig /\ _)) = pageSig
+currentPage (Router { currentPage: pageSig /\ _ }) = pageSig
+
+getBasePath :: forall page. Router page -> String
+getBasePath (Router { basePath: bp }) = bp
 
 pushPage :: forall page. Router page -> page -> Effect Unit
-pushPage (Router toPath _ (_ /\ pageAtom)) page = do
+pushPage
+  ( Router
+      { toPath
+      , basePath
+      , currentPage: _ /\ pageAtom
+      }
+  )
+  page = do
   writeAtom pageAtom page
   hst <- history =<< window
-  pushState (unsafeToForeign {}) (DocumentTitle "") (URL $ toPath page) hst
+  pushState (unsafeToForeign {}) (DocumentTitle "") (URL $ basePath <> toPath page) hst
