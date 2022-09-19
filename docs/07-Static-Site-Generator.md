@@ -27,7 +27,7 @@ rootComponent = do
   el_ "html" do
     el_ "head" do
       el "script"
-        [ "defer" := true, "type" := "text/javascript", "src" := "./index.js" ]
+        [ "defer" := true, "type" := "text/javascript", "src" := "/index.js" ]
         emptyC
     el_ "body" do
       el_ "h1" do
@@ -61,11 +61,16 @@ module JellyExamples.SSG.ClientMain where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Client (makeClientMain)
-import JellyExamples.SSG.RootComponent (rootComponent)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Aff (awaitDocument)
+import Jelly.RunJelly (runJelly)
+import Test.RootComponent (rootComponent)
 
 main :: Effect Unit
-main = makeClientMain rootComponent
+main = launchAff_ do
+  node <- awaitDocument
+  liftEffect $ runJelly rootComponent node
 ```
 
 ## Make Main module
@@ -80,7 +85,7 @@ module JellyExamples.SSG.Main where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Generator (GeneratorSettings(..), generate)
+import Jelly.Generator (GeneratorSettings(..), generate)
 import JellyExamples.SSG.RootComponent (rootComponent)
 
 generatorSettings :: GeneratorSettings

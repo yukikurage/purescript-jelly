@@ -1,7 +1,8 @@
-module Jelly.SSG.Generator where
+module Jelly.Generator where
 
 import Prelude
 
+import Control.Parallel (parTraverse_)
 import Data.Array (fold)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -9,13 +10,13 @@ import Data.Posix.Signal (Signal(..))
 import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Aff (Aff, Canceler(..), error, launchAff_, makeAff)
+import Effect.Aff (Aff, Canceler(..), error, makeAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Class.Console as Console
 import Effect.Ref (new)
 import Jelly.Data.Component (Component, runComponent)
-import Jelly.Data.Emitter (newEmitter)
+import Jelly.Data.Emitter (emit, newEmitter)
 import Jelly.Data.Instance (toHTML)
 import Jelly.Data.Signal (readSignal)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
@@ -23,14 +24,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', writeTextFile)
 import Node.FS.Perms (all, mkPerms)
 import Node.Path (concat)
-import Node.Process (exit)
 import Node.Stream (onDataString)
-
-data GeneratorSettings = GeneratorSettings
-  { clientMain :: String
-  , output :: String
-  , component :: Component ()
-  }
 
 jellyPrefix :: String
 jellyPrefix = "🍮 > "
@@ -40,10 +34,11 @@ render component = do
   unmountEmitter <- newEmitter
   realNodeRef <- new Nothing
   insts <- readSignal =<< runComponent component { context: {}, unmountEmitter, realNodeRef }
+  emit unmountEmitter
   fold <$> traverse toHTML insts
 
-bundleCommand :: GeneratorSettings -> String /\ Array String
-bundleCommand (GeneratorSettings { clientMain, output }) =
+bundleCommand :: String -> String -> String /\ Array String
+bundleCommand output clientMain =
   "npx" /\
     [ "spago"
     , "bundle-app"
@@ -69,19 +64,45 @@ logStdOut cp = do
   onDataString streamOut UTF8 \str -> log $ str
   onDataString streamErr UTF8 \str -> Console.error $ str
 
-generate :: GeneratorSettings -> Effect Unit
-generate settings@(GeneratorSettings { output, component }) = launchAff_ do
-  log $ jellyPrefix <> "Rendering HTML..."
+generateHTML :: String -> Component () -> Aff Unit
+generateHTML output component = do
+  let
+    htmlPath = concat [ output, "index.html" ]
+  log $ jellyPrefix <> "HTML Generating: " <> htmlPath
   rendered <- liftEffect $ render component
   mkdir' output { recursive: true, mode: mkPerms all all all }
-  writeTextFile UTF8 (concat [ output, "index.html" ]) $ rendered
-  log $ jellyPrefix <> "Rendering Succeed and output file to " <> concat [ output, "index.html" ]
+  writeTextFile UTF8 htmlPath $ rendered
+  log $ jellyPrefix <> "HTML Generated: " <> htmlPath
 
+generateJS :: String -> String -> Aff Unit
+generateJS output clientMain = do
   let
-    cmd /\ args = bundleCommand settings
+    jsPath = concat [ output, "index.js" ]
+    cmd /\ args = bundleCommand output clientMain
+  log $ jellyPrefix <> "JS Generating: " <> jsPath
   log $ jellyPrefix <> "Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   liftEffect $ logStdOut cp
   waitExit cp
+  log $ jellyPrefix <> "JS Generated: " <> jsPath
 
-  liftEffect $ exit 0
+type GeneratorSettings page =
+  { pageToPath :: page -> String
+  , pages :: Array page
+  , output :: String
+  , clientMain :: String
+  , component :: page -> Component ()
+  }
+
+generate
+  :: forall page
+   . GeneratorSettings page
+  -> Aff Unit
+generate { pageToPath, pages, output, clientMain, component } = do
+  let
+    generatePageHTML page = do
+      let
+        pageOutput = concat [ output, pageToPath page ]
+      generateHTML pageOutput $ component page
+  parTraverse_ generatePageHTML pages
+  generateJS output clientMain

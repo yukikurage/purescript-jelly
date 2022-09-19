@@ -139,6 +139,7 @@ export const addEventListenerImpl = (eventType) => (listener) => (instance) => (
             instance.instance.removeEventListener(eventType, l);
         };
     }
+    return () => { };
 };
 export const setTextContent = (text) => (instance) => () => {
     if (instance.type === "BROWSER") {

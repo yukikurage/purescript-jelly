@@ -3,15 +3,16 @@ module Test.Main where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Generator (GeneratorSettings(..), generate)
+import Effect.Aff (launchAff_)
+import Jelly.Generator (generate)
 import Test.RootComponent (rootComponent)
 
-generatorSettings :: GeneratorSettings
-generatorSettings = GeneratorSettings
-  { clientMain: "Test.ClientMain"
-  , output: "public"
-  , component: rootComponent
-  }
-
 main :: Effect Unit
-main = generate generatorSettings
+main = launchAff_ do
+  generate
+    { pageToPath: identity
+    , pages: [ "/", "/hoge/" ]
+    , output: "public"
+    , clientMain: "Test.ClientMain"
+    , component: \page -> rootComponent page
+    }

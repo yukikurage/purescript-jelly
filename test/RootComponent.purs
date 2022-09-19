@@ -9,6 +9,7 @@ import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
+import Jelly.Data.Router (Router, currentPage, newRouter, pushPage)
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
 import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
@@ -22,35 +23,32 @@ import Web.HTML.HTMLSelectElement as Select
 
 foreign import setInnerHTML :: String -> Element -> Effect Unit
 
-rootComponent :: Component Context
-rootComponent = do
-  docTypeHTML
-  el_ "html" do
-    el_ "head" do
-      el "script"
-        [ "defer" := true, "type" := "text/javascript", "src" := "./index.js" ]
-        mempty
-    el_ "body" do
-      el_ "h1" do
-        text $ pure "🍮Hello, Jelly!"
-      el_ "p" do
-        text $ pure "This is a Jelly test."
-      withTitle (pure "SSG") ssg
-      withTitle (pure "Timer") timer
-      withTitle (pure "Counter") counter
-      withTitle (pure "Mount / Unmount") mount
-      withTitle (pure "Raw") raw
+rootComponent :: String -> Component Context
+rootComponent initPage = makeComponent do
+  router <- liftEffect $ newRouter identity Just initPage
+
+  pure do
+    docTypeHTML
+    el_ "html" do
+      el_ "head" do
+        el "script"
+          [ "defer" := true, "type" := "text/javascript", "src" := "/index.js" ]
+          mempty
+      el_ "body" do
+        el_ "h1" do
+          text $ pure "🍮Hello, Jelly!"
+        el_ "p" do
+          text $ pure "This is a Jelly test."
+        withTitle (pure "Timer") timer
+        withTitle (pure "Counter") counter
+        withTitle (pure "Mount / Unmount") mount
+        withTitle (pure "Raw") raw
+        withTitle (pure "Paging") $ paging router
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
   el_ "h2" $ text titleSig
   el "div" [ "style" := "padding: 10px" ] component
-
-ssg :: Component Context
-ssg = do
-  el_ "p" do
-    text $ pure
-      "Jelly has SSG capabilities. This site intentionally delays client-side rendering by one second and displays generated HTML for the first second. Therefore, buttons can be clicked after 1 second."
 
 timer :: Component Context
 timer = makeComponent do
@@ -119,3 +117,18 @@ mount = makeComponent do
 
 raw :: Component Context
 raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"
+
+paging :: Router String -> Component Context
+paging router = makeComponent do
+  let pageSig = currentPage router
+
+  pure do
+    text $ pure "Paging with Router is available."
+
+    el_ "div" do
+      el "button" [ on click \_ -> pushPage router "/hoge/" ] do
+        text $ pure "Hoge"
+      el "button" [ on click \_ -> pushPage router "/" ] do
+        text $ pure "Top"
+
+    text $ ("Current page: " <> _) <$> pageSig

@@ -200,6 +200,7 @@ export const addEventListenerImpl =
         instance.instance.removeEventListener(eventType, l);
       };
     }
+    return () => {};
   };
 
 export const setTextContent = (text: string) => (instance: Instance) => () => {

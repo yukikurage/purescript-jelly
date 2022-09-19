@@ -3,8 +3,13 @@ module JellyExamples.SSG.ClientMain where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Client (makeClientMain)
-import JellyExamples.SSG.RootComponent (rootComponent)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Aff (awaitDocument)
+import Jelly.RunJelly (runJelly_)
+import Test.RootComponent (rootComponent)
 
 main :: Effect Unit
-main = makeClientMain rootComponent
+main = launchAff_ do
+  node <- awaitDocument
+  liftEffect $ runJelly_ rootComponent node

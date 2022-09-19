@@ -3,7 +3,7 @@ module JellyExamples.SSG.Main where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Generator (GeneratorSettings(..), generate)
+import Jelly.Generator (GeneratorSettings(..), generate)
 import JellyExamples.SSG.RootComponent (rootComponent)
 
 generatorSettings :: GeneratorSettings
