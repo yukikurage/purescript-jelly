@@ -32,7 +32,7 @@ rootComponent initPage = makeComponent do
     el_ "html" do
       el_ "head" do
         el "script"
-          [ "defer" := true, "type" := "text/javascript", "src" := "/index.js" ]
+          [ "defer" := true, "type" := "text/javascript", "src" := "/purescript-jelly/index.js" ]
           mempty
       el_ "body" do
         el_ "h1" do
