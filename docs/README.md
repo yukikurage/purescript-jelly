@@ -7,4 +7,4 @@
 - [04 Stateful Component](./04-Stateful-Component.md)
 - [05 Useful Hooks](./05-Useful-Hooks.md)
 - [06 Context](./06-Context.md)
-- [07 Server Side Rendering](./07-Server-Side-Rendering.md)
+- [07 Static Site Generator](./07-Static-Site-Generator.md)

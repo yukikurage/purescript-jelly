@@ -1,8 +1,7 @@
-module Jelly.SSG.Server where
+module Jelly.SSG.Generator where
 
 import Prelude
 
-import Control.Safely (traverse_)
 import Data.Array (fold)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -27,7 +26,7 @@ import Node.Path (concat)
 import Node.Process (exit)
 import Node.Stream (onDataString)
 
-data SsgSettings = SsgSettings
+data GeneratorSettings = GeneratorSettings
   { clientMain :: String
   , output :: String
   , component :: Component ()
@@ -43,19 +42,17 @@ render component = do
   insts <- readSignal =<< runComponent component { context: {}, unmountEmitter, realNodeRef }
   fold <$> traverse toHTML insts
 
-bundleCommands :: SsgSettings -> Array (String /\ Array String)
-bundleCommands (SsgSettings { clientMain, output }) =
-  [ "tsc" /\ []
-  , "npx" /\
-      [ "spago"
-      , "bundle-app"
-      , "--main"
-      , clientMain
-      , "--to"
-      , concat [ output, "index.js" ]
-      , "--minify"
-      ]
-  ]
+bundleCommand :: GeneratorSettings -> String /\ Array String
+bundleCommand (GeneratorSettings { clientMain, output }) =
+  "npx" /\
+    [ "spago"
+    , "bundle-app"
+    , "--main"
+    , clientMain
+    , "--to"
+    , concat [ output, "index.js" ]
+    , "--minify"
+    ]
 
 waitExit :: ChildProcess -> Aff Unit
 waitExit cp = makeAff \callback -> do
@@ -63,13 +60,6 @@ waitExit cp = makeAff \callback -> do
     Normally 0 -> Right unit
     _ -> Left $ error $ "Command failed with code " <> show code
   pure $ Canceler \_ -> liftEffect $ kill SIGTERM cp
-
-spawnSequence :: (ChildProcess -> Effect Unit) -> Array (String /\ Array String) -> Aff Unit
-spawnSequence onSpawn = traverse_ \(cmd /\ args) -> do
-  log $ jellyPrefix <> "Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
-  cp <- liftEffect $ spawn cmd args defaultSpawnOptions
-  liftEffect $ onSpawn cp
-  waitExit cp
 
 logStdOut :: ChildProcess -> Effect Unit
 logStdOut cp = do
@@ -79,12 +69,19 @@ logStdOut cp = do
   onDataString streamOut UTF8 \str -> log $ str
   onDataString streamErr UTF8 \str -> Console.error $ str
 
-ssg :: SsgSettings -> Effect Unit
-ssg settings@(SsgSettings { output, component }) = launchAff_ do
+generate :: GeneratorSettings -> Effect Unit
+generate settings@(GeneratorSettings { output, component }) = launchAff_ do
   log $ jellyPrefix <> "Rendering HTML..."
   rendered <- liftEffect $ render component
   mkdir' output { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 (concat [ output, "index.html" ]) $ rendered
   log $ jellyPrefix <> "Rendering Succeed and output file to " <> concat [ output, "index.html" ]
-  spawnSequence logStdOut $ bundleCommands settings
+
+  let
+    cmd /\ args = bundleCommand settings
+  log $ jellyPrefix <> "Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
+  cp <- liftEffect $ spawn cmd args defaultSpawnOptions
+  liftEffect $ logStdOut cp
+  waitExit cp
+
   liftEffect $ exit 0

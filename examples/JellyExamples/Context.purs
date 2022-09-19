@@ -1,10 +1,5 @@
-# 06 Context
+module JellyExamples.Context where
 
-Context allows you to share values among components without having to bucket-relay values.
-
-Here is an example
-
-```purs
 import Prelude
 
 import Jelly.Data.Component (Component)
@@ -26,8 +21,3 @@ componentSecondChild = makeComponent do
 
   pure $ el_ "div" do
     text $ pure someContext
-```
-
-Thus, provideContext provides a Context and useContext retrieves a Context.
-
-The argument of type Component represents the type of Context.

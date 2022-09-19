@@ -17,8 +17,8 @@ import Jelly.Data.Instance (Instance, newDocTypeInstance, newInstance, newTextIn
 import Jelly.Data.Instance as Instance
 import Jelly.Data.Prop (Prop, registerProps)
 import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
-import Prim.Row (class Nub, class Union)
-import Record (disjointUnion)
+import Prim.Row (class Union)
+import Record (union)
 import Web.DOM (Node)
 import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
@@ -162,16 +162,15 @@ emptyC = mempty
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
 
-withContext
+provideContext
   :: forall oldContext appendContext newContext
-   . Union oldContext appendContext newContext
-  => Nub newContext newContext
+   . Union appendContext oldContext newContext
   => Record appendContext
   -> Component newContext
   -> Component oldContext
-withContext appendContext component = do
+provideContext appendContext component = do
   { context, unmountEmitter, realNodeRef } <- ask
-  let newContext = disjointUnion context appendContext
+  let newContext = union appendContext context
   instanceArraySig <- liftEffect $ runComponent component
     { context: newContext, unmountEmitter, realNodeRef }
   tell instanceArraySig

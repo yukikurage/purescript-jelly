@@ -8,10 +8,9 @@ import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on)
 import Jelly.Data.Signal (modifyAtom_, signal)
 import Jelly.El (el, el_, text)
-import Test.Context (Context)
 import Web.HTML.Event.EventTypes (click)
 
-counter :: Component Context
+counter :: Component ()
 counter = makeComponent do
   countSig /\ countAtom <- signal 0
 

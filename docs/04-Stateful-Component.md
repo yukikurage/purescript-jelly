@@ -7,8 +7,6 @@ Signal and Hooks can be combined to create a component with state.
 For example, let's create a counter
 
 ```purs
-module JellyExamples.Counter where
-
 import Prelude
 
 import Data.Tuple.Nested ((/\))
@@ -17,10 +15,9 @@ import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on)
 import Jelly.Data.Signal (modifyAtom_, signal)
 import Jelly.El (el, el_, text)
-import Test.Context (Context)
 import Web.HTML.Event.EventTypes (click)
 
-counter :: Component Context
+counter :: Component ()
 counter = makeComponent do
   countSig /\ countAtom <- signal 0
 
@@ -31,14 +28,21 @@ counter = makeComponent do
       text $ show <$> countSig
 ```
 
-The text is a Signal String, and when the value of the Signal is changed, the component using that value is re-rendered.
-
 ## Timer
 
-Next, we will try to make a timer, but we must be careful to stop the timer when unmounting.
+Next we will create a timer, but note that the timer should be stopped when unmounted.
 
 ```purs
-timer :: Component Unit
+import Data.Tuple.Nested ((/\))
+import Effect.Class (liftEffect)
+import Effect.Timer (clearInterval, setInterval)
+import Jelly.Data.Component (Component)
+import Jelly.Data.Hooks (makeComponent)
+import Jelly.Data.Signal (modifyAtom_, signal)
+import Jelly.El (text)
+import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+
+timer :: Component ()
 timer = makeComponent do
   timeSig /\ timeAtom <- signal 0
 

@@ -2,12 +2,21 @@
 
 Hooks are monads used to add logic to Component.
 
-Hooks can execute an arbitrary Effect when the Component is mounted, and when it is unmounted.
+It can execute an arbitrary Effect when the Component is mounted, and when it is unmounted.
 
 Let's look at an example.
 
 ```purs
-componentWithHooks :: Component Unit
+import Prelude
+
+import Effect.Class (liftEffect)
+import Effect.Console (log)
+import Jelly.Data.Component (Component)
+import Jelly.Data.Hooks (makeComponent)
+import Jelly.El (el_, text)
+import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+
+componentWithHooks :: Component ()
 componentWithHooks = makeComponent do
   -- This effect runs when the component is mounted
   liftEffect $ log "Mounted"

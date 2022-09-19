@@ -7,9 +7,8 @@ Proper use of Signal can help manage reactive values.
 ## Create Signal and Atom
 
 ```purs
-main = do
-  valSig /\ valAtom <- signal 0
-  pure unit
+valSig /\ valAtom <- signal 0
+pure unit
 ```
 
 `signal` is a effective function that creates a Signal and Atom.
@@ -40,6 +39,26 @@ You can use `writeAtom`, `modifyAtom` or `modifyAtom_` to communicate value chan
 ## Result
 
 Continuing the above code in the main function, we get the following
+
+```purs
+import Prelude
+
+import Data.Tuple.Nested ((/\))
+import Effect (Effect)
+import Effect.Class.Console (log)
+import Jelly.Data.Signal (launch_, modifyAtom_, signal, writeAtom)
+
+main :: Effect Unit
+main = do
+  valSig /\ valAtom <- signal 0
+
+  launch_ do
+    val <- valSig
+    log $ show val
+
+  writeAtom valAtom 2
+  modifyAtom_ valAtom (_ + 3)
+```
 
 ```
 0

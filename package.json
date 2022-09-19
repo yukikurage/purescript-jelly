@@ -7,9 +7,9 @@
   },
   "scripts": {
     "watch-browser:tsc": "tsc -w --preserveWatchOutput",
-    "watch-browser:spago": "npx spago bundle-app --main Test.EntryPoints.Browser --to public/index.js --watch",
+    "watch-browser:spago": "npx spago bundle-app --main Test.ClientMain --to public/index.js --watch",
     "watch-browser": "npm-run-all -p watch-browser:*",
-    "bundle": "npx spago run --main Test.Main",
+    "bundle": "npx spago run --main Test.Main ",
     "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc && npx spago build",
     "prepare": "husky install"
   },

@@ -28,7 +28,7 @@ rootComponent = do
   el_ "html" do
     el_ "head" do
       el "script"
-        [ "async" := false, "type" := "text/javascript", "src" := "./index.js" ]
+        [ "defer" := true, "type" := "text/javascript", "src" := "./index.js" ]
         mempty
     el_ "body" do
       el_ "h1" do
@@ -50,7 +50,7 @@ ssg :: Component Context
 ssg = do
   el_ "p" do
     text $ pure
-      "Jelly has SSG capabilities. This site intentionally delays client-side rendering by one second and displays server-side generated HTML for the first second. Therefore, buttons can be clicked after 1 second."
+      "Jelly has SSG capabilities. This site intentionally delays client-side rendering by one second and displays generated HTML for the first second. Therefore, buttons can be clicked after 1 second."
 
 timer :: Component Context
 timer = makeComponent do

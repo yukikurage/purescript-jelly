@@ -77,7 +77,7 @@ If you have a Signal that contains heavy calculations, you may be able to reduce
 
 For example, suppose you have a heavy computation `heavy :: Int -> Int`.
 
-When a Signal using a heavy calculation is used in multiple places, as shown below, the number of times the heavy calculation is used is the number of times the heavy calculation is used.
+When a Signal using a heavy calculation is used in multiple places, as shown below, the heavy calculation is performed multiple times.
 
 ```purs
 heavyComponent = do
@@ -97,7 +97,7 @@ heavyComponent = do
       text $ show <$> heavySignal
 ```
 
-As a solution, a new Signal can be created and updated through it.
+As a solution, we can create a new Signal and updated through it.
 
 ```purs
 heavyComponent = do

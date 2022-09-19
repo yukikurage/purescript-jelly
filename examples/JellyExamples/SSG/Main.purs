@@ -1,14 +1,14 @@
-module Test.Main where
+module JellyExamples.SSG.Main where
 
 import Prelude
 
 import Effect (Effect)
 import Jelly.SSG.Generator (GeneratorSettings(..), generate)
-import Test.RootComponent (rootComponent)
+import JellyExamples.SSG.RootComponent (rootComponent)
 
 generatorSettings :: GeneratorSettings
 generatorSettings = GeneratorSettings
-  { clientMain: "Test.ClientMain"
+  { clientMain: "Test.EntryPoints.Browser"
   , output: "public"
   , component: rootComponent
   }

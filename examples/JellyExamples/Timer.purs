@@ -11,7 +11,7 @@ import Jelly.Data.Signal (modifyAtom_, signal)
 import Jelly.El (text)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
-timer :: Component Unit
+timer :: Component ()
 timer = makeComponent do
   timeSig /\ timeAtom <- signal 0
 

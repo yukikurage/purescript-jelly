@@ -8,32 +8,42 @@ First, create HTML that will serve as a template.
   <head>
     <meta charset="utf-8" />
     <title>Jelly Example</title>
+    <script src="index.js"></script>
   </head>
   <body>
     <div id="app"></div>
-    <script src="index.js"></script>
   </body>
 </html>
 ```
 
-Next, write the Component definition.
+Next, write the Component definition and the main function.
 
 ```purs
-component :: Component Unit
-component = el_ "h1" do
-  text $ pure "Hello, Jelly!"
-```
+import Prelude
 
-Finally, the main function mounts the component on the HTML `"app"` element.
+import Data.Traversable (traverse_)
+import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Aff (awaitQuerySelector)
+import Jelly.Data.Component (Component)
+import Jelly.El (el_, text)
+import Jelly.RunJelly (runJelly)
+import Web.DOM.ParentNode (QuerySelector(..))
 
-```purs
 main :: Effect Unit
-main = runBrowserApp $ launchAff_ do
+main = launchAff_ do
   appElemMaybe <- awaitQuerySelector $ QuerySelector "#app"
-  liftEffect $ traverse_ (runJelly component unit) appElemMaybe
+  liftEffect $ traverse_ (runJelly component) appElemMaybe
+
+component :: Component ()
+component = el_ "div" do
+  el_ "h1" do
+    text $ pure "Hello, Jelly!"
+
 ```
 
-As a result, the following HTML is generated
+Finally, bundle the app, generate `index.js`, and load the HTML file.
 
 ```html
 <!DOCTYPE html>
@@ -41,12 +51,12 @@ As a result, the following HTML is generated
   <head>
     <meta charset="utf-8" />
     <title>Jelly Example</title>
+    <script src="index.js"></script>
   </head>
   <body>
     <div id="app">
       <h1>Hello, Jelly!</h1>
     </div>
-    <script src="index.js"></script>
   </body>
 </html>
 ```

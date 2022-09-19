@@ -7,18 +7,17 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitQuerySelector)
-import Jelly.Browser (runJelly)
-import Jelly.Class.Platform (runBrowserApp)
 import Jelly.Data.Component (Component)
 import Jelly.El (el_, text)
+import Jelly.RunJelly (runJelly)
 import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit
-main = runBrowserApp $ launchAff_ do
+main = launchAff_ do
   appElemMaybe <- awaitQuerySelector $ QuerySelector "#app"
-  liftEffect $ traverse_ (runJelly component unit) appElemMaybe
+  liftEffect $ traverse_ (runJelly component) appElemMaybe
 
-component :: Component Unit
+component :: Component ()
 component = el_ "div" do
   el_ "h1" do
     text $ pure "Hello, Jelly!"

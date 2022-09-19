@@ -17,7 +17,7 @@ component = el "h1" [ "class" := "title" ] do
 <h1 class="title">Hello, Jelly!</h1>
 ```
 
-Component is a monad and multiple child elements can be added by writing.
+Component is a monad and multiple child elements can be created using `do` notation.
 
 ```purs
 component = el "div" do
