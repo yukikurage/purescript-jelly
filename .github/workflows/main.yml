@@ -42,8 +42,7 @@ jobs:
       run: npm ci
     - name: Build website
       run: |
-        npm run run-node
-        npm run bundle-browser
+        npm run bundle
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
       with:
