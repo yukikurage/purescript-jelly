@@ -2,9 +2,10 @@ module Jelly.Generator where
 
 import Prelude
 
-import Control.Parallel (parTraverse_)
-import Data.Array (fold)
+import Control.Parallel (parTraverse, parTraverse_)
+import Data.Array (fold, zip)
 import Data.Either (Either(..))
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Posix.Signal (Signal(..))
 import Data.Traversable (traverse)
@@ -87,23 +88,45 @@ generateJS output clientMain = do
   waitExit cp
   log $ jellyPrefix <> "Main Script Generated: " <> jsPath
 
-type GeneratorSettings page =
+generateData :: String -> String -> Aff String -> Aff String
+generateData output name fetchData = do
+  let
+    dataPath = concat [ output, name ]
+  log $ jellyPrefix <> "Chunk Data Generating: " <> dataPath
+  dt <- fetchData
+  mkdir' output { recursive: true, mode: mkPerms all all all }
+  writeTextFile UTF8 dataPath dt
+  log $ jellyPrefix <> "Chunk Data Generated: " <> dataPath
+  pure dt
+
+type GeneratorSettings page chunk =
   { pageToPath :: page -> Array String
   , pages :: Array page
+  , chunks :: Array chunk
   , output :: String
   , clientMain :: String
-  , component :: page -> Component ()
+  , component :: (chunk -> Aff (Maybe String)) -> page -> Component ()
+  , chunkData :: chunk -> Aff String
   }
 
 generate
-  :: forall page
-   . GeneratorSettings page
+  :: forall page chunk
+   . Show chunk
+  => Ord chunk
+  => GeneratorSettings page chunk
   -> Aff Unit
-generate { pageToPath, pages, output, clientMain, component } = do
+generate { pageToPath, pages, chunks, output, clientMain, component, chunkData } = do
   let
+    generateChunkData chunk = do
+      let
+        chunkOutput = concat [ output, "data/" ]
+      generateData chunkOutput (show chunk) $ chunkData chunk
+  chunkDatas <- parTraverse generateChunkData chunks
+  let
+    chunkDataMap = Map.fromFoldable $ zip chunks chunkDatas
     generatePageHTML page = do
       let
         pageOutput = concat [ output, makeAbsoluteUrlPath (pageToPath page) ]
-      generateHTML pageOutput $ component page
+      generateHTML pageOutput $ component (\chunk -> pure $ Map.lookup chunk chunkDataMap) page
   parTraverse_ generatePageHTML pages
   generateJS output clientMain

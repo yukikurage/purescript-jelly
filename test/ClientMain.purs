@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitDocument)
+import Jelly.Chunk (clientChunkData)
 import Jelly.RunJelly (runJelly_)
 import Jelly.Util (dropBasePath, pathToArray)
 import Test.Page (basePath, fromPath)
@@ -18,4 +19,6 @@ main :: Effect Unit
 main = launchAff_ do
   node <- awaitDocument
   path <- liftEffect $ pathname =<< location =<< window
-  liftEffect $ runJelly_ (rootComponent $ fromPath $ dropBasePath basePath $ pathToArray path) node
+  liftEffect $ runJelly_
+    (rootComponent clientChunkData $ fromPath $ dropBasePath basePath $ pathToArray path)
+    node

@@ -6,6 +6,7 @@ import Data.Array (snoc)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
@@ -16,6 +17,7 @@ import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Jelly.Util (makeAbsoluteFilePath)
+import Test.Chunk (Chunk(..))
 import Test.Context (Context)
 import Test.Page (Page(..), basePath, fromUrl, toUrl)
 import Web.DOM (Element)
@@ -26,8 +28,8 @@ import Web.HTML.HTMLSelectElement as Select
 
 foreign import setInnerHTML :: String -> Element -> Effect Unit
 
-rootComponent :: Page -> Component ()
-rootComponent initPage = makeComponent do
+rootComponent :: (Chunk -> Aff (Maybe String)) -> Page -> Component ()
+rootComponent chunkData initPage = makeComponent do
   let
     routerSettings =
       { basePath: basePath
@@ -57,6 +59,7 @@ rootComponent initPage = makeComponent do
           withTitle (pure "Mount / Unmount") mount
           withTitle (pure "Raw") raw
           withTitle (pure "Paging") paging
+          withTitle (pure "Static") $ static chunkData
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
@@ -145,3 +148,24 @@ paging = makeComponent do
         text $ pure "Top"
 
     text $ ("Current page: " <> _) <<< show <$> pageSig
+
+static :: (Chunk -> Aff (Maybe String)) -> Component Context
+static chunkData = makeComponent do
+  profileSig /\ profileAtom <- signal Nothing
+  profilePosts /\ profilePostsAtom <- signal Nothing
+
+  liftEffect $ launchAff_ do
+    profile <- chunkData Profile
+    writeAtom profileAtom profile
+    posts <- chunkData $ Posts
+    writeAtom profilePostsAtom posts
+
+  pure $ el_ "div" do
+    el_ "div" do
+      text $ pure "Jelly can retrieve static data at build time and embed it in the page."
+    el_ "div" do
+      text $ pure "It is efficient because it can be stored in multiple chunks."
+    el_ "div" do
+      text $ ("Profile: " <> _) <<< show <$> profileSig
+    el_ "div" do
+      text $ ("Posts: " <> _) <<< show <$> profilePosts

@@ -81,10 +81,15 @@ routerProvider { basePath: bp, fromUrl, toUrl, initialPage } component = makeCom
         hst <- history $ w
         let
           url = toUrl page
+          path = makeAbsoluteUrlPath $ bp <> url.path
+          search = case toSearch url.query of
+            "" -> ""
+            s -> "?" <> s
+          hash = case url.hash of
+            "" -> ""
+            h -> "#" <> h
         pushState (unsafeToForeign {}) (DocumentTitle "")
-          ( URL $ (makeAbsoluteUrlPath $ bp <> url.path) <> "?" <> toSearch url.query <> "#" <>
-              url.hash
-          )
+          (URL $ path <> search <> hash)
           hst
 
   let

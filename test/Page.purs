@@ -3,6 +3,7 @@ module Test.Page where
 import Prelude
 
 import Data.Map (Map)
+import Data.Map as Map
 
 data Page = Hoge | Top | NotFound
 
@@ -20,7 +21,7 @@ toPath = case _ of
   NotFound -> [ "404" ]
 
 toUrl :: Page -> { path :: Array String, query :: Map String String, hash :: String }
-toUrl page = { path: toPath page, query: mempty, hash: "" }
+toUrl page = { path: toPath page, query: Map.empty, hash: "" }
 
 fromPath :: Array String -> Page
 fromPath = case _ of
