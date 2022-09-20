@@ -33,4 +33,4 @@ fromUrl :: { path :: Array String, query :: Map String String, hash :: String } 
 fromUrl { path } = fromPath $ path
 
 basePath :: Array String
-basePath = []
+basePath = [ "purescript-jelly" ]
