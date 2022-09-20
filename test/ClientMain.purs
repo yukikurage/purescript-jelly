@@ -7,8 +7,8 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitDocument)
 import Jelly.RunJelly (runJelly_)
-import Jelly.Util (pathToArray)
-import Test.Page (fromPath)
+import Jelly.Util (dropBasePath, pathToArray)
+import Test.Page (basePath, fromPath)
 import Test.RootComponent (rootComponent)
 import Web.HTML (window)
 import Web.HTML.Location (pathname)
@@ -18,4 +18,4 @@ main :: Effect Unit
 main = launchAff_ do
   node <- awaitDocument
   path <- liftEffect $ pathname =<< location =<< window
-  liftEffect $ runJelly_ (rootComponent $ fromPath $ pathToArray path) node
+  liftEffect $ runJelly_ (rootComponent $ fromPath $ dropBasePath basePath $ pathToArray path) node
