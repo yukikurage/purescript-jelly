@@ -12,10 +12,9 @@ import Effect.Ref (Ref)
 import Jelly.Data.Emitter (Emitter)
 import Jelly.Data.Instance (Instance)
 import Jelly.Data.Signal (Signal)
-import Web.DOM (Node)
 
 type ComponentInternal context =
-  { unmountEmitter :: Emitter, context :: Record context, realNodeRef :: Ref (Maybe Node) }
+  { unmountEmitter :: Emitter, context :: Record context, realInstanceRef :: Ref (Maybe Instance) }
 
 newtype ComponentM context a = Component
   (ReaderT (ComponentInternal context) (WriterT (Signal (Array Instance)) Effect) a)

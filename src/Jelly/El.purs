@@ -4,86 +4,116 @@ import Prelude
 
 import Control.Monad.Reader (ask)
 import Control.Monad.Writer (tell)
+import Control.Safely (for_)
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
-import Data.String (toUpper)
-import Data.Tuple.Nested (type (/\), (/\))
+import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (new, read, write)
 import Jelly.Data.Component (Component, ComponentM, runComponent)
 import Jelly.Data.Emitter (Emitter, addListener, emit, newEmitter)
-import Jelly.Data.Instance (Instance, newDocTypeInstance, newInstance, newTextInstance, setInnerHTML, setTextContent, updateChildren)
-import Jelly.Data.Instance as Instance
-import Jelly.Data.Prop (Prop, registerProps)
-import Jelly.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
+import Jelly.Data.Instance (Instance, addEventListener, firstChild, newDocTypeInstance, newInstance, newTextInstance, nextSibling, removeAttribute, setAttribute, setInnerHTML, setTextContent, updateChildren)
+import Jelly.Data.Prop (Prop(..))
+import Jelly.Data.Signal (Signal, defer, launch, readSignal, signalWithoutEq, writeAtom)
 import Prim.Row (class Union)
 import Record (union)
-import Web.DOM (Node)
-import Web.DOM.DocumentType as DocumentType
-import Web.DOM.Element as Element
-import Web.DOM.Node (firstChild, nextSibling)
-import Web.DOM.Text as Text
 
-registerChildNodes :: Signal (Array Instance) -> Emitter -> Instance -> Effect Unit
-registerChildNodes nodesSig unmountEmitter inst = addListener unmountEmitter =<< launch do
-  nodes <- nodesSig
-  liftEffect $ updateChildren nodes inst
+registerChildNodes
+  :: forall context
+   . Boolean
+  -> Component context
+  -> Record context
+  -> Emitter
+  -> Instance
+  -> Effect Unit
+registerChildNodes isFirstRun component context unmountEmitter inst = do
+  fc <- firstChild inst
+  fcRef <- new fc
+  nodesSig <- runComponent component $ { realInstanceRef: fcRef, unmountEmitter, context }
+  write Nothing fcRef
 
-newInstanceWithRealNode
-  :: forall context. String -> ComponentM context (Instance /\ Maybe Node)
-newInstanceWithRealNode tag = do
-  { realNodeRef } <- ask
-  realNode <- liftEffect $ read realNodeRef
-  case realNode of
-    Just node | Just elem <- Element.fromNode node, Element.tagName elem == toUpper tag ->
-      liftEffect $ do
-        maybeNextNode <- nextSibling node
-        write maybeNextNode realNodeRef
-        maybeFc <- firstChild node
-        pure $ Instance.fromNode node /\ maybeFc
-    _ -> liftEffect do
-      inst <- newInstance tag
-      pure $ inst /\ Nothing
+  isFirstRef <- new true
 
-newTextInstanceWithRealNode :: forall context. String -> ComponentM context Instance
-newTextInstanceWithRealNode txt = do
-  { realNodeRef } <- ask
-  realNode <- liftEffect $ read realNodeRef
-  case realNode of
-    Just node | Just _ <- Text.fromNode node -> liftEffect $ do
-      maybeNextNode <- nextSibling node
-      write maybeNextNode realNodeRef
-      pure $ Instance.fromNode node
-    _ -> liftEffect $ newTextInstance txt
+  stop <- launch do
+    nodes <- nodesSig
+    liftEffect do
+      isFirst <- read isFirstRef
+      when (isFirstRun || not isFirst) $ updateChildren nodes inst
+      write false isFirstRef
+  addListener unmountEmitter stop
 
-newDocTypeInstanceWithRealNode
-  :: forall context. String -> String -> String -> ComponentM context Instance
-newDocTypeInstanceWithRealNode qualifiedName publicId systemId = do
-  { realNodeRef } <- ask
-  realNode <- liftEffect $ read realNodeRef
-  case realNode of
-    Just node | Just _ <- DocumentType.fromNode node -> liftEffect $ do
-      maybeNextNode <- nextSibling node
-      write maybeNextNode realNodeRef
-      pure $ Instance.fromNode node
-    _ -> liftEffect $ newDocTypeInstance qualifiedName publicId systemId
+registerProps
+  :: forall context
+   . Boolean
+  -> Array (Prop context)
+  -> Record context
+  -> Emitter
+  -> Instance
+  -> Effect Unit
+registerProps isFirstRun props context unmountEmitter inst = do
+  isFirstRef <- new true
+  for_ props case _ of
+    PropAttribute name signal ->
+      addListener unmountEmitter =<< launch do
+        value <- signal context
+        liftEffect do
+          isFirst <- read isFirstRef
+          when (isFirstRun || not isFirst) case value of
+            Just v -> setAttribute name v inst
+            Nothing -> removeAttribute name inst
+          write false isFirstRef
+    PropHandler eventType handler -> do
+      remove <- addEventListener eventType (handler context) inst
+      addListener unmountEmitter remove
+
+registerText :: Boolean -> Signal String -> Emitter -> Instance -> Effect Unit
+registerText isFirstRun valueSig unmountEmitter inst = do
+  isFirstRef <- new true
+  stop <- launch do
+    value <- valueSig
+    liftEffect do
+      isFirst <- read isFirstRef
+      when (isFirstRun || not isFirst) $ setTextContent value inst
+      write false isFirstRef
+  addListener unmountEmitter stop
+
+registerInnerHtml :: Boolean -> Signal String -> Emitter -> Instance -> Effect Unit
+registerInnerHtml isFirstRun htmlSig unmountEmitter inst = do
+  isFirstRef <- new true
+  stop <- launch do
+    html <- htmlSig
+    liftEffect do
+      isFirst <- read isFirstRef
+      when (isFirstRun || not isFirst) $ setInnerHTML html inst
+      write false isFirstRef
+  addListener unmountEmitter stop
 
 -- | Create Element Component
 el :: forall context. String -> Array (Prop context) -> Component context -> Component context
 el tag props component = do
-  inst /\ fc <- newInstanceWithRealNode tag
+  { realInstanceRef, unmountEmitter, context } <- ask
 
-  internal <- ask
+  realInstMaybe <- liftEffect $ read realInstanceRef
 
-  liftEffect $ registerProps props internal.context internal.unmountEmitter inst
+  inst <- case realInstMaybe of
+    Just realInst -> liftEffect $ do
+      ns <- nextSibling realInst
+      write ns realInstanceRef
 
-  realNodeRef <- liftEffect $ new fc
+      registerProps false props context unmountEmitter realInst
 
-  childNodes <- liftEffect $ runComponent component $ internal { realNodeRef = realNodeRef }
-  liftEffect $ registerChildNodes childNodes internal.unmountEmitter inst
+      registerChildNodes false component context unmountEmitter realInst
 
-  liftEffect $ write Nothing realNodeRef
+      pure realInst
+    Nothing -> liftEffect $ do
+      inst <- newInstance tag
+
+      registerProps true props context unmountEmitter inst
+
+      registerChildNodes true component context unmountEmitter inst
+
+      pure inst
 
   tell $ pure [ inst ]
 
@@ -93,38 +123,71 @@ el_ tag component = el tag [] component
 -- | Element which innerHTML is given string
 rawEl :: forall context. String -> Array (Prop context) -> Signal String -> Component context
 rawEl tag props htmlSig = do
-  inst /\ _ <- newInstanceWithRealNode tag
+  { realInstanceRef, unmountEmitter, context } <- ask
 
-  internal <- ask
+  realInstMaybe <- liftEffect $ read realInstanceRef
 
-  liftEffect $ registerProps props internal.context internal.unmountEmitter inst
+  inst <- case realInstMaybe of
+    Just realInst -> liftEffect $ do
+      ns <- nextSibling realInst
+      write ns realInstanceRef
 
-  liftEffect $ addListener internal.unmountEmitter =<< launch do
-    html <- htmlSig
-    liftEffect $ setInnerHTML html inst
+      registerProps false props context unmountEmitter realInst
+
+      registerInnerHtml false htmlSig unmountEmitter realInst
+
+      pure realInst
+    Nothing -> liftEffect $ do
+      inst <- newInstance tag
+
+      registerProps true props context unmountEmitter inst
+
+      registerInnerHtml true htmlSig unmountEmitter inst
+
+      pure inst
 
   tell $ pure [ inst ]
-
-registerText :: Signal String -> Emitter -> Instance -> Effect Unit
-registerText value unmountEmitter inst =
-  addListener unmountEmitter =<< launch do
-    v <- value
-    liftEffect $ setTextContent v inst
 
 -- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do
-  inst <- newTextInstanceWithRealNode ""
+  { realInstanceRef, unmountEmitter } <- ask
 
-  internal <- ask
+  realInstMaybe <- liftEffect $ read realInstanceRef
 
-  liftEffect $ registerText signal internal.unmountEmitter inst
+  inst <- case realInstMaybe of
+    Just realInst -> liftEffect $ do
+      ns <- nextSibling realInst
+      write ns realInstanceRef
+
+      registerText false signal unmountEmitter realInst
+
+      pure realInst
+    Nothing -> liftEffect $ do
+      inst <- newTextInstance =<< readSignal signal
+
+      registerText true signal unmountEmitter inst
+
+      pure inst
 
   tell $ pure [ inst ]
 
 docType :: forall context. String -> String -> String -> Component context
 docType qualifiedName publicId systemId = do
-  inst <- newDocTypeInstanceWithRealNode qualifiedName publicId systemId
+  { realInstanceRef } <- ask
+
+  realInstMaybe <- liftEffect $ read realInstanceRef
+
+  inst <- case realInstMaybe of
+    Just realInst -> liftEffect $ do
+      ns <- nextSibling realInst
+      write ns realInstanceRef
+
+      pure realInst
+    Nothing -> liftEffect $ do
+      inst <- newDocTypeInstance qualifiedName publicId systemId
+
+      pure inst
 
   tell $ pure [ inst ]
 
@@ -137,14 +200,14 @@ fragment = fold
 
 signalC :: forall context. Signal (Component context) -> Component context
 signalC cmpSig = do
-  { context, unmountEmitter, realNodeRef } <- ask
+  { context, unmountEmitter, realInstanceRef } <- ask
 
   nodesSig /\ nodesAtom <- signalWithoutEq $ pure []
 
   liftEffect $ addListener unmountEmitter =<< launch do
     cmp <- cmpSig
     ue <- liftEffect newEmitter
-    cmpNodes <- liftEffect $ runComponent cmp { unmountEmitter: ue, context, realNodeRef }
+    cmpNodes <- liftEffect $ runComponent cmp { unmountEmitter: ue, context, realInstanceRef }
     writeAtom nodesAtom cmpNodes
     defer $ emit ue
   tell $ join nodesSig
@@ -164,9 +227,9 @@ whenC blSig component = ifC blSig component emptyC
 
 contextC :: forall context. (Record context -> Component context) -> Component context
 contextC component = do
-  { context, unmountEmitter, realNodeRef } <- ask
+  { context, unmountEmitter, realInstanceRef } <- ask
   instanceArraySig <- liftEffect $ runComponent (component context)
-    { context, unmountEmitter, realNodeRef }
+    { context, unmountEmitter, realInstanceRef }
   tell instanceArraySig
 
 contextProvider
@@ -176,10 +239,10 @@ contextProvider
   -> Component newContext
   -> Component oldContext
 contextProvider appendContext component = do
-  { context, unmountEmitter, realNodeRef } <- ask
+  { context, unmountEmitter, realInstanceRef } <- ask
   let newContext = union appendContext context
   instanceArraySig <- liftEffect $ runComponent component
-    { context: newContext, unmountEmitter, realNodeRef }
+    { context: newContext, unmountEmitter, realInstanceRef }
   tell instanceArraySig
 
 -- TODO

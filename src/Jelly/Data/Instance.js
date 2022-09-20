@@ -169,3 +169,23 @@ export const fromNodeImpl = (node) => {
         instance: node,
     };
 };
+export const firstChildImpl = (just) => (nothing) => (instance) => () => {
+    if (instance.type === "BROWSER") {
+        const child = instance.instance.firstChild;
+        if (child === null) {
+            return nothing;
+        }
+        return just(fromNodeImpl(child));
+    }
+    return nothing;
+};
+export const nextSiblingImpl = (just) => (nothing) => (instance) => () => {
+    if (instance.type === "BROWSER") {
+        const sibling = instance.instance.nextSibling;
+        if (sibling === null) {
+            return nothing;
+        }
+        return just(fromNodeImpl(sibling));
+    }
+    return nothing;
+};

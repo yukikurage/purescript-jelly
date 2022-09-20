@@ -2,14 +2,10 @@ module Jelly.Data.Prop where
 
 import Prelude
 
-import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith)
 import Effect (Effect)
-import Effect.Class (liftEffect)
-import Jelly.Data.Emitter (Emitter, addListener)
-import Jelly.Data.Instance (Instance, addEventListener, removeAttribute, setAttribute)
-import Jelly.Data.Signal (Signal, launch)
+import Jelly.Data.Signal (Signal)
 import Web.Event.Event (Event, EventType)
 
 data Prop context
@@ -81,17 +77,3 @@ on et el = PropHandler et $ \_ -> el
 onWithContext
   :: forall context. EventType -> (Record context -> Event -> Effect Unit) -> Prop context
 onWithContext = PropHandler
-
-registerProps
-  :: forall context. Array (Prop context) -> Record context -> Emitter -> Instance -> Effect Unit
-registerProps props context unmountEmitter inst = do
-  for_ props case _ of
-    PropAttribute name signal ->
-      addListener unmountEmitter =<< launch do
-        value <- signal context
-        liftEffect case value of
-          Just v -> setAttribute name v inst
-          Nothing -> removeAttribute name inst
-    PropHandler eventType handler -> do
-      remove <- addEventListener eventType (handler context) inst
-      addListener unmountEmitter remove

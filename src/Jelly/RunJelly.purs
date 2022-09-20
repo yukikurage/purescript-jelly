@@ -4,13 +4,11 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Ref (new)
-import Jelly.Data.Component (Component, runComponent)
+import Jelly.Data.Component (Component)
 import Jelly.Data.Emitter (emit, newEmitter)
 import Jelly.Data.Instance (fromNode, updateChildren)
 import Jelly.El (registerChildNodes)
 import Web.DOM (Node)
-import Web.DOM.Node (firstChild)
 
 runJelly :: Component () -> Node -> Effect (Effect Unit)
 runJelly component node = do
@@ -18,10 +16,7 @@ runJelly component node = do
   let
     inst = fromNode node
 
-  realNodeRef <- liftEffect $ new =<< firstChild node
-
-  childNodes <- liftEffect $ runComponent component { unmountEmitter, context: {}, realNodeRef }
-  liftEffect $ registerChildNodes childNodes unmountEmitter inst
+  liftEffect $ registerChildNodes true component {} unmountEmitter inst
 
   pure $ do
     emit unmountEmitter

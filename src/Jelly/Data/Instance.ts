@@ -228,9 +228,39 @@ export const toNodeImpl = (instance: Instance): Node => {
   throw new Error("Unknown instance type");
 };
 
-export const fromNodeImpl = (node: Element | DocumentType | Text): Instance => {
+export const fromNodeImpl = (node: Element | Text | DocumentType): Instance => {
   return {
     type: "BROWSER",
     instance: node,
   };
 };
+
+export const firstChildImpl =
+  <T>(just: (instance: Instance) => T) =>
+  (nothing: T) =>
+  (instance: Instance) =>
+  () => {
+    if (instance.type === "BROWSER") {
+      const child = instance.instance.firstChild;
+      if (child === null) {
+        return nothing;
+      }
+      return just(fromNodeImpl(child as Element | Text | DocumentType));
+    }
+    return nothing;
+  };
+
+export const nextSiblingImpl =
+  <T>(just: (instance: Instance) => T) =>
+  (nothing: T) =>
+  (instance: Instance) =>
+  () => {
+    if (instance.type === "BROWSER") {
+      const sibling = instance.instance.nextSibling;
+      if (sibling === null) {
+        return nothing;
+      }
+      return just(fromNodeImpl(sibling as Element | Text | DocumentType));
+    }
+    return nothing;
+  };

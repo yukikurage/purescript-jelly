@@ -34,8 +34,8 @@ jellyPrefix = "🍮 > "
 render :: Component () -> Effect String
 render component = do
   unmountEmitter <- newEmitter
-  realNodeRef <- new Nothing
-  insts <- readSignal =<< runComponent component { context: {}, unmountEmitter, realNodeRef }
+  realInstanceRef <- new Nothing
+  insts <- readSignal =<< runComponent component { context: {}, unmountEmitter, realInstanceRef }
   emit unmountEmitter
   fold <$> traverse toHTML insts
 

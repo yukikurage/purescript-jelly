@@ -2,6 +2,7 @@ module Jelly.Data.Instance where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Web.DOM (Node)
 import Web.Event.Event (EventType(..))
@@ -21,15 +22,17 @@ foreign import removeAttribute :: String -> Instance -> Effect Unit
 foreign import updateChildren :: Array Instance -> Instance -> Effect Unit
 foreign import toHTMLImpl :: Instance -> Effect String
 foreign import setInnerHTML :: String -> Instance -> Effect Unit
+foreign import firstChildImpl
+  :: (Instance -> Maybe Instance) -> Maybe Instance -> Instance -> Effect (Maybe Instance)
 
 foreign import addEventListenerImpl
   :: String -> (Event -> Effect Unit) -> Instance -> Effect (Effect Unit)
 
 foreign import setTextContent :: String -> Instance -> Effect Unit
-
 foreign import toNodeImpl :: Instance -> Node
-
 foreign import fromNodeImpl :: Node -> Instance
+foreign import nextSiblingImpl
+  :: (Instance -> Maybe Instance) -> Maybe Instance -> Instance -> Effect (Maybe Instance)
 
 addEventListener :: EventType -> (Event -> Effect Unit) -> Instance -> Effect (Effect Unit)
 addEventListener (EventType name) = addEventListenerImpl name
@@ -44,3 +47,9 @@ fromNode = fromNodeImpl
 
 toHTML :: Instance -> Effect String
 toHTML = toHTMLImpl
+
+firstChild :: Instance -> Effect (Maybe Instance)
+firstChild = firstChildImpl Just Nothing
+
+nextSibling :: Instance -> Effect (Maybe Instance)
+nextSibling = nextSiblingImpl Just Nothing
