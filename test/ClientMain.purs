@@ -20,5 +20,5 @@ main = launchAff_ do
   node <- awaitDocument
   path <- liftEffect $ pathname =<< location =<< window
   liftEffect $ runJelly_
-    (rootComponent clientChunkData $ fromPath $ dropBasePath basePath $ pathToArray path)
+    (rootComponent (clientChunkData basePath) $ fromPath $ dropBasePath basePath $ pathToArray path)
     node

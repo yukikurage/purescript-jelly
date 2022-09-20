@@ -9,9 +9,9 @@ import Data.Maybe (Maybe)
 import Effect.Aff (Aff)
 import Jelly.Util (makeAbsoluteFilePath)
 
-clientChunkData :: forall chunk. Show chunk => chunk -> Aff (Maybe String)
-clientChunkData chunk = do
+clientChunkData :: forall chunk. Show chunk => Array String -> chunk -> Aff (Maybe String)
+clientChunkData basePath chunk = do
   let
-    chunkDataUrl = makeAbsoluteFilePath [ "data", show chunk ]
+    chunkDataUrl = makeAbsoluteFilePath $ basePath <> [ "data", show chunk ]
   res <- get string chunkDataUrl
   pure $ (_.body) <$> hush res
