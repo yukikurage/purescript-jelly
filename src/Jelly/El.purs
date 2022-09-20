@@ -70,13 +70,13 @@ newDocTypeInstanceWithRealNode qualifiedName publicId systemId = do
     _ -> liftEffect $ newDocTypeInstance qualifiedName publicId systemId
 
 -- | Create Element Component
-el :: forall context. String -> Array Prop -> Component context -> Component context
+el :: forall context. String -> Array (Prop context) -> Component context -> Component context
 el tag props component = do
   inst /\ fc <- newInstanceWithRealNode tag
 
   internal <- ask
 
-  liftEffect $ registerProps props internal.unmountEmitter inst
+  liftEffect $ registerProps props internal.context internal.unmountEmitter inst
 
   realNodeRef <- liftEffect $ new fc
 
@@ -91,13 +91,13 @@ el_ :: forall context. String -> Component context -> Component context
 el_ tag component = el tag [] component
 
 -- | Element which innerHTML is given string
-rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
+rawEl :: forall context. String -> Array (Prop context) -> Signal String -> Component context
 rawEl tag props htmlSig = do
   inst /\ _ <- newInstanceWithRealNode tag
 
   internal <- ask
 
-  liftEffect $ registerProps props internal.unmountEmitter inst
+  liftEffect $ registerProps props internal.context internal.unmountEmitter inst
 
   liftEffect $ addListener internal.unmountEmitter =<< launch do
     html <- htmlSig
@@ -161,6 +161,13 @@ emptyC = mempty
 
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC blSig component = ifC blSig component emptyC
+
+contextC :: forall context. (Record context -> Component context) -> Component context
+contextC component = do
+  { context, unmountEmitter, realNodeRef } <- ask
+  instanceArraySig <- liftEffect $ runComponent (component context)
+    { context, unmountEmitter, realNodeRef }
+  tell instanceArraySig
 
 contextProvider
   :: forall oldContext appendContext newContext

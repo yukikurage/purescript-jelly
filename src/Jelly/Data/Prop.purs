@@ -12,9 +12,9 @@ import Jelly.Data.Instance (Instance, addEventListener, removeAttribute, setAttr
 import Jelly.Data.Signal (Signal, launch)
 import Web.Event.Event (Event, EventType)
 
-data Prop
-  = PropAttribute String (Signal (Maybe String))
-  | PropHandler EventType (Event -> Effect Unit)
+data Prop context
+  = PropAttribute String (Record context -> Signal (Maybe String))
+  | PropHandler EventType (Record context -> Event -> Effect Unit)
 
 class AttrValue a where
   toAttrValue :: a -> Maybe String
@@ -49,28 +49,49 @@ instance AttrValue (Array String) where
 instance AttrValue (Maybe (Array String)) where
   toAttrValue = map (joinWith " ")
 
-attr :: forall a. AttrValue a => String -> a -> Prop
-attr name value = PropAttribute name $ pure $ toAttrValue value
+class AttrValueWithContext context a where
+  toAttrValueWithContext :: a -> Record context -> Maybe String
+
+instance (AttrValue a) => AttrValueWithContext context a where
+  toAttrValueWithContext a _ = toAttrValue a
+
+else instance (AttrValue a) => AttrValueWithContext context (Record context -> a) where
+  toAttrValueWithContext f context = toAttrValue $ f context
+
+class AttrValueWithSignalAndContext context a where
+  toAttrValueWithSignalAndContext :: a -> Record context -> Signal (Maybe String)
+
+instance (AttrValue a) => AttrValueWithSignalAndContext context (Signal a) where
+  toAttrValueWithSignalAndContext signal _ = map toAttrValue signal
+
+else instance (AttrValue a) => AttrValueWithSignalAndContext context (Record context -> Signal a) where
+  toAttrValueWithSignalAndContext f context = map toAttrValue $ f context
+
+attr :: forall context a. AttrValueWithContext context a => String -> a -> Prop context
+attr name signal = PropAttribute name \context -> pure $ toAttrValueWithContext signal context
 
 infix 0 attr as :=
 
-attrSig :: forall a. AttrValue a => String -> Signal a -> Prop
-attrSig name signal = PropAttribute name $ map toAttrValue signal
+attrSig :: forall context a. AttrValueWithSignalAndContext context a => String -> a -> Prop context
+attrSig name signal = PropAttribute name \context -> toAttrValueWithSignalAndContext signal context
 
-infix 0 attrSig as :=#
+on :: forall context. EventType -> (Event -> Effect Unit) -> Prop context
+on et el = PropHandler et $ \_ -> el
 
-on :: EventType -> (Event -> Effect Unit) -> Prop
-on = PropHandler
+onWithContext
+  :: forall context. EventType -> (Record context -> Event -> Effect Unit) -> Prop context
+onWithContext = PropHandler
 
-registerProps :: Array Prop -> Emitter -> Instance -> Effect Unit
-registerProps props unmountEmitter inst = do
+registerProps
+  :: forall context. Array (Prop context) -> Record context -> Emitter -> Instance -> Effect Unit
+registerProps props context unmountEmitter inst = do
   for_ props case _ of
     PropAttribute name signal ->
       addListener unmountEmitter =<< launch do
-        value <- signal
+        value <- signal context
         liftEffect case value of
           Just v -> setAttribute name v inst
           Nothing -> removeAttribute name inst
     PropHandler eventType handler -> do
-      remove <- addEventListener eventType handler inst
+      remove <- addEventListener eventType (handler context) inst
       addListener unmountEmitter remove

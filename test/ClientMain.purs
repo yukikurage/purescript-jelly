@@ -2,20 +2,20 @@ module Test.ClientMain where
 
 import Prelude
 
-import Debug (traceM)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitDocument)
 import Jelly.RunJelly (runJelly_)
-import Jelly.Util (getPath)
-import Test.Page (basePath, fromPath)
+import Jelly.Util (pathToArray)
+import Test.Page (fromPath)
 import Test.RootComponent (rootComponent)
 import Web.HTML (window)
+import Web.HTML.Location (pathname)
+import Web.HTML.Window (location)
 
 main :: Effect Unit
 main = launchAff_ do
   node <- awaitDocument
-  path <- liftEffect $ getPath basePath =<< window
-  traceM path
-  liftEffect $ runJelly_ (rootComponent $ fromPath path) node
+  path <- liftEffect $ pathname =<< location =<< window
+  liftEffect $ runJelly_ (rootComponent $ fromPath $ pathToArray path) node

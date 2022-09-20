@@ -2,6 +2,8 @@ module Test.Page where
 
 import Prelude
 
+import Data.Map (Map)
+
 data Page = Hoge | Top | NotFound
 
 derive instance Eq Page
@@ -17,11 +19,17 @@ toPath = case _ of
   Top -> []
   NotFound -> [ "404" ]
 
+toUrl :: Page -> { path :: Array String, query :: Map String String, hash :: String }
+toUrl page = { path: toPath page, query: mempty, hash: "" }
+
 fromPath :: Array String -> Page
 fromPath = case _ of
   [ "hoge" ] -> Hoge
   [] -> Top
   _ -> NotFound
+
+fromUrl :: { path :: Array String, query :: Map String String, hash :: String } -> Page
+fromUrl { path } = fromPath $ path
 
 basePath :: Array String
 basePath = [ "purescript-jelly" ]

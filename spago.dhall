@@ -28,6 +28,8 @@ to generate this file without the comments in this block.
   , "node-fs-aff"
   , "node-path"
   , "node-streams"
+  , "node-url"
+  , "ordered-collections"
   , "parallel"
   , "posix-types"
   , "prelude"

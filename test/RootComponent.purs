@@ -10,14 +10,14 @@ import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
-import Jelly.Data.Router (getCurrentPage, pushPage, routerProvider, useRouter)
+import Jelly.Data.Router (routerProvider, useRouter)
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
 import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 import Jelly.Util (makeAbsoluteFilePath)
 import Test.Context (Context)
-import Test.Page (Page(..), basePath, fromPath, toPath)
+import Test.Page (Page(..), basePath, fromUrl, toUrl)
 import Web.DOM (Element)
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
@@ -30,10 +30,10 @@ rootComponent :: Page -> Component ()
 rootComponent initPage = makeComponent do
   let
     routerSettings =
-      { basePath
+      { basePath: basePath
       , initialPage: initPage
-      , toPath
-      , fromPath
+      , toUrl
+      , fromUrl
       }
 
   pure do
@@ -133,16 +133,15 @@ raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"
 
 paging :: Component Context
 paging = makeComponent do
-  router <- useRouter
-  let pageSig = getCurrentPage router
+  { pageSig, pageAtom } <- useRouter
 
   pure do
     text $ pure "Paging with Router is available."
 
     el_ "div" do
-      el "button" [ on click \_ -> pushPage router Hoge ] do
+      el "button" [ on click \_ -> writeAtom pageAtom Hoge ] do
         text $ pure "Hoge"
-      el "button" [ on click \_ -> pushPage router Top ] do
+      el "button" [ on click \_ -> writeAtom pageAtom Top ] do
         text $ pure "Top"
 
     text $ ("Current page: " <> _) <<< show <$> pageSig
