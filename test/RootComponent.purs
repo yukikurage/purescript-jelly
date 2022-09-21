@@ -123,15 +123,15 @@ raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"
 
 paging :: Component Context
 paging = makeComponent do
-  { pageSig, pageAtom } <- useRouter
+  { pageSig, pushPage } <- useRouter
 
   pure do
     text $ pure "Paging with Router is available."
 
     el_ "div" do
-      el "button" [ on click \_ -> writeAtom pageAtom Hoge ] do
+      el "button" [ on click \_ -> pushPage Hoge ] do
         text $ pure "Hoge"
-      el "button" [ on click \_ -> writeAtom pageAtom Top ] do
+      el "button" [ on click \_ -> pushPage Top ] do
         text $ pure "Top"
 
     text $ ("Current page: " <> _) <<< show <$> pageSig

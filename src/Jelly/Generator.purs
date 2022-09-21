@@ -131,11 +131,11 @@ summary :: String -> Array String -> Aff Unit
 summary root outputs = do
   Stats { size: mainJsSize } <- stat $ concat [ root, "index.js" ]
   log $ ""
-  log $ "  " <> "Main Script (Only on first load)"
+  log $ "  " <> "Main Script (On first load)"
   log $ "    " <> printSize (floor mainJsSize)
   log ""
   log $ "  " <> "HTML / Data"
-  log $ "    " <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (Only on first load)"
+  log $ "    " <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (On first load)"
     <> " "
     <> truncate
       sizeWidth
@@ -186,8 +186,8 @@ generate { rootComponent, basePath, pageToUrl, getPages, clientMain, output, pag
       let
         pageOutput = concat [ output, makeAbsoluteUrlPath path ]
         mockRouterProvider component = makeComponent do
-          pageSig /\ pageAtom <- signal page
-          pure $ contextProvider { __router: { pageSig, pageAtom } } component
+          pageSig /\ _ <- signal page
+          pure $ contextProvider { __router: { pageSig, pushPage: const $ pure unit } } component
 
       staticData <- generateData pageOutput getStaticData
 

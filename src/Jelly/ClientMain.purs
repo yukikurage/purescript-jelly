@@ -62,7 +62,6 @@ clientMain
       { basePath
       , pageToUrl
       , urlToPage
-      , initialPage
       }
     routedRootComponent = routerProvider routerSettings $ makeComponent do
       { pageSig } <- useRouter
