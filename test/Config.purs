@@ -3,10 +3,11 @@ module Test.Config where
 import Prelude
 
 import Jelly.Data.Config (Config)
+import Test.Context (Context)
 import Test.Page (Page(..), basePath, pageToUrl, urlToPage)
 import Test.RootComponent (hogePage, notFoundPage, rootComponent, topPage)
 
-config :: Config Page
+config :: Config Context Page
 config =
   { basePath
   , rootComponent: rootComponent

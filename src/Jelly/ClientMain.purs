@@ -30,7 +30,7 @@ foreign import setData :: String -> String -> Effect Unit
 getData :: String -> Effect (Maybe String)
 getData key = getDataImpl Just Nothing key
 
-clientMain :: forall page. Eq page => Config page -> Aff Unit
+clientMain :: forall context page. Eq page => Config context page -> Aff Unit
 clientMain
   { rootComponent, pageToUrl, urlToPage, basePath, pageComponent } = do
   w <- liftEffect $ window

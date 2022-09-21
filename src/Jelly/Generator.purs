@@ -3,12 +3,14 @@ module Jelly.Generator where
 import Prelude
 
 import Control.Parallel (parTraverse_)
-import Control.Safely (for_)
-import Data.Array (fold, length)
+import Control.Safely (for_, traverse_)
+import Data.Array (fold, length, replicate)
 import Data.Either (Either(..))
+import Data.Int (floor)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Posix.Signal (Signal(..))
+import Data.String as String
 import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
@@ -27,13 +29,14 @@ import Jelly.Data.Url (makeAbsoluteUrlPath, urlToString)
 import Jelly.El (contextProvider)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (mkdir', writeTextFile)
+import Node.FS.Aff (mkdir', stat, writeTextFile)
 import Node.FS.Perms (all, mkPerms)
+import Node.FS.Stats (Stats(..))
 import Node.Path (concat)
 import Node.Stream (onDataString)
 
 jellyPrefix :: String
-jellyPrefix = "🍮 > "
+jellyPrefix = ""
 
 render :: Component () -> Effect String
 render component = do
@@ -74,46 +77,103 @@ generateHTML :: String -> Component () -> Aff Unit
 generateHTML output component = do
   let
     htmlPath = concat [ output, "index.html" ]
-  log $ jellyPrefix <> "HTML Generating... " <> htmlPath
   rendered <- liftEffect $ render component
   mkdir' output { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 htmlPath $ rendered
-  log $ jellyPrefix <> "HTML Generated: " <> htmlPath
 
 generateJS :: String -> String -> Aff Unit
 generateJS output clientMain = do
   let
-    jsPath = concat [ output, "index.js" ]
     cmd /\ args = bundleCommand output clientMain
-  log $ jellyPrefix <> "Main Script Generating...: " <> jsPath
-  log $ jellyPrefix <> "Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
+  log $ jellyPrefix <> "🏃 Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
-  liftEffect $ logStdOut cp
   waitExit cp
-  log $ jellyPrefix <> "Main Script Generated: " <> jsPath
 
 generateData :: String -> Aff String -> Aff String
 generateData output fetchData = do
   let
     dataPath = concat [ output, "data" ]
-  log $ jellyPrefix <> "Static Data Generating...: " <> dataPath
   dt <- fetchData
   mkdir' output { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 dataPath dt
-  log $ jellyPrefix <> "Static Data Generated: " <> dataPath
   pure dt
 
+replicateStr :: Int -> String -> String
+replicateStr i str = fold $ replicate i str
+
+truncate :: Int -> String -> String
+truncate i str =
+  if String.length str > i then String.take (i - 3) str <> "..."
+  else str <> replicateStr (i - String.length str) " "
+
+pathWidth :: Int
+pathWidth = 30
+
+printPath :: String -> String
+printPath = truncate pathWidth
+
+sizeWidth :: Int
+sizeWidth = 30
+
+printSize :: Int -> String
+printSize byte =
+  let
+    sizeStr = case unit of
+      _
+        | byte < 1024 -> show byte <> " B"
+        | byte < 1024 * 1024 -> show (byte / 1024) <> " KB"
+        | byte < 1024 * 1024 * 1024 -> show (byte / 1024 / 1024) <> " MB"
+        | otherwise -> show (byte / 1024 / 1024 / 1024) <> " GB"
+  in
+    truncate sizeWidth sizeStr
+
+summary :: String -> Array String -> Aff Unit
+summary root outputs = do
+  Stats { size: mainJsSize } <- stat $ concat [ root, "index.js" ]
+  log $ ""
+  log $ "  " <> "Main Script (Only on first load)"
+  log $ "    " <> printSize (floor mainJsSize)
+  log ""
+  log $ "  " <> "HTML / Data"
+  log $ "    " <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (Only on first load)"
+    <> " "
+    <> truncate
+      sizeWidth
+      "Data (At page transition)"
+  let
+    htmlAndDataSummary output = do
+      Stats { size: htmlSize } <- stat $ concat [ root, output, "index.html" ]
+      Stats { size: dataSize } <- stat $ concat [ root, output, "data" ]
+      log $ "    "
+        <> printPath output
+        <> " "
+        <> printSize (floor htmlSize)
+        <> " "
+        <> printSize (floor dataSize)
+  traverse_ htmlAndDataSummary outputs
+  pure unit
+
 generate
-  :: forall page
+  :: forall context page
    . Eq page
-  => Config page
+  => Config context page
   -> Aff Unit
 generate { rootComponent, basePath, pageToUrl, getPages, clientMain, output, pageComponent } = do
-  log $ jellyPrefix <> "Retrieving page list..."
+  log ""
+  log ""
+  log $ jellyPrefix <> "----------------------"
+  log $ jellyPrefix <> "🍮 Jelly Generator 🍮"
+  log $ jellyPrefix <> "----------------------"
+  log ""
+  log $ jellyPrefix <> "📖  Retrieving page list..."
+  log ""
   pages <- getPages
-  log $ jellyPrefix <> "Page list retrieved: " <> show (length pages) <> " pages"
+  log $ "  " <> show (length pages) <> " pages"
+  log ""
   for_ pages \page -> do
-    log $ jellyPrefix <> "- " <> urlToString basePath (pageToUrl page)
+    log $ "    " <> urlToString basePath (pageToUrl page)
+  log ""
+  log $ jellyPrefix <> "🏗️  HTML / Data generating..."
   let
     generatePageHTML page = do
       let
@@ -133,4 +193,16 @@ generate { rootComponent, basePath, pageToUrl, getPages, clientMain, output, pag
 
       generateHTML pageOutput $ mockRouterProvider $ rootComponent $ component staticData
   parTraverse_ generatePageHTML pages
+  log $ jellyPrefix <> "📄  HTML / Data generated"
+  log ""
+  log $ jellyPrefix <> "🏗️  Main script generating..."
   generateJS output clientMain
+  log $ jellyPrefix <> "⚙️  Main script generated"
+  log ""
+  log $ jellyPrefix <> "🚩  Static pages successfully generated"
+  log ""
+  log $ jellyPrefix <> "📦  File Size"
+  summary output $ map (\{ path } -> concat [ makeAbsoluteUrlPath path ]) $ map pageToUrl
+    pages
+  log ""
+  log ""
