@@ -3,7 +3,6 @@ module Jelly.Data.Prop where
 import Prelude
 
 import Data.Maybe (Maybe(..))
-import Data.String (joinWith)
 import Effect (Effect)
 import Jelly.Data.Signal (Signal)
 import Web.Event.Event (Event, EventType)
@@ -26,24 +25,6 @@ instance AttrValue Boolean where
 
 instance AttrValue (Maybe Boolean) where
   toAttrValue v = toAttrValue =<< v
-
-instance AttrValue Int where
-  toAttrValue = pure <<< show
-
-instance AttrValue (Maybe Int) where
-  toAttrValue = map show
-
-instance AttrValue Number where
-  toAttrValue = pure <<< show
-
-instance AttrValue (Maybe Number) where
-  toAttrValue = map show
-
-instance AttrValue (Array String) where
-  toAttrValue = pure <<< joinWith " "
-
-instance AttrValue (Maybe (Array String)) where
-  toAttrValue = map (joinWith " ")
 
 class AttrValueWithContext context a where
   toAttrValueWithContext :: a -> Record context -> Maybe String
@@ -70,6 +51,8 @@ infix 0 attr as :=
 
 attrSig :: forall context a. AttrValueWithSignalAndContext context a => String -> a -> Prop context
 attrSig name signal = PropAttribute name \context -> toAttrValueWithSignalAndContext signal context
+
+infix 0 attrSig as :=@
 
 on :: forall context. EventType -> (Event -> Effect Unit) -> Prop context
 on et el = PropHandler et $ \_ -> el

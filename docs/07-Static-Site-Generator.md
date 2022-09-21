@@ -64,13 +64,13 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitDocument)
-import Jelly.RunJelly (runJelly)
+import Jelly.mount (mount)
 import Test.RootComponent (rootComponent)
 
 main :: Effect Unit
 main = launchAff_ do
   node <- awaitDocument
-  liftEffect $ runJelly rootComponent node
+  liftEffect $ mount rootComponent node
 ```
 
 ## Make Main module

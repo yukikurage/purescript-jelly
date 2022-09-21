@@ -148,6 +148,9 @@ rawEl tag props htmlSig = do
 
   tell $ pure [ inst ]
 
+rawEl_ :: forall context. String -> Signal String -> Component context
+rawEl_ tag htmlSig = rawEl tag [] htmlSig
+
 -- | Create Text Component
 text :: forall context. Signal String -> Component context
 text signal = do

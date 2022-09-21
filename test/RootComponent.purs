@@ -6,60 +6,47 @@ import Data.Array (snoc)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
-import Jelly.Data.Router (routerProvider, useRouter)
+import Jelly.Data.Router (useRouter)
 import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
+import Jelly.Data.Url (makeAbsoluteFilePath)
 import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
-import Jelly.Util (makeAbsoluteFilePath)
-import Test.Chunk (Chunk(..))
 import Test.Context (Context)
-import Test.Page (Page(..), basePath, fromUrl, toUrl)
-import Web.DOM (Element)
+import Test.Page (Page(..), basePath)
 import Web.Event.Event (target)
 import Web.Event.Internal.Types (Event)
 import Web.HTML.Event.EventTypes (click, input)
 import Web.HTML.HTMLSelectElement as Select
 
-foreign import setInnerHTML :: String -> Element -> Effect Unit
-
-rootComponent :: (Chunk -> Aff (Maybe String)) -> Page -> Component ()
-rootComponent chunkData initPage = makeComponent do
-  let
-    routerSettings =
-      { basePath: basePath
-      , initialPage: initPage
-      , toUrl
-      , fromUrl
-      }
+rootComponent :: Component Context -> Component Context
+rootComponent pageComponent = makeComponent do
 
   pure do
-    routerProvider routerSettings do
-      docTypeHTML
-      el_ "html" do
-        el_ "head" do
-          el "script"
-            [ "defer" := true
-            , "type" := "text/javascript"
-            , "src" := makeAbsoluteFilePath (basePath `snoc` "index.js")
-            ]
-            mempty
-        el_ "body" do
-          el_ "h1" do
-            text $ pure "🍮Hello, Jelly!"
-          el_ "p" do
-            text $ pure "This is a Jelly test."
-          withTitle (pure "Timer") timer
-          withTitle (pure "Counter") counter
-          withTitle (pure "Mount / Unmount") mount
-          withTitle (pure "Raw") raw
-          withTitle (pure "Paging") paging
-          withTitle (pure "Static") $ static chunkData
+    docTypeHTML
+    el_ "html" do
+      el_ "head" do
+        el "script"
+          [ "defer" := true
+          , "type" := "text/javascript"
+          , "src" := makeAbsoluteFilePath (basePath `snoc` "index.js")
+          ]
+          mempty
+      el_ "body" do
+        el_ "h1" do
+          text $ pure "🍮Hello, Jelly!"
+        el_ "p" do
+          text $ pure "This is a Jelly test."
+        withTitle (pure "Timer") timer
+        withTitle (pure "Counter") counter
+        withTitle (pure "Mount / Unmount") mount
+        withTitle (pure "Raw") raw
+        withTitle (pure "Paging") paging
+        withTitle (pure "Static") $ static pageComponent
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
@@ -121,7 +108,7 @@ mount = makeComponent do
           text $ pure "Timer"
         el "option" [ "value" := "counter" ] do
           text $ pure "Counter"
-    el "div" [ "style" := [ "border: 1px solid #ccc;", "padding: 10px;", "height: 50px;" ] ] do
+    el "div" [ "style" := "border: 1px solid #ccc;padding: 10px;height: 50px;" ] do
       signalC do
         cmpName <- cmpNameSig
         pure $ case cmpName of
@@ -149,23 +136,24 @@ paging = makeComponent do
 
     text $ ("Current page: " <> _) <<< show <$> pageSig
 
-static :: (Chunk -> Aff (Maybe String)) -> Component Context
-static chunkData = makeComponent do
-  profileSig /\ profileAtom <- signal Nothing
-  profilePosts /\ profilePostsAtom <- signal Nothing
-
-  liftEffect $ launchAff_ do
-    profile <- chunkData Profile
-    writeAtom profileAtom profile
-    posts <- chunkData $ Posts
-    writeAtom profilePostsAtom posts
+static :: Component Context -> Component Context
+static pageComponent = makeComponent do
 
   pure $ el_ "div" do
     el_ "div" do
       text $ pure "Jelly can retrieve static data at build time and embed it in the page."
     el_ "div" do
       text $ pure "It is efficient because it can be stored in multiple chunks."
-    el_ "div" do
-      text $ ("Profile: " <> _) <<< show <$> profileSig
-    el_ "div" do
-      text $ ("Posts: " <> _) <<< show <$> profilePosts
+    pageComponent
+
+topPage :: String -> Component Context
+topPage dt = el_ "div" do
+  text $ pure $ "Top: " <> dt
+
+hogePage :: String -> Component Context
+hogePage dt = el_ "div" do
+  text $ pure $ "Posts: " <> dt
+
+notFoundPage :: String -> Component Context
+notFoundPage dt = el_ "div" do
+  text $ pure $ "Not Found: " <> dt

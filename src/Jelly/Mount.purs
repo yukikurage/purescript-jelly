@@ -1,4 +1,4 @@
-module Jelly.RunJelly where
+module Jelly.Mount where
 
 import Prelude
 
@@ -6,15 +6,12 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Emitter (emit, newEmitter)
-import Jelly.Data.Instance (fromNode, updateChildren)
+import Jelly.Data.Instance (Instance, updateChildren)
 import Jelly.El (registerChildNodes)
-import Web.DOM (Node)
 
-runJelly :: Component () -> Node -> Effect (Effect Unit)
-runJelly component node = do
+mount :: Component () -> Instance -> Effect (Effect Unit)
+mount component inst = do
   unmountEmitter <- newEmitter
-  let
-    inst = fromNode node
 
   liftEffect $ registerChildNodes true component {} unmountEmitter inst
 
@@ -22,5 +19,5 @@ runJelly component node = do
     emit unmountEmitter
     updateChildren [] inst
 
-runJelly_ :: Component () -> Node -> Effect Unit
-runJelly_ component node = void $ runJelly component node
+mount_ :: Component () -> Instance -> Effect Unit
+mount_ component node = void $ mount component node

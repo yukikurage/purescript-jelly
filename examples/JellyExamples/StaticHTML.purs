@@ -9,13 +9,13 @@ import Effect.Class (liftEffect)
 import Jelly.Aff (awaitQuerySelector)
 import Jelly.Data.Component (Component)
 import Jelly.El (el_, text)
-import Jelly.RunJelly (runJelly_)
+import Jelly.Mount (mount_)
 import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit
 main = launchAff_ do
   appElemMaybe <- awaitQuerySelector $ QuerySelector "#app"
-  liftEffect $ traverse_ (runJelly_ component) appElemMaybe
+  liftEffect $ traverse_ (mount_ component) appElemMaybe
 
 component :: Component ()
 component = el_ "div" do
