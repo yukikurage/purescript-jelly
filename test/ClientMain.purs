@@ -4,7 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Jelly.ClientMain (clientMain)
+import Jelly.SSG.ClientMain (clientMain)
 import Test.Config (config)
 
 main :: Effect Unit

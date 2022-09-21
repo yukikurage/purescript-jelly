@@ -1,4 +1,4 @@
-module Jelly.Data.Query where
+module Jelly.Router.Data.Query where
 
 import Prelude
 

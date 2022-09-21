@@ -1,4 +1,4 @@
-module Jelly.Data.Router where
+module Jelly.Router.Data.Router where
 
 import Prelude
 
@@ -8,28 +8,17 @@ import Effect.Class (liftEffect)
 import Foreign (unsafeToForeign)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (Hooks, makeComponent)
-import Jelly.Data.Query (Query)
 import Jelly.Data.Signal (Signal, signal, writeAtom)
-import Jelly.Data.Url (locationToUrl, urlToString)
 import Jelly.El (contextProvider)
 import Jelly.Hooks.UseContext (useContext)
 import Jelly.Hooks.UseEventListener (useEventListener)
+import Jelly.Router.Data.Config (RouterConfig)
+import Jelly.Router.Data.Url (locationToUrl, urlToString)
 import Web.HTML (window)
 import Web.HTML.Event.PopStateEvent.EventTypes (popstate)
 import Web.HTML.History (DocumentTitle(..), URL(..), pushState, replaceState)
 import Web.HTML.Window (history, location)
 import Web.HTML.Window as Window
-
-type RouterSettings page =
-  { basePath :: Array String
-  , pageToUrl ::
-      page
-      -> { path :: Array String
-         , query :: Query
-         , hash :: String
-         }
-  , urlToPage :: { path :: Array String, query :: Query, hash :: String } -> page
-  }
 
 type Router page =
   { pageSig :: Signal page
@@ -41,7 +30,7 @@ type RouterContext page context = (__router :: Router page | context)
 routerProvider
   :: forall context page
    . Eq page
-  => RouterSettings page
+  => RouterConfig page
   -> Component (RouterContext page context)
   -> Component context
 routerProvider { basePath, urlToPage, pageToUrl } component = makeComponent do

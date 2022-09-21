@@ -3,25 +3,18 @@ module Test.RootComponent where
 import Prelude
 
 import Data.Array (snoc)
-import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Effect (Effect)
-import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Prop (on, (:=))
-import Jelly.Data.Router (useRouter)
-import Jelly.Data.Signal (Signal, modifyAtom_, readSignal, signal, writeAtom)
-import Jelly.Data.Url (makeAbsoluteFilePath)
-import Jelly.El (docTypeHTML, el, el_, rawEl, signalC, text)
+import Jelly.Data.Signal (Signal, modifyAtom_, signal)
+import Jelly.El (docTypeHTML, el, el_, rawEl, text)
 import Jelly.Hooks.UseInterval (useInterval)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Router.Data.Router (useRouter)
+import Jelly.Router.Data.Url (makeAbsoluteFilePath)
 import Test.Context (Context)
 import Test.Page (Page(..), basePath)
-import Web.Event.Event (target)
-import Web.Event.Internal.Types (Event)
-import Web.HTML.Event.EventTypes (click, input)
-import Web.HTML.HTMLSelectElement as Select
+import Web.HTML.Event.EventTypes (click)
 
 rootComponent :: Component Context -> Component Context
 rootComponent pageComponent = makeComponent do
@@ -43,7 +36,7 @@ rootComponent pageComponent = makeComponent do
           text $ pure "This is a Jelly test."
         withTitle (pure "Timer") timer
         withTitle (pure "Counter") counter
-        withTitle (pure "Mount / Unmount") mount
+        -- withTitle (pure "Mount / Unmount") mount
         withTitle (pure "Raw") raw
         withTitle (pure "Paging") paging
         withTitle (pure "Static") $ static pageComponent
@@ -71,52 +64,52 @@ counter = makeComponent do
     el_ "div" do
       text $ show <$> countSig
 
-mount :: Component Context
-mount = makeComponent do
-  cmpNameSig /\ cmpNameAtom <- signal "timer"
-  logTextSig /\ logTextAtom <- signal ""
+-- mount :: Component Context
+-- mount = makeComponent do
+--   cmpNameSig /\ cmpNameAtom <- signal "timer"
+--   logTextSig /\ logTextAtom <- signal ""
 
-  let
-    addLog :: String -> Effect Unit
-    addLog str = modifyAtom_ logTextAtom \logText ->
-      logText <> str <> "\n"
+--   let
+--     addLog :: String -> Effect Unit
+--     addLog str = modifyAtom_ logTextAtom \logText ->
+--       logText <> str <> "\n"
 
-    handleChange :: Event -> Effect Unit
-    handleChange e = case Select.fromEventTarget =<< target e of
-      Nothing -> pure unit
-      Just select -> do
-        v <- Select.value select
-        addLog $ "input: " <> v
-        writeAtom cmpNameAtom =<< Select.value select
+--     handleChange :: Event -> Effect Unit
+--     handleChange e = case Select.fromEventTarget =<< target e of
+--       Nothing -> pure unit
+--       Just select -> do
+--         v <- Select.value select
+--         addLog $ "input: " <> v
+--         writeAtom cmpNameAtom =<< Select.value select
 
-    withMountMessage :: Signal String -> Component Context -> Component Context
-    withMountMessage nameSig component = makeComponent do
-      liftEffect do
-        name <- readSignal nameSig
-        addLog $ "mount: " <> name
+--     withMountMessage :: Signal String -> Component Context -> Component Context
+--     withMountMessage nameSig component = makeComponent do
+--       liftEffect do
+--         name <- readSignal nameSig
+--         addLog $ "mount: " <> name
 
-      useUnmountEffect do
-        name <- readSignal nameSig
-        addLog $ "unmounted: " <> name
+--       useUnmountEffect do
+--         name <- readSignal nameSig
+--         addLog $ "unmounted: " <> name
 
-      pure component
+--       pure component
 
-  pure $ el_ "div" do
-    el_ "div" do
-      el "select" [ on input handleChange ] do
-        el "option" [ "value" := "timer" ] do
-          text $ pure "Timer"
-        el "option" [ "value" := "counter" ] do
-          text $ pure "Counter"
-    el "div" [ "style" := "border: 1px solid #ccc;padding: 10px;height: 50px;" ] do
-      signalC do
-        cmpName <- cmpNameSig
-        pure $ case cmpName of
-          "timer" -> withMountMessage (pure "Timer") timer
-          "counter" -> withMountMessage (pure "Counter") counter
-          _ -> mempty
-    el_ "pre" do
-      text logTextSig
+-- pure $ el_ "div" do
+--   el_ "div" do
+--     el "select" [ on input handleChange ] do
+--       el "option" [ "value" := "timer" ] do
+--         text $ pure "Timer"
+--       el "option" [ "value" := "counter" ] do
+--         text $ pure "Counter"
+--   el "div" [ "style" := "border: 1px solid #ccc;padding: 10px;height: 50px;" ] do
+--     signalC do
+--       cmpName <- cmpNameSig
+--       pure $ case cmpName of
+--         "timer" -> withMountMessage (pure "Timer") timer
+--         "counter" -> withMountMessage (pure "Counter") counter
+--         _ -> mempty
+--   el_ "pre" do
+--     text logTextSig
 
 raw :: Component Context
 raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"

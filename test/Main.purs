@@ -4,7 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Jelly.Generator (generate)
+import Jelly.SSG.Generator (generate)
 import Test.Config (config)
 
 main :: Effect Unit

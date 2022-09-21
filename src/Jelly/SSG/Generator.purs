@@ -1,4 +1,4 @@
-module Jelly.Generator where
+module Jelly.SSG.Generator where
 
 import Prelude
 
@@ -20,13 +20,13 @@ import Effect.Class.Console (log)
 import Effect.Class.Console as Console
 import Effect.Ref (new)
 import Jelly.Data.Component (Component, runComponent)
-import Jelly.Data.Config (Config)
 import Jelly.Data.Emitter (emit, newEmitter)
 import Jelly.Data.Hooks (makeComponent)
 import Jelly.Data.Instance (toHTML)
 import Jelly.Data.Signal (readSignal, signal)
-import Jelly.Data.Url (makeAbsoluteUrlPath, urlToString)
 import Jelly.El (contextProvider)
+import Jelly.Router.Data.Url (makeAbsoluteUrlPath)
+import Jelly.SSG.Data.Config (SsgConfig)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', stat, writeTextFile)
@@ -156,14 +156,14 @@ summary root outputs = do
 generate
   :: forall context page
    . Eq page
-  => Config context page
+  => SsgConfig context page
   -> Aff Unit
-generate { rootComponent, basePath, pageToUrl, getPages, clientMain, output, pageComponent } = do
+generate { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent } = do
   log ""
   log ""
-  log $ jellyPrefix <> "----------------------"
-  log $ jellyPrefix <> "🍮 Jelly Generator 🍮"
-  log $ jellyPrefix <> "----------------------"
+  log "----------------------"
+  log "🍮 Jelly Generator 🍮"
+  log "----------------------"
   log ""
   log $ jellyPrefix <> "📖  Retrieving page list..."
   log ""

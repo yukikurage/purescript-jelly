@@ -1,11 +1,11 @@
-module Jelly.Data.Url where
+module Jelly.Router.Data.Url where
 
 import Prelude
 
 import Data.Array (drop, filter, foldMap, length)
 import Data.String (Pattern(..), split)
 import Effect (Effect)
-import Jelly.Data.Query (Query, fromSearch, toSearch)
+import Jelly.Router.Data.Query (Query, fromSearch, toSearch)
 import Web.HTML (Location)
 import Web.HTML.Location (hash, pathname, search)
 

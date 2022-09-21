@@ -1,4 +1,4 @@
-module Jelly.ClientMain where
+module Jelly.SSG.ClientMain where
 
 import Prelude
 
@@ -11,14 +11,14 @@ import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Jelly.Aff (awaitDocument)
-import Jelly.Data.Config (Config)
 import Jelly.Data.Hooks (makeComponent)
-import Jelly.Data.Router (routerProvider, useRouter)
 import Jelly.Data.Signal (signalWithoutEq, writeAtom)
-import Jelly.Data.Url (locationToUrl, makeAbsoluteFilePath)
 import Jelly.El (signalC)
 import Jelly.Hooks.UseSignal (useSignal)
 import Jelly.Mount (mount_)
+import Jelly.Router.Data.Router (routerProvider, useRouter)
+import Jelly.Router.Data.Url (locationToUrl, makeAbsoluteFilePath)
+import Jelly.SSG.Data.Config (SsgConfig)
 import Web.HTML (window)
 import Web.HTML.Window (location)
 
@@ -30,7 +30,7 @@ foreign import setData :: String -> String -> Effect Unit
 getData :: String -> Effect (Maybe String)
 getData key = getDataImpl Just Nothing key
 
-clientMain :: forall context page. Eq page => Config context page -> Aff Unit
+clientMain :: forall context page. Eq page => SsgConfig context page -> Aff Unit
 clientMain
   { rootComponent, pageToUrl, urlToPage, basePath, pageComponent } = do
   w <- liftEffect $ window

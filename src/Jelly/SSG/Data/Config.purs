@@ -1,11 +1,11 @@
-module Jelly.Data.Config where
+module Jelly.SSG.Data.Config where
 
 import Effect.Aff (Aff)
 import Jelly.Data.Component (Component)
-import Jelly.Data.Query (Query)
-import Jelly.Data.Router (RouterContext)
+import Jelly.Router.Data.Query (Query)
+import Jelly.Router.Data.Router (RouterContext)
 
-type Config context page =
+type SsgConfig context page =
   { basePath :: Array String
   , rootComponent :: Component context -> Component (RouterContext page ())
   , pageToUrl :: page -> { path :: Array String, query :: Query, hash :: String }
