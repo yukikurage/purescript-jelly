@@ -171,7 +171,7 @@ generate { rootComponent, basePath, pageToUrl, getPages, clientMain, output, pag
   log $ "  " <> show (length pages) <> " pages"
   log ""
   for_ pages \page -> do
-    log $ "    " <> urlToString basePath (pageToUrl page)
+    log $ "    " <> makeAbsoluteUrlPath (pageToUrl page).path
   log ""
   log $ jellyPrefix <> "🏗️  HTML / Data generating..."
   let
