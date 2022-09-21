@@ -85,7 +85,7 @@ generateJS :: String -> String -> Aff Unit
 generateJS output clientMain = do
   let
     cmd /\ args = bundleCommand output clientMain
-  log $ jellyPrefix <> "🏃 Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
+  log $ jellyPrefix <> "🍝  Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   waitExit cp
 
@@ -134,7 +134,7 @@ summary root outputs = do
   log $ "  " <> "Main Script (On first load)"
   log $ "    " <> printSize (floor mainJsSize)
   log ""
-  log $ "  " <> "HTML / Data"
+  log $ "  " <> "HTML & Static Data"
   log $ "    " <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (On first load)"
     <> " "
     <> truncate
@@ -173,7 +173,7 @@ generate { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent
   for_ pages \page -> do
     log $ "    " <> makeAbsoluteUrlPath (pageToUrl page).path
   log ""
-  log $ jellyPrefix <> "🏗️  HTML / Data generating..."
+  log $ jellyPrefix <> "💫  HTML & Static data generating..."
   let
     generatePageHTML page = do
       let
@@ -193,13 +193,13 @@ generate { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent
 
       generateHTML pageOutput $ mockRouterProvider $ rootComponent $ component staticData
   parTraverse_ generatePageHTML pages
-  log $ jellyPrefix <> "📄  HTML / Data generated"
+  log $ jellyPrefix <> "🚩  HTML & Static data generated"
   log ""
-  log $ jellyPrefix <> "🏗️  Main script generating..."
+  log $ jellyPrefix <> "💫  Main script generating..."
   generateJS output clientMain
-  log $ jellyPrefix <> "⚙️  Main script generated"
+  log $ jellyPrefix <> "🚩  Main script generated"
   log ""
-  log $ jellyPrefix <> "🚩  Static pages successfully generated"
+  log $ jellyPrefix <> "🎉  Static pages successfully generated"
   log ""
   log $ jellyPrefix <> "📦  File Size"
   summary output $ map (\{ path } -> concat [ makeAbsoluteUrlPath path ]) $ map pageToUrl
