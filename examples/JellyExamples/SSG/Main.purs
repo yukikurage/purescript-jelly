@@ -3,15 +3,9 @@ module JellyExamples.SSG.Main where
 import Prelude
 
 import Effect (Effect)
-import Jelly.SSG.Generator (GeneratorSettings(..), generate)
-import JellyExamples.SSG.RootComponent (rootComponent)
-
-generatorSettings :: GeneratorSettings
-generatorSettings = GeneratorSettings
-  { clientMain: "Test.EntryPoints.Browser"
-  , output: "public"
-  , component: rootComponent
-  }
+import Effect.Aff (launchAff_)
+import Jelly.SSG.Generator (generate)
+import JellyExamples.SSG.Config (ssgConfig)
 
 main :: Effect Unit
-main = generate generatorSettings
+main = launchAff_ $ generate ssgConfig

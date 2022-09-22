@@ -10,3 +10,4 @@
 /.spago
 /public
 /purescript-dependency-graph
+/examples/public/SSG
