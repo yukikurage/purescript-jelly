@@ -2,15 +2,15 @@ module Jelly.SSG.Components where
 
 import Prelude
 
-import Effect.Aff (launchAff_)
+import Effect.Aff (Aff, launchAff_)
 import Jelly.Core.Components (el)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (hooks)
+import Jelly.Core.Data.Hooks (Hooks, hooks)
 import Jelly.Core.Data.Prop (Prop, on, (:=))
 import Jelly.Router.Data.Router (useRouter)
 import Jelly.Router.Data.Url (makeAbsoluteFilePath, urlToString)
 import Jelly.SSG.Data.Config (SsgContext)
-import Jelly.SSG.Data.StaticData (dataPath, getStaticData, useStaticData)
+import Jelly.SSG.Data.StaticData (dataPath, pokeStaticData, useStaticData)
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.MouseEvent.EventTypes (click, mouseenter)
 
@@ -33,10 +33,9 @@ link
 link page props component = hooks do
   { pageToUrl, basePath, pushPage } <- useRouter
 
-  staticData <- useStaticData
+  prefetch <- usePrefetch page
   let
-    handleHover _ = launchAff_ $ void $ getStaticData staticData $ dataPath basePath $ pageToUrl
-      page
+    handleHover _ = launchAff_ $ void $ prefetch
     handleClick e = do
       preventDefault e
       pushPage page
@@ -48,6 +47,14 @@ link page props component = hooks do
       ] <> props
     )
     component
+
+usePrefetch :: forall page context. page -> Hooks (SsgContext page context) (Aff String)
+usePrefetch page = do
+  { pageToUrl, basePath } <- useRouter
+  staticData <- useStaticData
+
+  pure $ pokeStaticData staticData $ dataPath basePath $ pageToUrl
+    page
 
 link_
   :: forall page context

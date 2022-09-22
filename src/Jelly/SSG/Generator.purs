@@ -31,9 +31,6 @@ import Node.FS.Perms (all, mkPerms)
 import Node.FS.Stats (Stats(..))
 import Node.Stream (onDataString)
 
-jellyPrefix :: String
-jellyPrefix = ""
-
 bundleCommand :: Array String -> String -> String /\ Array String
 bundleCommand output clientMain =
   "npx" /\
@@ -73,7 +70,7 @@ generateJS :: Array String -> String -> Aff Unit
 generateJS output clientMain = do
   let
     cmd /\ args = bundleCommand output clientMain
-  log $ jellyPrefix <> "🍝  Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
+  log $ "🍝  Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   waitExit cp
 
@@ -115,15 +112,21 @@ printSize byte =
   in
     truncate sizeWidth sizeStr
 
+indentSize :: Int
+indentSize = 2
+
+indent :: Int -> String
+indent i = replicateStr (i * indentSize) " "
+
 summary :: Array String -> Array (Array String) -> Aff Unit
 summary root outputs = do
   Stats { size: mainJsSize } <- stat $ makeRelativeFilePath $ root <> [ "index.js" ]
-  log $ ""
-  log $ "  " <> "Main Script (On first load)"
-  log $ "    " <> printSize (floor mainJsSize)
   log ""
-  log $ "  " <> "HTML & Static Data"
-  log $ "    " <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (On first load)"
+  log $ indent 1 <> "Main Script (On first load)"
+  log $ indent 2 <> printSize (floor mainJsSize)
+  log ""
+  log $ indent 1 <> "HTML & Static Data"
+  log $ indent 2 <> truncate pathWidth "" <> " " <> truncate sizeWidth "HTML (On first load)"
     <> " "
     <> truncate
       sizeWidth
@@ -133,7 +136,7 @@ summary root outputs = do
       Stats { size: htmlSize } <- stat $ makeRelativeFilePath $ root <> output <> [ "index.html" ]
       Stats { size: dataSize } <- stat $ makeRelativeFilePath $ root <> output <> [ "data" ]
       log
-        $ "    "
+        $ indent 2
             <> printPath (makeAbsoluteUrlPath output)
             <> " "
             <> printSize (floor htmlSize)
@@ -141,6 +144,16 @@ summary root outputs = do
             <> printSize (floor dataSize)
   traverse_ htmlAndDataSummary outputs
   pure unit
+
+logTitle :: Aff Unit
+logTitle = do
+  log ""
+  log ""
+  log "┌─────────────────────┐"
+  log "│🍮 Jelly Generator 🍮│"
+  log "└─────────────────────┘"
+  log ""
+  log ""
 
 generate
   :: forall context page
@@ -150,28 +163,23 @@ generate
 generate
   { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent, basePath, urlToPage } =
   do
-    log ""
-    log ""
-    log "----------------------"
-    log "🍮 Jelly Generator 🍮"
-    log "----------------------"
-    log ""
-    log $ jellyPrefix <> "📖  Retrieving page list..."
+    logTitle
+    log "📖  Retrieving page list..."
     log ""
     pages <- getPages
-    log $ "  " <> show (length pages) <> " pages"
+    log $ indent 1 <> show (length pages) <> " pages"
     log ""
     for_ pages \page -> do
-      log $ "    " <> makeAbsoluteUrlPath (pageToUrl page).path
+      log $ indent 2 <> makeAbsoluteUrlPath (pageToUrl page).path
     log ""
-    log $ jellyPrefix <> "💫  HTML & Static data generating..."
+    log "💫  HTML & Static data generating..."
     let
       generatePageHTML page = do
         let
           { component, getStaticData } = pageComponent page
           { path, query, hash } = pageToUrl page
         when (not (Map.isEmpty query) || hash /= "") do
-          log $ jellyPrefix <> "Error: Page " <> makeAbsoluteUrlPath path <>
+          log $ "Error: Page " <> makeAbsoluteUrlPath path <>
             " has query or hash, which is not supported by Jelly Generator"
           throwError $ error "Page has query or hash"
         let
@@ -190,16 +198,15 @@ generate
         generateHTML pageOutput $ mockStaticDataProvider $ mockRouterProvider $ rootComponent $
           component staticData
     parTraverse_ generatePageHTML pages
-    log $ jellyPrefix <> "🚩  HTML & Static data generated"
+    log "🚩  HTML & Static data generated"
     log ""
-    log $ jellyPrefix <> "💫  Main script generating..."
+    log "💫  Main script generating..."
     generateJS output clientMain
-    log $ jellyPrefix <> "🚩  Main script generated"
+    log "🚩  Main script generated"
     log ""
-    log $ jellyPrefix <> "🎉  Static pages successfully generated"
+    log "🎉  Static pages successfully generated"
     log ""
-    log $ jellyPrefix <> "📦  File Size"
+    log "📦  File Size"
     summary output $ map (\{ path } -> path) $ map pageToUrl
       pages
-    log ""
     log ""

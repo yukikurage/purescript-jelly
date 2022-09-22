@@ -14,7 +14,7 @@ import Jelly.Core.Mount (hydrate_)
 import Jelly.Router.Data.Router (routerProvider, useRouter)
 import Jelly.Router.Data.Url (locationToUrl)
 import Jelly.SSG.Data.Config (SsgConfig)
-import Jelly.SSG.Data.StaticData (dataPath, getStaticData, newStaticData, staticDataProvider)
+import Jelly.SSG.Data.StaticData (dataPath, newStaticData, pokeStaticData, staticDataProvider)
 import Web.HTML (window)
 import Web.HTML.Window (location)
 
@@ -29,7 +29,7 @@ clientMain
 
   -- Fetch Initial Data
   staticData <- liftEffect newStaticData
-  initialData <- getStaticData staticData $ dataPath basePath $ pageToUrl initialPage
+  initialData <- pokeStaticData staticData $ dataPath basePath $ pageToUrl initialPage
 
   -- Make Routed Component
   componentSig /\ componentAtom <- signalWithoutEq $ (pageComponent initialPage).component
@@ -47,7 +47,7 @@ clientMain
         page <- pageSig
         -- Change page component after fetching data
         liftEffect $ launchAff_ do
-          dt <- getStaticData staticData $ dataPath basePath $ pageToUrl page
+          dt <- pokeStaticData staticData $ dataPath basePath $ pageToUrl page
           writeAtom componentAtom $ (pageComponent page).component dt
       pure do
         rootComponent do

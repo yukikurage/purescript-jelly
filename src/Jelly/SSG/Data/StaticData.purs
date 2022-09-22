@@ -29,8 +29,8 @@ staticDataProvider staticData component = contextProvider { __staticData: static
 useStaticData :: forall r. Hooks (StaticDataContext r) (STObject Global (Fiber String))
 useStaticData = (_.__staticData) <$> useContext
 
-getStaticData :: STObject Global (Fiber String) -> String -> Aff String
-getStaticData staticData staticDataUrl = joinFiber =<< liftEffect do
+pokeStaticData :: STObject Global (Fiber String) -> String -> Aff String
+pokeStaticData staticData staticDataUrl = joinFiber =<< liftEffect do
   maybeStaticData <- toEffect $ peek staticDataUrl staticData
   case maybeStaticData of
     Just sd -> pure sd
