@@ -64,6 +64,6 @@ in  upstream
 
 and run `spago install jelly` (or `npx spago install jelly`)
 
-## Examples
+## Documents
 
-See [Jelly Examples](https://yukikurage.github.io/purescript-jelly-examples/) and its [Repository](https://github.com/yukikurage/purescript-jelly-examples).
+See [docs directory](./docs) for more details.
