@@ -10,7 +10,7 @@
     "watch-browser:spago": "npx spago bundle-app --main Test.ClientMain --to public/index.js --watch",
     "watch-browser": "npm-run-all -p watch-browser:*",
     "bundle": "npx spago run --main Test.Main ",
-    "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc && npx spago build",
+    "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc",
     "prepare": "husky install"
   },
   "devDependencies": {

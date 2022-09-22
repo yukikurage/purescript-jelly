@@ -6,6 +6,7 @@ type NodeJSInstance =
 type NodeJSElementInstance = {
   type: "ELEMENT";
   tagName: string;
+  namespaceURI: string;
   attributes: Record<string, string>;
   children: NodeJSInstance[];
 };
@@ -45,12 +46,34 @@ export const newInstance = (tagName: string) => (): Instance => {
       instance: {
         type: "ELEMENT",
         tagName,
+        namespaceURI: "http://www.w3.org/1999/xhtml",
         attributes: {},
         children: [],
       },
     };
   }
 };
+
+export const newInstanceNS =
+  (namespaceURI: string) => (tagName: string) => (): Instance => {
+    if (isBrowser) {
+      return {
+        type: "BROWSER",
+        instance: document.createElementNS(namespaceURI, tagName),
+      };
+    } else {
+      return {
+        type: "NODE",
+        instance: {
+          type: "ELEMENT",
+          tagName,
+          namespaceURI,
+          attributes: {},
+          children: [],
+        },
+      };
+    }
+  };
 
 export const newTextInstance = (text: string) => (): Instance => {
   if (isBrowser) {

@@ -14,6 +14,7 @@ import Web.Event.Internal.Types (Event)
 foreign import data Instance :: Type
 
 foreign import newInstance :: String -> Effect Instance
+foreign import newInstanceNS :: String -> String -> Effect Instance
 foreign import newTextInstance :: String -> Effect Instance
 foreign import newDocTypeInstance :: String -> String -> String -> Effect Instance
 foreign import setAttribute :: String -> String -> Instance -> Effect Unit

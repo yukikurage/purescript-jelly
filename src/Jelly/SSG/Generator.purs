@@ -149,9 +149,11 @@ logTitle :: Aff Unit
 logTitle = do
   log ""
   log ""
-  log "┌─────────────────────┐"
-  log "│🍮 Jelly Generator 🍮│"
-  log "└─────────────────────┘"
+  log "┌───────────────────────┐"
+  log "│                       │"
+  log "│ 🍮 Jelly Generator 🍮 │"
+  log "│    ===============    │"
+  log "└───────────────────────┘"
   log ""
   log ""
 
@@ -197,6 +199,7 @@ generate
 
         generateHTML pageOutput $ mockStaticDataProvider $ mockRouterProvider $ rootComponent $
           component staticData
+
     parTraverse_ generatePageHTML pages
     log "🚩  HTML & Static data generated"
     log ""

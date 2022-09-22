@@ -12,6 +12,27 @@ export const newInstance = (tagName) => () => {
             instance: {
                 type: "ELEMENT",
                 tagName,
+                namespaceURI: "http://www.w3.org/1999/xhtml",
+                attributes: {},
+                children: [],
+            },
+        };
+    }
+};
+export const newInstanceNS = (namespaceURI) => (tagName) => () => {
+    if (isBrowser) {
+        return {
+            type: "BROWSER",
+            instance: document.createElementNS(namespaceURI, tagName),
+        };
+    }
+    else {
+        return {
+            type: "NODE",
+            instance: {
+                type: "ELEMENT",
+                tagName,
+                namespaceURI,
                 attributes: {},
                 children: [],
             },

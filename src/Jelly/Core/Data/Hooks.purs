@@ -15,6 +15,7 @@ type HooksInternalW =
   { unmountEffect :: Effect Unit
   }
 
+-- | A monad to make stateful component.
 newtype Hooks context a = Hooks
   (ReaderT (HooksInternalR context) (WriterT HooksInternalW Effect) a)
 
@@ -32,6 +33,7 @@ derive newtype instance Semigroup a => Semigroup (Hooks context a)
 derive newtype instance Monoid a => Monoid (Hooks context a)
 derive newtype instance MonadRec (Hooks context)
 
+-- | Make Component from Hooks.
 hooks :: forall context. Hooks context (Component context) -> Component context
 hooks (Hooks reader) = do
   internal <- ask

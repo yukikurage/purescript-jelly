@@ -4,70 +4,20 @@ import Prelude
 
 import Control.Monad.Reader (ask)
 import Control.Monad.Writer (tell)
-import Control.Safely (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Ref (new, read, write)
+import Effect.Ref (read, write)
 import Jelly.Core.Data.Component (Component, ComponentM, runComponent, tellInstancesSig, tellUnmountEffect)
-import Jelly.Core.Data.Instance (Instance, addEventListener, firstChild, newDocTypeInstance, newInstance, newTextInstance, nextSibling, removeAttribute, setAttribute, setInnerHTML, setTextContent, updateChildren)
-import Jelly.Core.Data.Prop (Prop(..))
+import Jelly.Core.Data.Instance (Instance, newDocTypeInstance, newInstance, newInstanceNS, newTextInstance, nextSibling)
+import Jelly.Core.Data.Prop (Prop)
 import Jelly.Core.Data.Signal (Signal, defer, launch, signalWithoutEq, writeAtom)
+import Jelly.Core.Register (registerChildComponent, registerInnerHtml, registerProps, registerText)
 import Prim.Row (class Union)
 import Record (union)
 
-registerChildComponent :: forall context. Instance -> Component context -> Component context
-registerChildComponent inst childComponent = do
-  { context } <- ask
-
-  realInstanceRef <- liftEffect $ new =<< firstChild inst
-
-  { instancesSig, unmountEffect } <- liftEffect $ runComponent childComponent
-    { context, realInstanceRef }
-
-  liftEffect $ write Nothing realInstanceRef
-
-  stop <- launch do
-    instances <- instancesSig
-    liftEffect $ updateChildren instances inst
-
-  tellUnmountEffect stop
-  tellUnmountEffect unmountEffect
-
-registerProps :: forall context. Instance -> Array Prop -> Component context
-registerProps inst props = do
-  for_ props \prop -> case prop of
-    PropAttribute key valueSig -> do
-      stop <- launch do
-        valueMaybe <- valueSig
-        liftEffect case valueMaybe of
-          Just value -> setAttribute key value inst
-          Nothing -> removeAttribute key inst
-
-      tellUnmountEffect stop
-
-    PropHandler eventType listener -> do
-      stop <- liftEffect $ addEventListener eventType listener inst
-
-      tellUnmountEffect stop
-
-registerText :: forall context. Instance -> Signal String -> Component context
-registerText inst valueSig = do
-  stop <- launch do
-    value <- valueSig
-    liftEffect $ setTextContent value inst
-
-  tellUnmountEffect stop
-
-registerInnerHtml :: forall context. Instance -> Signal String -> Component context
-registerInnerHtml inst htmlSig = do
-  stop <- launch do
-    html <- htmlSig
-    liftEffect $ setInnerHTML html inst
-
-  tellUnmountEffect stop
-
+-- | Use real instance if it exits
 hydrateInstance :: forall context. Effect Instance -> ComponentM context Instance
 hydrateInstance mkInst = do
   { realInstanceRef } <- ask
@@ -86,21 +36,43 @@ el :: forall context. String -> Array Prop -> Component context -> Component con
 el tag props childComponent = do
   inst <- hydrateInstance $ newInstance tag
 
-  registerProps inst props
-  registerChildComponent inst childComponent
+  { context } <- ask
+
+  tellUnmountEffect =<< liftEffect (registerProps inst props)
+  tellUnmountEffect =<< liftEffect (registerChildComponent inst childComponent context)
 
   tellInstancesSig $ pure [ inst ]
 
 el_ :: forall context. String -> Component context -> Component context
 el_ tag component = el tag [] component
 
+elNS
+  :: forall context
+   . String
+  -> String
+  -> Array Prop
+  -> ComponentM context Unit
+  -> ComponentM context Unit
+elNS nameSpaceURI tag props childComponent = do
+  inst <- hydrateInstance $ newInstanceNS nameSpaceURI tag
+
+  { context } <- ask
+
+  tellUnmountEffect =<< liftEffect (registerProps inst props)
+  tellUnmountEffect =<< liftEffect (registerChildComponent inst childComponent context)
+
+  tellInstancesSig $ pure [ inst ]
+
+elNS_ :: forall context. String -> String -> ComponentM context Unit -> ComponentM context Unit
+elNS_ nameSpaceURI tag component = elNS nameSpaceURI tag [] component
+
 -- | Element which innerHTML is given string
 rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
 rawEl tag props htmlSig = do
   inst <- hydrateInstance $ newInstance tag
 
-  registerProps inst props
-  registerInnerHtml inst htmlSig
+  tellUnmountEffect =<< liftEffect (registerProps inst props)
+  tellUnmountEffect =<< liftEffect (registerInnerHtml inst htmlSig)
 
   tellInstancesSig $ pure [ inst ]
 
@@ -112,7 +84,7 @@ text :: forall context. Signal String -> Component context
 text signal = do
   inst <- hydrateInstance $ newTextInstance ""
 
-  registerText inst signal
+  tellUnmountEffect =<< liftEffect (registerText inst signal)
 
   tellInstancesSig $ pure [ inst ]
 

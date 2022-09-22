@@ -13,13 +13,15 @@ import Effect.Ref (Ref)
 import Jelly.Core.Data.Instance (Instance)
 import Jelly.Core.Data.Signal (Signal)
 
--- | Type for Read
+-- | context: The context of the component.
+-- | realInstanceRef: A ref to the real instance (real node), which is used to hydrate.
 type ComponentInternalR context =
   { context :: Record context
   , realInstanceRef :: Ref (Maybe Instance)
   }
 
--- | Type for Write
+-- | instancesSig is a signal of instances, jelly calls updateChildren each time it changes.
+-- | unmountEffect is an effect that will be called when the component is unmounted.
 type ComponentInternalW =
   { instancesSig :: Signal (Array Instance)
   , unmountEffect :: Effect Unit
@@ -45,6 +47,7 @@ derive newtype instance MonadRec (ComponentM context)
 
 type Component context = ComponentM context Unit
 
+-- | Run a component.
 runComponent
   :: forall context
    . Component context
@@ -53,8 +56,10 @@ runComponent
 runComponent (Component m) internal = do
   snd <$> runWriterT (runReaderT m internal)
 
+-- | Add an instance to the component.
 tellInstancesSig :: forall context. Signal (Array Instance) -> ComponentM context Unit
 tellInstancesSig instancesSig = tell { instancesSig, unmountEffect: mempty }
 
+-- | Add an unmount effect to the component.
 tellUnmountEffect :: forall context. Effect Unit -> ComponentM context Unit
 tellUnmountEffect unmountEffect = tell { instancesSig: mempty, unmountEffect }
