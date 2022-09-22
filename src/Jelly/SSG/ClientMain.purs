@@ -29,7 +29,7 @@ clientMain
 
   -- Fetch Initial Data
   staticData <- liftEffect newStaticData
-  initialData <- getStaticData staticData $ dataPath pageToUrl initialPage
+  initialData <- getStaticData staticData $ dataPath basePath $ pageToUrl initialPage
 
   -- Make Routed Component
   componentSig /\ componentAtom <- signalWithoutEq $ (pageComponent initialPage).component
@@ -47,7 +47,7 @@ clientMain
         page <- pageSig
         -- Change page component after fetching data
         liftEffect $ launchAff_ do
-          dt <- getStaticData staticData $ dataPath pageToUrl page
+          dt <- getStaticData staticData $ dataPath basePath $ pageToUrl page
           writeAtom componentAtom $ (pageComponent page).component dt
       pure do
         rootComponent do

@@ -10,7 +10,7 @@ import Jelly.Core.Data.Prop (on, (:=))
 import Jelly.Core.Data.Signal (Signal, modifyAtom_, signal)
 import Jelly.Core.Hooks.UseInterval (useInterval)
 import Jelly.Router.Data.Router (useRouter)
-import Jelly.SSG.Components (link, link_, mainScript)
+import Jelly.SSG.Components (link_, mainScript)
 import Test.Context (Context)
 import Test.Page (Page(..))
 import Web.HTML.Event.EventTypes (click)
@@ -114,9 +114,9 @@ paging = hooks do
     text $ pure "Paging with Router is available."
 
     el_ "div" do
-      link_ Hoge do
+      el_ "div" $ link_ Hoge do
         text $ pure "Hoge"
-      link_ Top do
+      el_ "div" $ link_ Top do
         text $ pure "Top"
 
     text $ ("Current page: " <> _) <<< show <$> pageSig

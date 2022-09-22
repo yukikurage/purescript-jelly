@@ -42,5 +42,5 @@ getStaticData staticData staticDataUrl = joinFiber =<< liftEffect do
       _ <- toEffect $ poke staticDataUrl fiber staticData
       pure fiber
 
-dataPath :: forall page. (page -> Url) -> page -> String
-dataPath pageToUrl page = makeAbsoluteFilePath $ (pageToUrl page).path <> [ "data" ]
+dataPath :: Array String -> Url -> String
+dataPath basePath pageToUrl = makeAbsoluteFilePath $ basePath <> pageToUrl.path <> [ "data" ]

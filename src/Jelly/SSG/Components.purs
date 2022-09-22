@@ -35,7 +35,8 @@ link page props component = hooks do
 
   staticData <- useStaticData
   let
-    handleHover _ = launchAff_ $ void $ getStaticData staticData $ dataPath pageToUrl page
+    handleHover _ = launchAff_ $ void $ getStaticData staticData $ dataPath basePath $ pageToUrl
+      page
     handleClick e = do
       preventDefault e
       pushPage page
