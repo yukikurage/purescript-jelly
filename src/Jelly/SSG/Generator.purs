@@ -18,11 +18,12 @@ import Effect.Class.Console (log)
 import Effect.Class.Console as Console
 import Jelly.Core.Components (contextProvider)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Signal (signal)
 import Jelly.Core.Render (render)
 import Jelly.Router.Data.Url (makeAbsoluteUrlPath)
 import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.StaticData (newStaticData, staticDataProvider)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', stat, writeTextFile)
@@ -146,51 +147,59 @@ generate
    . Eq page
   => SsgConfig context page
   -> Aff Unit
-generate { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent } = do
-  log ""
-  log ""
-  log "----------------------"
-  log "🍮 Jelly Generator 🍮"
-  log "----------------------"
-  log ""
-  log $ jellyPrefix <> "📖  Retrieving page list..."
-  log ""
-  pages <- getPages
-  log $ "  " <> show (length pages) <> " pages"
-  log ""
-  for_ pages \page -> do
-    log $ "    " <> makeAbsoluteUrlPath (pageToUrl page).path
-  log ""
-  log $ jellyPrefix <> "💫  HTML & Static data generating..."
-  let
-    generatePageHTML page = do
-      let
-        { component, getStaticData } = pageComponent page
-        { path, query, hash } = pageToUrl page
-      when (not (Map.isEmpty query) || hash /= "") do
-        log $ jellyPrefix <> "Error: Page " <> makeAbsoluteUrlPath path <>
-          " has query or hash, which is not supported by Jelly Generator"
-        throwError $ error "Page has query or hash"
-      let
-        pageOutput = concat [ output, makeAbsoluteUrlPath path ]
-        mockRouterProvider component = makeComponent do
-          pageSig /\ _ <- signal page
-          pure $ contextProvider { __router: { pageSig, pushPage: const $ pure unit } } component
+generate
+  { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent, basePath, urlToPage } =
+  do
+    log ""
+    log ""
+    log "----------------------"
+    log "🍮 Jelly Generator 🍮"
+    log "----------------------"
+    log ""
+    log $ jellyPrefix <> "📖  Retrieving page list..."
+    log ""
+    pages <- getPages
+    log $ "  " <> show (length pages) <> " pages"
+    log ""
+    for_ pages \page -> do
+      log $ "    " <> makeAbsoluteUrlPath (pageToUrl page).path
+    log ""
+    log $ jellyPrefix <> "💫  HTML & Static data generating..."
+    let
+      generatePageHTML page = do
+        let
+          { component, getStaticData } = pageComponent page
+          { path, query, hash } = pageToUrl page
+        when (not (Map.isEmpty query) || hash /= "") do
+          log $ jellyPrefix <> "Error: Page " <> makeAbsoluteUrlPath path <>
+            " has query or hash, which is not supported by Jelly Generator"
+          throwError $ error "Page has query or hash"
+        let
+          pageOutput = concat [ output, makeAbsoluteUrlPath path ]
+          mockRouterProvider component = hooks do
+            pageSig /\ _ <- signal page
+            pure $ contextProvider
+              { __router: { pageSig, pushPage: const $ pure unit, basePath, pageToUrl, urlToPage } }
+              component
+          mockStaticDataProvider component = hooks do
+            sd <- liftEffect $ newStaticData
+            pure $ staticDataProvider sd component
 
-      staticData <- generateData pageOutput getStaticData
+        staticData <- generateData pageOutput getStaticData
 
-      generateHTML pageOutput $ mockRouterProvider $ rootComponent $ component staticData
-  parTraverse_ generatePageHTML pages
-  log $ jellyPrefix <> "🚩  HTML & Static data generated"
-  log ""
-  log $ jellyPrefix <> "💫  Main script generating..."
-  generateJS output clientMain
-  log $ jellyPrefix <> "🚩  Main script generated"
-  log ""
-  log $ jellyPrefix <> "🎉  Static pages successfully generated"
-  log ""
-  log $ jellyPrefix <> "📦  File Size"
-  summary output $ map (\{ path } -> concat [ makeAbsoluteUrlPath path ]) $ map pageToUrl
-    pages
-  log ""
-  log ""
+        generateHTML pageOutput $ mockStaticDataProvider $ mockRouterProvider $ rootComponent $
+          component staticData
+    parTraverse_ generatePageHTML pages
+    log $ jellyPrefix <> "🚩  HTML & Static data generated"
+    log ""
+    log $ jellyPrefix <> "💫  Main script generating..."
+    generateJS output clientMain
+    log $ jellyPrefix <> "🚩  Main script generated"
+    log ""
+    log $ jellyPrefix <> "🎉  Static pages successfully generated"
+    log ""
+    log $ jellyPrefix <> "📦  File Size"
+    summary output $ map (\{ path } -> concat [ makeAbsoluteUrlPath path ]) $ map pageToUrl
+      pages
+    log ""
+    log ""

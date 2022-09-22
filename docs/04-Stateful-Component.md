@@ -11,14 +11,14 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Prop (on)
 import Jelly.Core.Data.Signal (modifyAtom_, signal)
 import Jelly.Core.Components (el, el_, text)
 import Web.HTML.Event.EventTypes (click)
 
 counter :: Component ()
-counter = makeComponent do
+counter = hooks do
   countSig /\ countAtom <- signal 0
 
   pure $ el_ "div" do
@@ -37,13 +37,13 @@ import Data.Tuple.Nested ((/\))
 import Effect.Class (liftEffect)
 import Effect.Timer (clearInterval, setInterval)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Signal (modifyAtom_, signal)
 import Jelly.Core.Components (text)
 import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 timer :: Component ()
-timer = makeComponent do
+timer = hooks do
   timeSig /\ timeAtom <- signal 0
 
   id <- liftEffect $ setInterval 1000 $ modifyAtom_ timeAtom (_ + 1)

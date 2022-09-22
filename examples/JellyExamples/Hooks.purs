@@ -6,11 +6,11 @@ import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Jelly.Core.Components (el_, text)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 componentWithHooks :: Component ()
-componentWithHooks = makeComponent do
+componentWithHooks = hooks do
   -- This effect runs when the component is mounted
   liftEffect $ log "Mounted"
 

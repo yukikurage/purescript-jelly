@@ -21,6 +21,7 @@ to generate this file without the comments in this block.
   , "either"
   , "foldable-traversable"
   , "foreign"
+  , "foreign-object"
   , "integers"
   , "js-timers"
   , "maybe"
@@ -35,7 +36,9 @@ to generate this file without the comments in this block.
   , "posix-types"
   , "prelude"
   , "record"
+  , "refs"
   , "safely"
+  , "st"
   , "strings"
   , "tailrec"
   , "transformers"
@@ -43,6 +46,7 @@ to generate this file without the comments in this block.
   , "web-dom"
   , "web-events"
   , "web-html"
+  , "web-uievents"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

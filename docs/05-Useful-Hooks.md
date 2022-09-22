@@ -8,7 +8,7 @@ Hooks that stop the timer when unmounting.
 
 ```purs
 timer :: Component Unit
-timer = makeComponent do
+timer = hooks do
   timeSig /\ timeAtom <- signal 0
 
   id <- liftEffect $ setInterval 1000 $ modifyAtom_ timeAtom (_ + 1)
@@ -23,7 +23,7 @@ timer = makeComponent do
 
 ```purs
 timer :: Component Unit
-timer = makeComponent do
+timer = hooks do
   timeSig /\ timeAtom <- signal 0
 
   useInterval 1000 $ modifyAtom_ timeAtom (_ + 1)

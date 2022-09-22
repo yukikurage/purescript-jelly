@@ -1,7 +1,7 @@
 module Test.Context where
 
-import Jelly.Router.Data.Router (RouterContext)
+import Jelly.SSG.Data.Config (SsgContext)
 import Test.Page (Page)
 
 type Context :: Row Type
-type Context = RouterContext Page ()
+type Context = SsgContext Page ()

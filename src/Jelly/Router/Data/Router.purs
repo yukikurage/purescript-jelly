@@ -8,12 +8,12 @@ import Effect.Class (liftEffect)
 import Foreign (unsafeToForeign)
 import Jelly.Core.Components (contextProvider)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (Hooks, makeComponent)
+import Jelly.Core.Data.Hooks (Hooks, hooks)
 import Jelly.Core.Data.Signal (Signal, signal, writeAtom)
 import Jelly.Core.Hooks.UseContext (useContext)
 import Jelly.Core.Hooks.UseEventListener (useEventListener)
 import Jelly.Router.Data.Config (RouterConfig)
-import Jelly.Router.Data.Url (locationToUrl, urlToString)
+import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
 import Web.HTML (window)
 import Web.HTML.Event.PopStateEvent.EventTypes (popstate)
 import Web.HTML.History (DocumentTitle(..), URL(..), pushState, replaceState)
@@ -23,6 +23,9 @@ import Web.HTML.Window as Window
 type Router page =
   { pageSig :: Signal page
   , pushPage :: page -> Effect Unit
+  , basePath :: Array String
+  , urlToPage :: Url -> page
+  , pageToUrl :: page -> Url
   }
 
 type RouterContext page context = (__router :: Router page | context)
@@ -33,7 +36,7 @@ routerProvider
   => RouterConfig page
   -> Component (RouterContext page context)
   -> Component context
-routerProvider { basePath, urlToPage, pageToUrl } component = makeComponent do
+routerProvider { basePath, urlToPage, pageToUrl } component = hooks do
   w <- liftEffect window
   loc <- liftEffect $ location w
   initialPage <- liftEffect $ urlToPage <$> locationToUrl basePath loc
@@ -59,6 +62,9 @@ routerProvider { basePath, urlToPage, pageToUrl } component = makeComponent do
     router =
       { pageSig
       , pushPage
+      , basePath
+      , urlToPage
+      , pageToUrl
       }
 
   pure $ contextProvider { __router: router } component

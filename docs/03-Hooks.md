@@ -12,12 +12,12 @@ import Prelude
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Components (el_, text)
 import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 componentWithHooks :: Component ()
-componentWithHooks = makeComponent do
+componentWithHooks = hooks do
   -- This effect runs when the component is mounted
   liftEffect $ log "Mounted"
 
@@ -28,6 +28,6 @@ componentWithHooks = makeComponent do
     text $ pure "Hello, World!"
 ```
 
-Here, the `makeComponent` function type is `makeComponent :: ∀ context. Hooks context (Component context) → Component context`.
+Here, the `hooks` function type is `hooks :: ∀ context. Hooks context (Component context) → Component context`.
 
 Thus, what you write in `Hooks` directly with `liftEffect` will be executed on mount, and what you write in `useUnmountEffect` will be executed on unmount.

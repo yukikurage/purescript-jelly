@@ -1,14 +1,9 @@
 module Jelly.Router.Data.Config where
 
-import Jelly.Router.Data.Query (Query)
+import Jelly.Router.Data.Url (Url)
 
 type RouterConfig page =
   { basePath :: Array String
-  , pageToUrl ::
-      page
-      -> { path :: Array String
-         , query :: Query
-         , hash :: String
-         }
-  , urlToPage :: { path :: Array String, query :: Query, hash :: String } -> page
+  , pageToUrl :: page -> Url
+  , urlToPage :: Url -> page
   }

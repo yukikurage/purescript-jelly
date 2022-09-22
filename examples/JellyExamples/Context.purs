@@ -4,7 +4,7 @@ import Prelude
 
 import Jelly.Core.Components (contextProvider, el_, text)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Hooks.UseContext (useContext)
 
 componentParent :: Component ()
@@ -16,7 +16,7 @@ componentFirstChild = el_ "div" do
   componentSecondChild
 
 componentSecondChild :: Component (someContext :: String)
-componentSecondChild = makeComponent do
+componentSecondChild = hooks do
   { someContext } <- useContext
 
   pure $ el_ "div" do

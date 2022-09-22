@@ -7,9 +7,9 @@ import Effect (Effect)
 import Jelly.Core.Data.Signal (Signal)
 import Web.Event.Event (Event, EventType)
 
-data Prop context
-  = PropAttribute String (Record context -> Signal (Maybe String))
-  | PropHandler EventType (Record context -> Event -> Effect Unit)
+data Prop
+  = PropAttribute String (Signal (Maybe String))
+  | PropHandler EventType (Event -> Effect Unit)
 
 class AttrValue a where
   toAttrValue :: a -> Maybe String
@@ -26,37 +26,15 @@ instance AttrValue Boolean where
 instance AttrValue (Maybe Boolean) where
   toAttrValue v = toAttrValue =<< v
 
-class AttrValueWithContext context a where
-  toAttrValueWithContext :: a -> Record context -> Maybe String
-
-instance (AttrValue a) => AttrValueWithContext context a where
-  toAttrValueWithContext a _ = toAttrValue a
-
-else instance (AttrValue a) => AttrValueWithContext context (Record context -> a) where
-  toAttrValueWithContext f context = toAttrValue $ f context
-
-class AttrValueWithSignalAndContext context a where
-  toAttrValueWithSignalAndContext :: a -> Record context -> Signal (Maybe String)
-
-instance (AttrValue a) => AttrValueWithSignalAndContext context (Signal a) where
-  toAttrValueWithSignalAndContext signal _ = map toAttrValue signal
-
-else instance (AttrValue a) => AttrValueWithSignalAndContext context (Record context -> Signal a) where
-  toAttrValueWithSignalAndContext f context = map toAttrValue $ f context
-
-attr :: forall context a. AttrValueWithContext context a => String -> a -> Prop context
-attr name signal = PropAttribute name \context -> pure $ toAttrValueWithContext signal context
+attr :: forall a. AttrValue a => String -> a -> Prop
+attr name value = PropAttribute name $ pure $ toAttrValue value
 
 infix 0 attr as :=
 
-attrSig :: forall context a. AttrValueWithSignalAndContext context a => String -> a -> Prop context
-attrSig name signal = PropAttribute name \context -> toAttrValueWithSignalAndContext signal context
+attrSig :: forall a. AttrValue a => String -> Signal a -> Prop
+attrSig name value = PropAttribute name $ toAttrValue <$> value
 
 infix 0 attrSig as :=@
 
-on :: forall context. EventType -> (Event -> Effect Unit) -> Prop context
-on et el = PropHandler et $ \_ -> el
-
-onWithContext
-  :: forall context. EventType -> (Record context -> Event -> Effect Unit) -> Prop context
-onWithContext = PropHandler
+on :: EventType -> (Event -> Effect Unit) -> Prop
+on = PropHandler

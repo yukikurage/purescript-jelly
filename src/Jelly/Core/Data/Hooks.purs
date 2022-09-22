@@ -32,8 +32,8 @@ derive newtype instance Semigroup a => Semigroup (Hooks context a)
 derive newtype instance Monoid a => Monoid (Hooks context a)
 derive newtype instance MonadRec (Hooks context)
 
-makeComponent :: forall context. Hooks context (Component context) -> Component context
-makeComponent (Hooks reader) = do
+hooks :: forall context. Hooks context (Component context) -> Component context
+hooks (Hooks reader) = do
   internal <- ask
   component /\ { unmountEffect } <- liftEffect $ runWriterT $ runReaderT reader internal
   tellUnmountEffect unmountEffect

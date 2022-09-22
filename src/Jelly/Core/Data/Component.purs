@@ -5,15 +5,18 @@ import Prelude
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT, tell)
+import Data.Maybe (Maybe)
 import Data.Tuple (snd)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+import Effect.Ref (Ref)
 import Jelly.Core.Data.Instance (Instance)
 import Jelly.Core.Data.Signal (Signal)
 
 -- | Type for Read
 type ComponentInternalR context =
   { context :: Record context
+  , realInstanceRef :: Ref (Maybe Instance)
   }
 
 -- | Type for Write

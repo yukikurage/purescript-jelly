@@ -2,44 +2,36 @@ module Test.RootComponent where
 
 import Prelude
 
-import Data.Array (snoc)
 import Data.Tuple.Nested ((/\))
 import Jelly.Core.Components (docTypeHTML, el, el_, rawEl, text)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Prop (on, (:=))
 import Jelly.Core.Data.Signal (Signal, modifyAtom_, signal)
 import Jelly.Core.Hooks.UseInterval (useInterval)
 import Jelly.Router.Data.Router (useRouter)
-import Jelly.Router.Data.Url (makeAbsoluteFilePath)
+import Jelly.SSG.Components (link, link_, mainScript)
 import Test.Context (Context)
-import Test.Page (Page(..), basePath)
+import Test.Page (Page(..))
 import Web.HTML.Event.EventTypes (click)
 
 rootComponent :: Component Context -> Component Context
-rootComponent pageComponent = makeComponent do
-
-  pure do
-    docTypeHTML
-    el_ "html" do
-      el_ "head" do
-        el "script"
-          [ "defer" := true
-          , "type" := "text/javascript"
-          , "src" := makeAbsoluteFilePath (basePath `snoc` "index.js")
-          ]
-          mempty
-      el_ "body" do
-        el_ "h1" do
-          text $ pure "🍮Hello, Jelly!"
-        el_ "p" do
-          text $ pure "This is a Jelly test."
-        withTitle (pure "Timer") timer
-        withTitle (pure "Counter") counter
-        -- withTitle (pure "Mount / Unmount") mount
-        withTitle (pure "Raw") raw
-        withTitle (pure "Paging") paging
-        withTitle (pure "Static") $ static pageComponent
+rootComponent pageComponent = do
+  docTypeHTML
+  el_ "html" do
+    el_ "head" do
+      mainScript
+    el_ "body" do
+      el_ "h1" do
+        text $ pure "🍮Hello, Jelly!"
+      el_ "p" do
+        text $ pure "This is a Jelly test."
+      withTitle (pure "Timer") timer
+      withTitle (pure "Counter") counter
+      -- withTitle (pure "Mount / Unmount") mount
+      withTitle (pure "Raw") raw
+      withTitle (pure "Paging") paging
+      withTitle (pure "Static") $ static pageComponent
 
 withTitle :: Signal String -> Component Context -> Component Context
 withTitle titleSig component = el_ "div" do
@@ -47,7 +39,7 @@ withTitle titleSig component = el_ "div" do
   el "div" [ "style" := "padding: 10px" ] component
 
 timer :: Component Context
-timer = makeComponent do
+timer = hooks do
   timeSig /\ timeAtom <- signal 0
 
   useInterval 1000 $ modifyAtom_ timeAtom (_ + 1)
@@ -55,7 +47,7 @@ timer = makeComponent do
   pure $ text $ show <$> timeSig
 
 counter :: Component Context
-counter = makeComponent do
+counter = hooks do
   countSig /\ countAtom <- signal 0
 
   pure $ el_ "div" do
@@ -65,7 +57,7 @@ counter = makeComponent do
       text $ show <$> countSig
 
 -- mount :: Component Context
--- mount = makeComponent do
+-- mount = hooks do
 --   cmpNameSig /\ cmpNameAtom <- signal "timer"
 --   logTextSig /\ logTextAtom <- signal ""
 
@@ -83,7 +75,7 @@ counter = makeComponent do
 --         writeAtom cmpNameAtom =<< Select.value select
 
 --     withMountMessage :: Signal String -> Component Context -> Component Context
---     withMountMessage nameSig component = makeComponent do
+--     withMountMessage nameSig component = hooks do
 --       liftEffect do
 --         name <- readSignal nameSig
 --         addLog $ "mount: " <> name
@@ -115,22 +107,22 @@ raw :: Component Context
 raw = rawEl "div" [] $ pure "<p>Raw HTML</p>"
 
 paging :: Component Context
-paging = makeComponent do
-  { pageSig, pushPage } <- useRouter
+paging = hooks do
+  { pageSig } <- useRouter
 
   pure do
     text $ pure "Paging with Router is available."
 
     el_ "div" do
-      el "button" [ on click \_ -> pushPage Hoge ] do
+      link_ Hoge do
         text $ pure "Hoge"
-      el "button" [ on click \_ -> pushPage Top ] do
+      link_ Top do
         text $ pure "Top"
 
     text $ ("Current page: " <> _) <<< show <$> pageSig
 
 static :: Component Context -> Component Context
-static pageComponent = makeComponent do
+static pageComponent = hooks do
 
   pure $ el_ "div" do
     el_ "div" do
