@@ -22,7 +22,7 @@ import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Signal (signal)
 import Jelly.Core.Render (render)
 import Jelly.Router.Data.Url (makeAbsoluteUrlPath, makeRelativeFilePath)
-import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.GeneratorConfig (GeneratorConfig)
 import Jelly.SSG.Data.StaticData (newStaticData, staticDataProvider)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
@@ -160,10 +160,19 @@ logTitle = do
 generate
   :: forall context page
    . Eq page
-  => SsgConfig context page
+  => GeneratorConfig context page
   -> Aff Unit
 generate
-  { rootComponent, pageToUrl, getPages, clientMain, output, pageComponent, basePath, urlToPage } =
+  { rootComponent
+  , pageToUrl
+  , getPages
+  , clientMain
+  , output
+  , pageComponent
+  , pageStaticData
+  , basePath
+  , urlToPage
+  } =
   do
     logTitle
     log "📖  Retrieving page list..."
@@ -178,7 +187,8 @@ generate
     let
       generatePageHTML page = do
         let
-          { component, getStaticData } = pageComponent page
+          component = pageComponent page
+          getStaticData = pageStaticData page
           { path, query, hash } = pageToUrl page
         when (not (Map.isEmpty query) || hash /= "") do
           log $ "Error: Page " <> makeAbsoluteUrlPath path <>
@@ -186,14 +196,14 @@ generate
           throwError $ error "Page has query or hash"
         let
           pageOutput = output <> path
-          mockRouterProvider component = hooks do
+          mockRouterProvider cmp = hooks do
             pageSig /\ _ <- signal page
             pure $ contextProvider
               { __router: { pageSig, pushPage: const $ pure unit, basePath, pageToUrl, urlToPage } }
-              component
-          mockStaticDataProvider component = hooks do
+              cmp
+          mockStaticDataProvider cmp = hooks do
             sd <- liftEffect $ newStaticData
-            pure $ staticDataProvider sd component
+            pure $ staticDataProvider sd cmp
 
         staticData <- generateData pageOutput getStaticData
 

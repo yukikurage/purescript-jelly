@@ -48,7 +48,7 @@ basePath = []
 ```purs
 module JellyExamples.SSG.Context where
 
-import Jelly.SSG.Data.Config (SsgContext)
+import Jelly.SSG.Data.GeneratorConfig (SsgContext)
 import JellyExamples.SSG.Page (Page)
 
 type Context = SsgContext Page ()
@@ -117,7 +117,7 @@ import Prelude
 import Jelly.Core.Components (docTypeHTML, el_, text)
 import Jelly.Core.Data.Component (Component)
 import Jelly.SSG.Components (mainScript)
-import Jelly.SSG.Data.Config (SsgContext)
+import Jelly.SSG.Data.GeneratorConfig (SsgContext)
 import JellyExamples.SSG.Context (Context)
 import JellyExamples.SSG.Page (Page)
 
@@ -156,14 +156,14 @@ module JellyExamples.SSG.Config where
 
 import Prelude
 
-import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.GeneratorConfig (GeneratorConfig)
 import JellyExamples.SSG.Context (Context)
 import JellyExamples.SSG.Page (Page(..), basePath, pageToUrl, urlToPage)
 import JellyExamples.SSG.Pages.About as About
 import JellyExamples.SSG.Pages.Top as Top
 import JellyExamples.SSG.RootComponent (rootComponent)
 
-ssgConfig :: SsgConfig Context Page
+ssgConfig :: GeneratorConfig Context Page
 ssgConfig =
   { basePath
   , rootComponent

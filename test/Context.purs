@@ -1,6 +1,6 @@
 module Test.Context where
 
-import Jelly.SSG.Data.Config (SsgContext)
+import Jelly.SSG.Data.GeneratorConfig (SsgContext)
 import Test.Page (Page)
 
 type Context :: Row Type

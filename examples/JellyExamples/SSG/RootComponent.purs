@@ -5,7 +5,7 @@ import Prelude
 import Jelly.Core.Components (docTypeHTML, el_, text)
 import Jelly.Core.Data.Component (Component)
 import Jelly.SSG.Components (mainScript)
-import Jelly.SSG.Data.Config (SsgContext)
+import Jelly.SSG.Data.GeneratorConfig (SsgContext)
 import JellyExamples.SSG.Context (Context)
 import JellyExamples.SSG.Page (Page)
 

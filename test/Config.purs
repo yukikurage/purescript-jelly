@@ -2,12 +2,12 @@ module Test.Config where
 
 import Prelude
 
-import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.GeneratorConfig (GeneratorConfig)
 import Test.Context (Context)
 import Test.Page (Page(..), basePath, pageToUrl, urlToPage)
 import Test.RootComponent (hogePage, notFoundPage, rootComponent, topPage)
 
-config :: SsgConfig Context Page
+config :: GeneratorConfig Context Page
 config =
   { basePath
   , rootComponent: rootComponent

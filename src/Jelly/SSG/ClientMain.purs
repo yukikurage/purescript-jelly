@@ -13,12 +13,12 @@ import Jelly.Core.Hooks.UseSignal (useSignal)
 import Jelly.Core.Mount (hydrate_)
 import Jelly.Router.Data.Router (routerProvider, useRouter)
 import Jelly.Router.Data.Url (locationToUrl)
-import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.ClientConfig (ClientConfig)
 import Jelly.SSG.Data.StaticData (dataPath, newStaticData, pokeStaticData, staticDataProvider)
 import Web.HTML (window)
 import Web.HTML.Window (location)
 
-clientMain :: forall context page. Eq page => SsgConfig context page -> Aff Unit
+clientMain :: forall context page. Eq page => ClientConfig context page -> Aff Unit
 clientMain
   { rootComponent, pageToUrl, urlToPage, basePath, pageComponent } = do
   w <- liftEffect $ window
@@ -32,7 +32,7 @@ clientMain
   initialData <- pokeStaticData staticData $ dataPath basePath $ pageToUrl initialPage
 
   -- Make Routed Component
-  componentSig /\ componentAtom <- signalWithoutEq $ (pageComponent initialPage).component
+  componentSig /\ componentAtom <- signalWithoutEq $ pageComponent initialPage
     initialData
   let
     routerSettings =
@@ -48,7 +48,7 @@ clientMain
         -- Change page component after fetching data
         liftEffect $ launchAff_ do
           dt <- pokeStaticData staticData $ dataPath basePath $ pageToUrl page
-          writeAtom componentAtom $ (pageComponent page).component dt
+          writeAtom componentAtom $ pageComponent page dt
       pure do
         rootComponent do
           signalC componentSig

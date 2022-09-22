@@ -2,14 +2,14 @@ module JellyExamples.SSG.Config where
 
 import Prelude
 
-import Jelly.SSG.Data.Config (SsgConfig)
+import Jelly.SSG.Data.GeneratorConfig (GeneratorConfig)
 import JellyExamples.SSG.Context (Context)
 import JellyExamples.SSG.Page (Page(..), basePath, pageToUrl, urlToPage)
 import JellyExamples.SSG.Pages.About as About
 import JellyExamples.SSG.Pages.Top as Top
 import JellyExamples.SSG.RootComponent (rootComponent)
 
-ssgConfig :: SsgConfig Context Page
+ssgConfig :: GeneratorConfig Context Page
 ssgConfig =
   { basePath
   , rootComponent

@@ -5,7 +5,7 @@ import Prelude
 import Effect.Aff (Aff)
 import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Router.Data.Router (useRouter)
-import Jelly.SSG.Data.Config (SsgContext)
+import Jelly.SSG.Data.GeneratorConfig (SsgContext)
 import Jelly.SSG.Data.StaticData (dataPath, pokeStaticData, useStaticData)
 
 usePrefetch :: forall page context. page -> Hooks (SsgContext page context) (Aff String)
