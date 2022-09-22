@@ -2,9 +2,9 @@ module JellyExamples.SSG.RootComponent where
 
 import Prelude
 
-import Jelly.Data.Component (Component)
-import Jelly.Data.Prop ((:=))
-import Jelly.El (docTypeHTML, el, el_, emptyC, text)
+import Jelly.Core.Components (docTypeHTML, el, el_, emptyC, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Prop ((:=))
 import Test.Context (Context)
 
 rootComponent :: Component Context

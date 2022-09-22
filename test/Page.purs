@@ -33,4 +33,4 @@ urlToPage :: { path :: Array String, query :: Map String String, hash :: String 
 urlToPage { path } = fromPath $ path
 
 basePath :: Array String
-basePath = [ "purescript-jelly" ]
+basePath = []

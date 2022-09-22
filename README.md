@@ -7,7 +7,7 @@ Jelly is a framework with the following features
 - State management by reactivity (not FRP)
 - Logic synthesis and reuse via Hooks
 - Simple component separation
-- SSG support
+- SSG & SPA Routing support
 
 See [docs directory](./docs) for more details.
 
@@ -22,18 +22,28 @@ in  upstream
   with jelly =
     { dependencies =
       [ "aff"
+      , "affjax"
+      , "affjax-web"
       , "arrays"
+      , "console"
       , "effect"
       , "either"
       , "foldable-traversable"
+      , "foreign"
+      , "integers"
       , "js-timers"
       , "maybe"
       , "node-buffer"
+      , "node-child-process"
       , "node-fs"
       , "node-fs-aff"
       , "node-path"
-      , "node-process"
+      , "node-streams"
+      , "ordered-collections"
+      , "parallel"
+      , "posix-types"
       , "prelude"
+      , "record"
       , "refs"
       , "safely"
       , "strings"

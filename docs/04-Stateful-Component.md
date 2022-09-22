@@ -10,11 +10,11 @@ For example, let's create a counter
 import Prelude
 
 import Data.Tuple.Nested ((/\))
-import Jelly.Data.Component (Component)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.Data.Prop (on)
-import Jelly.Data.Signal (modifyAtom_, signal)
-import Jelly.El (el, el_, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Prop (on)
+import Jelly.Core.Data.Signal (modifyAtom_, signal)
+import Jelly.Core.Components (el, el_, text)
 import Web.HTML.Event.EventTypes (click)
 
 counter :: Component ()
@@ -36,10 +36,10 @@ Next we will create a timer, but note that the timer should be stopped when unmo
 import Data.Tuple.Nested ((/\))
 import Effect.Class (liftEffect)
 import Effect.Timer (clearInterval, setInterval)
-import Jelly.Data.Component (Component)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.Data.Signal (modifyAtom_, signal)
-import Jelly.El (text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Signal (modifyAtom_, signal)
+import Jelly.Core.Components (text)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
 timer :: Component ()

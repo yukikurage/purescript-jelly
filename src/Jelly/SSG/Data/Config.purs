@@ -1,7 +1,7 @@
 module Jelly.SSG.Data.Config where
 
 import Effect.Aff (Aff)
-import Jelly.Data.Component (Component)
+import Jelly.Core.Data.Component (Component)
 import Jelly.Router.Data.Query (Query)
 import Jelly.Router.Data.Router (RouterContext)
 

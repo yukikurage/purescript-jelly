@@ -4,9 +4,9 @@ import Prelude
 
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import Jelly.Data.Component (Component)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.El (el_, text)
+import Jelly.Core.Components (el_, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
 componentWithHooks :: Component ()

@@ -16,9 +16,9 @@ module JellyExamples.SSG.RootComponent where
 
 import Prelude
 
-import Jelly.Data.Component (Component)
-import Jelly.Data.Prop ((:=))
-import Jelly.El (docTypeHTML, el, el_, emptyC, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Prop ((:=))
+import Jelly.Core.Components (docTypeHTML, el, el_, emptyC, text)
 import Test.Context (Context)
 
 rootComponent :: Component Context
@@ -63,7 +63,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Jelly.Aff (awaitDocument)
+import Jelly.Core.Aff (awaitDocument)
 import Jelly.mount (mount)
 import Test.RootComponent (rootComponent)
 

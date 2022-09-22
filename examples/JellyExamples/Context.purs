@@ -2,9 +2,9 @@ module JellyExamples.Context where
 
 import Prelude
 
-import Jelly.Data.Component (Component)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.El (contextProvider, el_, text)
+import Jelly.Core.Components (contextProvider, el_, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
 import Jelly.Hooks.UseContext (useContext)
 
 componentParent :: Component ()

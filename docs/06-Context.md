@@ -7,9 +7,9 @@ Here is an example
 ```purs
 import Prelude
 
-import Jelly.Data.Component (Component)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.El (el_, provideContext, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Components (el_, provideContext, text)
 import Jelly.Hooks.UseContext (useContext)
 
 componentParent :: Component ()

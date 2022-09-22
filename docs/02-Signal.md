@@ -46,7 +46,7 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console (log)
-import Jelly.Data.Signal (launch_, modifyAtom_, signal, writeAtom)
+import Jelly.Core.Data.Signal (launch_, modifyAtom_, signal, writeAtom)
 
 main :: Effect Unit
 main = do

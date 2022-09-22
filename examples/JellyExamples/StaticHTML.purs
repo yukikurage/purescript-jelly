@@ -2,14 +2,14 @@ module JellyExamples.HelloJelly where
 
 import Prelude
 
-import Data.Traversable (traverse_)
+import Control.Safely (traverse_)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Jelly.Aff (awaitQuerySelector)
-import Jelly.Data.Component (Component)
-import Jelly.El (el_, text)
-import Jelly.Mount (mount_)
+import Jelly.Core.Aff (awaitQuerySelector)
+import Jelly.Core.Components (el_, text)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Mount (mount_)
 import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit

@@ -1,4 +1,4 @@
-module Jelly.Aff where
+module Jelly.Core.Aff where
 
 import Prelude
 
@@ -6,7 +6,7 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe)
 import Effect.Aff (Aff, effectCanceler, makeAff)
 import Effect.Class (liftEffect)
-import Jelly.Data.Instance (Instance, fromNode)
+import Web.DOM (Node)
 import Web.DOM.Element as Element
 import Web.DOM.ParentNode (QuerySelector, querySelector)
 import Web.Event.EventTarget (addEventListener, eventListener, removeEventListener)
@@ -33,14 +33,14 @@ awaitDomContentLoaded = makeAff \callback -> do
       callback (Right unit)
       mempty
 
-awaitDocument :: Aff Instance
+awaitDocument :: Aff Node
 awaitDocument = do
   awaitDomContentLoaded
-  liftEffect $ fromNode <<< HTMLDocument.toNode <$> (document =<< window)
+  liftEffect $ HTMLDocument.toNode <$> (document =<< window)
 
-awaitQuerySelector :: QuerySelector -> Aff (Maybe Instance)
+awaitQuerySelector :: QuerySelector -> Aff (Maybe Node)
 awaitQuerySelector qs = do
   awaitDomContentLoaded
   maybeEl <- liftEffect $ querySelector qs <<< HTMLDocument.toParentNode =<< document =<<
     window
-  pure $ fromNode <<< Element.toNode <$> maybeEl
+  pure $ Element.toNode <$> maybeEl

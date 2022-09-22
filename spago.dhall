@@ -35,7 +35,6 @@ to generate this file without the comments in this block.
   , "posix-types"
   , "prelude"
   , "record"
-  , "refs"
   , "safely"
   , "strings"
   , "tailrec"

@@ -1,4 +1,4 @@
-module Jelly.Data.Instance where
+module Jelly.Core.Data.Instance where
 
 import Prelude
 
@@ -9,9 +9,8 @@ import Web.Event.Event (EventType(..))
 import Web.Event.Internal.Types (Event)
 
 -- | Instance is a platform-dependent type generated from a Component.
--- | In the browser, type represent Element.
--- | In NodeJS, type represent mutable object.
--- | Operating Instance with reactivity is more efficient with a browser.
+-- | In the browser, type represent Node.
+-- | In node.js, type represent mutable object.
 foreign import data Instance :: Type
 
 foreign import newInstance :: String -> Effect Instance

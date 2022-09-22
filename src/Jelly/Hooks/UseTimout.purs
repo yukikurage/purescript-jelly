@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Timer (clearTimeout, setTimeout)
-import Jelly.Data.Hooks (Hooks)
+import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
 
 useTimeout :: forall context. Int -> Effect Unit -> Hooks context Unit

@@ -8,23 +8,19 @@ import Data.Array (fold, length, replicate)
 import Data.Either (Either(..))
 import Data.Int (floor)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
 import Data.Posix.Signal (Signal(..))
 import Data.String as String
-import Data.Traversable (traverse)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Aff (Aff, Canceler(..), error, makeAff, throwError)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Class.Console as Console
-import Effect.Ref (new)
-import Jelly.Data.Component (Component, runComponent)
-import Jelly.Data.Emitter (emit, newEmitter)
-import Jelly.Data.Hooks (makeComponent)
-import Jelly.Data.Instance (toHTML)
-import Jelly.Data.Signal (readSignal, signal)
-import Jelly.El (contextProvider)
+import Jelly.Core.Components (contextProvider)
+import Jelly.Core.Data.Component (Component)
+import Jelly.Core.Data.Hooks (makeComponent)
+import Jelly.Core.Data.Signal (signal)
+import Jelly.Core.Render (render)
 import Jelly.Router.Data.Url (makeAbsoluteUrlPath)
 import Jelly.SSG.Data.Config (SsgConfig)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
@@ -37,14 +33,6 @@ import Node.Stream (onDataString)
 
 jellyPrefix :: String
 jellyPrefix = ""
-
-render :: Component () -> Effect String
-render component = do
-  unmountEmitter <- newEmitter
-  realInstanceRef <- new Nothing
-  insts <- readSignal =<< runComponent component { context: {}, unmountEmitter, realInstanceRef }
-  emit unmountEmitter
-  fold <$> traverse toHTML insts
 
 bundleCommand :: String -> String -> String /\ Array String
 bundleCommand output clientMain =

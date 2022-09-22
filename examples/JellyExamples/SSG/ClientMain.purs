@@ -5,8 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Jelly.Aff (awaitDocument)
-import Jelly.Mount (mount_)
+import Jelly.Core.Aff (awaitDocument)
+import Jelly.Core.Mount (mount_)
 import JellyExamples.SSG.RootComponent (rootComponent)
 
 main :: Effect Unit

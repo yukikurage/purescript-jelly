@@ -1,4 +1,4 @@
-module Jelly.Data.Signal
+module Jelly.Core.Data.Signal
   ( Atom
   , Signal
   , defer
@@ -127,7 +127,7 @@ modifyAtom atom f = liftEffect $ do
 
 modifyAtom_
   :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m Unit
-modifyAtom_ atom f = modifyAtom atom f $> unit
+modifyAtom_ atom f = void $ modifyAtom atom f
 
 writeAtom :: forall m a. MonadEffect m => Atom a -> a -> m Unit
 writeAtom atom v = modifyAtom_ atom $ const v
