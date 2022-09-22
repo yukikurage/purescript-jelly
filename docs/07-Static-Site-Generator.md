@@ -4,8 +4,12 @@ Jelly supports SSG.
 
 SSG works by the following process
 
-- Generate and export HTML from components
-- Bundle client-side code using spago
+- Build
+  - Generate and export HTML from components
+  - Bundle client-side code using spago
+- Browser
+  - Display generated HTML
+  - Attach handler by client-side script (Hydration)
 
 ## Make root component
 

@@ -6,6 +6,8 @@
 
 `el` can take props, whereas `el_` cannot.
 
+and `text` is a function that creates text nodes.
+
 ```purs
 component = el "h1" [ "class" := "title" ] do
   text $ pure "Hello, Jelly!"
@@ -28,10 +30,6 @@ component = el "div" do
     el_ "div" do
       text $ pure "This is a nested element."
 ```
-
-## `text`
-
-`text` is a function that creates text nodes.
 
 ## Props
 

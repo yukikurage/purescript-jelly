@@ -2,7 +2,7 @@
 
 Context allows you to share values among components without having to bucket-relay values.
 
-Here is an example
+Here is an example.
 
 ```purs
 import Prelude
