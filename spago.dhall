@@ -29,7 +29,6 @@ to generate this file without the comments in this block.
   , "node-child-process"
   , "node-fs"
   , "node-fs-aff"
-  , "node-path"
   , "node-streams"
   , "ordered-collections"
   , "parallel"

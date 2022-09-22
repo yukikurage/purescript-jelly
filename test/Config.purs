@@ -28,5 +28,5 @@ config =
         }
   , getPages: pure [ Hoge, Top ]
   , clientMain: "Test.ClientMain"
-  , output: "public"
+  , output: [ "public" ]
   }

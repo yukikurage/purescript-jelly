@@ -41,6 +41,12 @@ makeAbsoluteFilePath path = foldMap ("/" <> _) path
 makeAbsoluteUrlPath :: Array String -> String
 makeAbsoluteUrlPath path = makeAbsoluteFilePath path <> "/"
 
+makeRelativeFilePath :: Array String -> String
+makeRelativeFilePath path = "." <> foldMap ("/" <> _) path
+
+makeRelativeUrlPath :: Array String -> String
+makeRelativeUrlPath path = makeRelativeFilePath path <> "/"
+
 pathToArray :: String -> Array String
 pathToArray path = filter (_ /= "") $ split (Pattern "/") path
 

@@ -20,5 +20,5 @@ type SsgConfig context page =
          }
   , getPages :: Aff (Array page)
   , clientMain :: String
-  , output :: String
+  , output :: Array String
   }

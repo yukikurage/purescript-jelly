@@ -21,7 +21,7 @@ import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Signal (signal)
 import Jelly.Core.Render (render)
-import Jelly.Router.Data.Url (makeAbsoluteUrlPath)
+import Jelly.Router.Data.Url (makeAbsoluteUrlPath, makeRelativeFilePath)
 import Jelly.SSG.Data.Config (SsgConfig)
 import Jelly.SSG.Data.StaticData (newStaticData, staticDataProvider)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
@@ -29,13 +29,12 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', stat, writeTextFile)
 import Node.FS.Perms (all, mkPerms)
 import Node.FS.Stats (Stats(..))
-import Node.Path (concat)
 import Node.Stream (onDataString)
 
 jellyPrefix :: String
 jellyPrefix = ""
 
-bundleCommand :: String -> String -> String /\ Array String
+bundleCommand :: Array String -> String -> String /\ Array String
 bundleCommand output clientMain =
   "npx" /\
     [ "spago"
@@ -43,7 +42,7 @@ bundleCommand output clientMain =
     , "--main"
     , clientMain
     , "--to"
-    , concat [ output, "index.js" ]
+    , makeRelativeFilePath $ output <> [ "index.js" ]
     , "--minify"
     ]
 
@@ -62,15 +61,15 @@ logStdOut cp = do
   onDataString streamOut UTF8 \str -> log $ str
   onDataString streamErr UTF8 \str -> Console.error $ str
 
-generateHTML :: String -> Component () -> Aff Unit
+generateHTML :: Array String -> Component () -> Aff Unit
 generateHTML output component = do
   let
-    htmlPath = concat [ output, "index.html" ]
+    htmlPath = makeRelativeFilePath $ output <> [ "index.html" ]
   rendered <- liftEffect $ render component
-  mkdir' output { recursive: true, mode: mkPerms all all all }
+  mkdir' (makeRelativeFilePath output) { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 htmlPath $ rendered
 
-generateJS :: String -> String -> Aff Unit
+generateJS :: Array String -> String -> Aff Unit
 generateJS output clientMain = do
   let
     cmd /\ args = bundleCommand output clientMain
@@ -78,12 +77,12 @@ generateJS output clientMain = do
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   waitExit cp
 
-generateData :: String -> Aff String -> Aff String
+generateData :: Array String -> Aff String -> Aff String
 generateData output fetchData = do
   let
-    dataPath = concat [ output, "data" ]
+    dataPath = makeRelativeFilePath $ output <> [ "data" ]
   dt <- fetchData
-  mkdir' output { recursive: true, mode: mkPerms all all all }
+  mkdir' (makeRelativeFilePath output) { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 dataPath dt
   pure dt
 
@@ -116,9 +115,9 @@ printSize byte =
   in
     truncate sizeWidth sizeStr
 
-summary :: String -> Array String -> Aff Unit
+summary :: Array String -> Array (Array String) -> Aff Unit
 summary root outputs = do
-  Stats { size: mainJsSize } <- stat $ concat [ root, "index.js" ]
+  Stats { size: mainJsSize } <- stat $ makeRelativeFilePath $ root <> [ "index.js" ]
   log $ ""
   log $ "  " <> "Main Script (On first load)"
   log $ "    " <> printSize (floor mainJsSize)
@@ -131,14 +130,15 @@ summary root outputs = do
       "Data (At page transition)"
   let
     htmlAndDataSummary output = do
-      Stats { size: htmlSize } <- stat $ concat [ root, output, "index.html" ]
-      Stats { size: dataSize } <- stat $ concat [ root, output, "data" ]
-      log $ "    "
-        <> printPath output
-        <> " "
-        <> printSize (floor htmlSize)
-        <> " "
-        <> printSize (floor dataSize)
+      Stats { size: htmlSize } <- stat $ makeRelativeFilePath $ root <> output <> [ "index.html" ]
+      Stats { size: dataSize } <- stat $ makeRelativeFilePath $ root <> output <> [ "data" ]
+      log
+        $ "    "
+            <> printPath (makeAbsoluteUrlPath output)
+            <> " "
+            <> printSize (floor htmlSize)
+            <> " "
+            <> printSize (floor dataSize)
   traverse_ htmlAndDataSummary outputs
   pure unit
 
@@ -175,7 +175,7 @@ generate
             " has query or hash, which is not supported by Jelly Generator"
           throwError $ error "Page has query or hash"
         let
-          pageOutput = concat [ output, makeAbsoluteUrlPath path ]
+          pageOutput = output <> path
           mockRouterProvider component = hooks do
             pageSig /\ _ <- signal page
             pure $ contextProvider
@@ -199,7 +199,7 @@ generate
     log $ jellyPrefix <> "🎉  Static pages successfully generated"
     log ""
     log $ jellyPrefix <> "📦  File Size"
-    summary output $ map (\{ path } -> concat [ makeAbsoluteUrlPath path ]) $ map pageToUrl
+    summary output $ map (\{ path } -> path) $ map pageToUrl
       pages
     log ""
     log ""

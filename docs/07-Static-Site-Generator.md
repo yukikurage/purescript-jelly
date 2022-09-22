@@ -175,7 +175,7 @@ ssgConfig =
       NotFound -> { component: const mempty, getStaticData: pure "" }
   , getPages: pure [ Top, About, NotFound ]
   , clientMain: "JellyExamples.SSG.ClientMain"
-  , output: "examples/public/SSG"
+  , output: [ "examples", "public", "SSG" ]
   }
 
 ```
