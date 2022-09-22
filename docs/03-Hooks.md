@@ -14,7 +14,7 @@ import Effect.Console (log)
 import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Data.Hooks (makeComponent)
 import Jelly.Core.Components (el_, text)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 componentWithHooks :: Component ()
 componentWithHooks = makeComponent do

@@ -10,7 +10,7 @@ import Prelude
 import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Data.Hooks (makeComponent)
 import Jelly.Core.Components (el_, provideContext, text)
-import Jelly.Hooks.UseContext (useContext)
+import Jelly.Core.Hooks.UseContext (useContext)
 
 componentParent :: Component ()
 componentParent = contextProvider { someContext: "text" } $ el_ "div" do

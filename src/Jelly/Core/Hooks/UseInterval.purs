@@ -1,4 +1,4 @@
-module Jelly.Hooks.UseInterval where
+module Jelly.Core.Hooks.UseInterval where
 
 import Prelude
 
@@ -6,7 +6,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Timer (clearInterval, setInterval)
 import Jelly.Core.Data.Hooks (Hooks)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 useInterval :: forall context. Int -> Effect Unit -> Hooks context Unit
 useInterval msc eff = do

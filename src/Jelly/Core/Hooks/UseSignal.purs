@@ -1,11 +1,11 @@
-module Jelly.Hooks.UseSignal where
+module Jelly.Core.Hooks.UseSignal where
 
 import Prelude
 
 import Effect.Class (liftEffect)
 import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Core.Data.Signal (Signal, launch)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 useSignal :: forall context. Signal Unit -> Hooks context Unit
 useSignal sig = do

@@ -1,11 +1,11 @@
-module Jelly.Hooks.UseEventListener where
+module Jelly.Core.Hooks.UseEventListener where
 
 import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Core.Data.Hooks (Hooks)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 import Web.Event.Event (EventType)
 import Web.Event.EventTarget (EventTarget, addEventListener, addEventListenerWithOptions, eventListener, removeEventListener)
 import Web.Event.Internal.Types (Event)

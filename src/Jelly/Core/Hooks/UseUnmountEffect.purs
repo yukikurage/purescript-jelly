@@ -1,4 +1,4 @@
-module Jelly.Hooks.UseUnmountEffect where
+module Jelly.Core.Hooks.UseUnmountEffect where
 
 import Prelude
 

@@ -40,7 +40,7 @@ import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Data.Hooks (makeComponent)
 import Jelly.Core.Data.Signal (modifyAtom_, signal)
 import Jelly.Core.Components (text)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 timer :: Component ()
 timer = makeComponent do

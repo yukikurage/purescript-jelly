@@ -1,4 +1,4 @@
-module Jelly.Hooks.UseContext where
+module Jelly.Core.Hooks.UseContext where
 
 import Prelude
 
