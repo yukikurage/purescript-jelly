@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Jelly.SSG.Generator (generate)
-import Test.Config (config)
+import Test.Config (generatorConfig)
 
 main :: Effect Unit
-main = launchAff_ $ generate config
+main = launchAff_ $ generate generatorConfig

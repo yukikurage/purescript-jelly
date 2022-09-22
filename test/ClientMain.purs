@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Jelly.SSG.ClientMain (clientMain)
-import Test.Config (config)
+import Test.Config (clientConfig)
 
 main :: Effect Unit
-main = launchAff_ $ clientMain config
+main = launchAff_ $ clientMain clientConfig
