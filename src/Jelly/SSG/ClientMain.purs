@@ -56,7 +56,7 @@ clientMain
         page <- pageSig
         -- Change page component after fetching data
         liftEffect $ launchAff_ do
-          dt <- pokeStaticData staticData $ dataPath basePath $ (pageToUrl initialPage).path
+          dt <- pokeStaticData staticData $ dataPath basePath $ (pageToUrl page).path
           writeAtom componentAtom $ pageComponent page dt
       pure do
         rootComponent do
