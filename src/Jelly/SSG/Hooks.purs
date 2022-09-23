@@ -13,5 +13,5 @@ usePrefetch page = do
   { pageToUrl, basePath } <- useRouter
   staticData <- useStaticData
 
-  pure $ pokeStaticData staticData $ dataPath basePath $ pageToUrl
+  pure $ pokeStaticData staticData $ dataPath basePath $ (_.path) $ pageToUrl
     page

@@ -21,15 +21,16 @@ import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Signal (signal)
 import Jelly.Core.Render (render)
-import Jelly.Router.Data.Url (makeAbsoluteUrlPath, makeRelativeFilePath)
+import Jelly.Router.Data.Url (Url, makeAbsoluteUrlPath, makeRelativeFilePath)
 import Jelly.SSG.Data.GeneratorConfig (GeneratorConfig)
-import Jelly.SSG.Data.StaticData (newStaticData, staticDataProvider)
+import Jelly.SSG.Data.StaticData (dataPath, newStaticData, staticDataProvider)
 import Node.ChildProcess (ChildProcess, Exit(..), defaultSpawnOptions, kill, onExit, spawn, stderr, stdout)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', stat, writeTextFile)
 import Node.FS.Perms (all, mkPerms)
 import Node.FS.Stats (Stats(..))
 import Node.Stream (onDataString)
+import Simple.JSON (writeJSON)
 
 bundleCommand :: Array String -> String -> String /\ Array String
 bundleCommand output clientMain =
@@ -157,6 +158,28 @@ logTitle = do
   log ""
   log ""
 
+generatePageList
+  :: forall page
+   . Array String
+  -> Aff (Array page)
+  -> (page -> Url)
+  -> Aff (Array page)
+generatePageList output getPages pageToUrl = do
+  log ""
+  pages <- getPages
+  log $ indent 1 <> show (length pages) <> " pages"
+  log ""
+  for_ pages \page -> do
+    log $ indent 2 <> makeAbsoluteUrlPath (pageToUrl page).path
+  log ""
+  let
+    dataPath = makeRelativeFilePath $ output <> [ "pages.json" ]
+  mkdir' (makeRelativeFilePath output) { recursive: true, mode: mkPerms all all all }
+  writeTextFile UTF8 dataPath $ writeJSON $ map
+    ((_.path) <<< pageToUrl)
+    pages
+  pure pages
+
 generate
   :: forall context page
    . Eq page
@@ -176,13 +199,7 @@ generate
   do
     logTitle
     log "📖  Retrieving page list..."
-    log ""
-    pages <- getPages
-    log $ indent 1 <> show (length pages) <> " pages"
-    log ""
-    for_ pages \page -> do
-      log $ indent 2 <> makeAbsoluteUrlPath (pageToUrl page).path
-    log ""
+    pages <- generatePageList output getPages pageToUrl
     log "💫  HTML & Static data generating..."
     let
       generatePageHTML page = do
@@ -202,7 +219,9 @@ generate
               { __router: { pageSig, pushPage: const $ pure unit, basePath, pageToUrl, urlToPage } }
               cmp
           mockStaticDataProvider cmp = hooks do
-            sd <- liftEffect $ newStaticData
+            sd <- liftEffect $ newStaticData $ map
+              (\pg -> dataPath basePath $ (_.path) $ pageToUrl pg)
+              pages
             pure $ staticDataProvider sd cmp
 
         staticData <- generateData pageOutput getStaticData

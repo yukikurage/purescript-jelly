@@ -37,6 +37,7 @@ to generate this file without the comments in this block.
   , "record"
   , "refs"
   , "safely"
+  , "simple-json"
   , "st"
   , "strings"
   , "tailrec"

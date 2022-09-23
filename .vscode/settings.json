@@ -1,3 +1,4 @@
 {
   "liveServer.settings.root": "./public",
+  "liveServer.settings.port": 5501,
 }
