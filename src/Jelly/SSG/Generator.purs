@@ -216,7 +216,15 @@ generate
           mockRouterProvider cmp = hooks do
             pageSig /\ _ <- signal page
             pure $ contextProvider
-              { __router: { pageSig, pushPage: const $ pure unit, basePath, pageToUrl, urlToPage } }
+              { __router:
+                  { pageSig
+                  , pushPage: const $ pure unit
+                  , basePath
+                  , pageToUrl
+                  , urlToPage
+                  , replacePage: const $ pure unit
+                  }
+              }
               cmp
           mockStaticDataProvider cmp = hooks do
             sd <- liftEffect $ newStaticData $ map

@@ -23,6 +23,7 @@ import Web.HTML.Window as Window
 type Router page =
   { pageSig :: Signal page
   , pushPage :: page -> Effect Unit
+  , replacePage :: page -> Effect Unit
   , basePath :: Array String
   , urlToPage :: Url -> page
   , pageToUrl :: page -> Url
@@ -58,10 +59,16 @@ routerProvider { basePath, urlToPage, pageToUrl } component = hooks do
         (URL $ urlToString basePath $ pageToUrl page)
         =<< history w
       writeAtom pageAtom page
+    replacePage page = do
+      replaceState (unsafeToForeign {}) (DocumentTitle "")
+        (URL $ urlToString basePath $ pageToUrl page)
+        =<< history w
+      writeAtom pageAtom page
 
     router =
       { pageSig
       , pushPage
+      , replacePage
       , basePath
       , urlToPage
       , pageToUrl
