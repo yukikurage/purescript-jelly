@@ -1,30 +1,24 @@
 "use strict";
-export const connect = (observer) => (atom) => () => {
-    atom.observers.add(observer);
-};
-export const disconnect = (observer) => (atom) => () => {
-    atom.observers.delete(observer);
-};
-export const newAtom = (eq) => (value) => () => ({
-    observers: new Set(),
+export const newAtom = (value) => () => ({
     value,
-    eq,
+    listeners: new Set(),
+    cleaners: new Set(),
 });
-export const newObserver = (signal) => () => ({
-    signal,
-    callbacks: new Set(),
-});
-export const getObservers = (atom) => () => [...atom.observers];
-export const getAtomValue = (atom) => () => atom.value;
-export const setAtomValue = (atom) => (value) => () => {
+export const listenAtom = (atom) => (listener) => () => {
+    atom.listeners.add(listener);
+    return () => {
+        atom.listeners.delete(listener);
+    };
+};
+export const writeAtom = (atom) => (value) => () => {
+    atom.cleaners.forEach((cleaner) => {
+        cleaner();
+    });
+    atom.cleaners.clear();
     atom.value = value;
+    atom.listeners.forEach((listener) => {
+        const cleaner = listener(value)();
+        atom.cleaners.add(cleaner);
+    });
 };
-export const getEq = (atom) => atom.eq;
-export const getObserverSignal = (observer) => () => observer.signal;
-export const getObserverCallbacks = (observer) => () => [...observer.callbacks];
-export const addObserverCallback = (observer) => (callback) => () => {
-    observer.callbacks.add(callback);
-};
-export const clearObserverCallbacks = (observer) => () => {
-    observer.callbacks.clear();
-};
+export const readAtom = (atom) => () => atom.value;

@@ -1,74 +1,49 @@
 "use strict";
 
-type Observer = {
-  signal: (observer: Observer) => () => void;
-  callbacks: Set<() => void>;
-};
-
 type Atom<T> = {
-  observers: Set<Observer>;
   value: T;
-  eq: (a: T) => (b: T) => boolean;
+  listeners: Set<Listener<T>>;
+  cleaners: Set<Effect<void>>;
 };
 
-export const connect =
-  (observer: Observer) =>
-  <T>(atom: Atom<T>) =>
-  () => {
-    atom.observers.add(observer);
-  };
+type Effect<T> = () => T;
 
-export const disconnect =
-  (observer: Observer) =>
-  <T>(atom: Atom<T>) =>
-  () => {
-    atom.observers.delete(observer);
-  };
+type Listener<T> = (value: T) => () => Effect<void>;
 
 export const newAtom =
-  <T>(eq: (a: T) => (b: T) => boolean) =>
-  (value: T) =>
-  (): Atom<T> => ({
-    observers: new Set(),
+  <T>(value: T): Effect<Atom<T>> =>
+  () => ({
     value,
-    eq,
+    listeners: new Set<Listener<T>>(),
+    cleaners: new Set<Effect<void>>(),
   });
 
-export const newObserver =
-  (signal: (observer: Observer) => () => void) => (): Observer => ({
-    signal,
-    callbacks: new Set(),
-  });
-
-export const getObservers =
+export const listenAtom =
   <T>(atom: Atom<T>) =>
-  (): Observer[] =>
-    [...atom.observers];
-
-export const getAtomValue =
-  <T>(atom: Atom<T>) =>
-  (): T =>
-    atom.value;
-
-export const setAtomValue =
-  <T>(atom: Atom<T>) =>
-  (value: T) =>
+  (listener: Listener<T>): Effect<Effect<void>> =>
   () => {
+    atom.listeners.add(listener);
+    return () => {
+      atom.listeners.delete(listener);
+    };
+  };
+
+export const writeAtom =
+  <T>(atom: Atom<T>) =>
+  (value: T): Effect<void> =>
+  () => {
+    atom.cleaners.forEach((cleaner) => {
+      cleaner();
+    });
+    atom.cleaners.clear();
     atom.value = value;
+    atom.listeners.forEach((listener) => {
+      const cleaner = listener(value)();
+      atom.cleaners.add(cleaner);
+    });
   };
 
-export const getEq = <T>(atom: Atom<T>) => atom.eq;
-
-export const getObserverSignal = (observer: Observer) => () => observer.signal;
-
-export const getObserverCallbacks = (observer: Observer) => () =>
-  [...observer.callbacks];
-
-export const addObserverCallback =
-  (observer: Observer) => (callback: () => void) => () => {
-    observer.callbacks.add(callback);
-  };
-
-export const clearObserverCallbacks = (observer: Observer) => () => {
-  observer.callbacks.clear();
-};
+export const readAtom =
+  <T>(atom: Atom<T>): Effect<T> =>
+  () =>
+    atom.value;
