@@ -23,6 +23,9 @@ render ctx cmp = do
       ComponentText textSig free -> do
         tell =<< get textSig
         pure free
+      ComponentDocType { name, publicId, systemId } free -> do
+        tell $ "<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">"
+        pure free
       ComponentSignal cmpSig free -> do
         component <- get cmpSig
         tell =<< liftEffect (render ctx component)

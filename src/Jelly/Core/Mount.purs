@@ -11,8 +11,9 @@ import Effect.Ref (Ref, new, read, write)
 import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Core.Data.Prop (registerProps)
 import Jelly.Core.Data.Signal (Signal, listen, signal, writeAtom)
-import Web.DOM (Element, Node, Text)
+import Web.DOM (Document, DocumentType, Element, Node, Text)
 import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
 import Web.DOM.Node (firstChild, nextSibling, setTextContent)
 import Web.DOM.Text as Text
@@ -21,6 +22,8 @@ import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (document)
 
 foreign import updateChildren :: Element -> Array Node -> Effect Unit
+foreign import createDocumentType
+  :: String -> String -> String -> Document -> Effect DocumentType
 
 registerChildren :: Element -> Signal (Array Node) -> Effect (Effect Unit)
 registerChildren elem chlSig = listen chlSig \chl -> do
@@ -95,6 +98,24 @@ makeNodesSig realNodeRef ctx cmp = do
           onUnmount = unRegisterText
 
         tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
+
+        pure free
+      ComponentDocType { name, publicId, systemId } free -> do
+        realNodeMaybe <- liftEffect $ read realNodeRef
+        let
+          realDocTypeMaybe = DocumentType.fromNode =<< realNodeMaybe
+
+        docType <- liftEffect case realDocTypeMaybe of
+          Just docType -> do
+            nxs <- liftEffect $ nextSibling $ DocumentType.toNode docType
+            liftEffect $ write nxs realNodeRef
+            pure docType
+          Nothing -> liftEffect $ createDocumentType name publicId systemId d
+
+        let
+          onUnmount = mempty
+
+        tell { onUnmount, nodesSig: pure [ DocumentType.toNode docType ] }
 
         pure free
       ComponentSignal cmpSig free -> do

@@ -21,3 +21,11 @@ export const updateChildren =
       elem.insertBefore(node, itrNode);
     }
   };
+
+export const createDocumentType =
+  (name: string) =>
+  (publicId: string) =>
+  (systemId: string) =>
+  (doc: Document) =>
+  () =>
+    doc.implementation.createDocumentType(name, publicId, systemId);

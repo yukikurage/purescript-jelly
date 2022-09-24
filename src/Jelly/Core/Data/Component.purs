@@ -1,18 +1,4 @@
-module Jelly.Core.Data.Component
-  ( Component
-  , ComponentElementSpec
-  , ComponentF(..)
-  , ComponentLifeCycleSpec
-  , ComponentM(..)
-  , ComponentSignalSpec
-  , ComponentTextSpec
-  , elC
-  , foldComponent
-  , ifC
-  , lifeCycleC
-  , textC
-  , whenC
-  ) where
+module Jelly.Core.Data.Component where
 
 import Prelude
 
@@ -30,6 +16,12 @@ type ComponentElementSpec context =
 
 type ComponentTextSpec = Signal String
 
+type ComponentDocTypeSpec =
+  { name :: String
+  , publicId :: String
+  , systemId :: String
+  }
+
 type ComponentSignalSpec context = Signal (Component context)
 
 type ComponentLifeCycleSpec context =
@@ -42,6 +34,7 @@ type ComponentLifeCycleSpec context =
 data ComponentF context f
   = ComponentElement (ComponentElementSpec context) f
   | ComponentText ComponentTextSpec f
+  | ComponentDocType ComponentDocTypeSpec f
   | ComponentSignal (ComponentSignalSpec context) f
   | ComponentLifeCycle (ComponentLifeCycleSpec context) f
 
@@ -65,11 +58,21 @@ foldComponent
   -> ComponentM context ~> m
 foldComponent f (ComponentM c) = foldFree f c
 
-elC :: forall context. String -> Array Prop -> Component context -> Component context
-elC tag props children = ComponentM $ liftF $ ComponentElement { tag, props, children } unit
+el :: forall context. String -> Array Prop -> Component context -> Component context
+el tag props children = ComponentM $ liftF $ ComponentElement { tag, props, children } unit
 
-textC :: forall context. Signal String -> Component context
-textC signal = ComponentM $ liftF $ ComponentText signal unit
+el_ :: forall context. String -> Component context -> Component context
+el_ tag children = el tag [] children
+
+text :: forall context. Signal String -> Component context
+text signal = ComponentM $ liftF $ ComponentText signal unit
+
+doctype :: forall context. String -> String -> String -> Component context
+doctype name publicId systemId = ComponentM $ liftF $ ComponentDocType { name, publicId, systemId }
+  unit
+
+doctypeHtml :: forall context. Component context
+doctypeHtml = doctype "html" "" ""
 
 signalC :: forall context. Signal (Component context) -> Component context
 signalC signal = ComponentM $ liftF $ ComponentSignal signal unit
