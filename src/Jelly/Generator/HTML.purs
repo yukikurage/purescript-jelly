@@ -2,6 +2,8 @@ module Jelly.Generator.HTML where
 
 import Prelude
 
+import Data.Array (init)
+import Data.Maybe (fromMaybe)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
@@ -18,6 +20,7 @@ generateHTML output context component = do
     htmlPath = makeRelativeFilePath $ output
   log $ "💫  " <> htmlPath <> " generating..."
   rendered <- liftEffect $ render context component
-  mkdir' (makeRelativeFilePath output) { recursive: true, mode: mkPerms all all all }
+  mkdir' (makeRelativeFilePath $ fromMaybe [] $ init output)
+    { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 htmlPath $ rendered
   log $ "🚩  " <> htmlPath <> " generated"
