@@ -2,7 +2,7 @@ module Jelly.Router.Data.Query where
 
 import Prelude
 
-import Data.Array (catMaybes)
+import Data.Array (catMaybes, filter)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), joinWith, split)
 import Data.Tuple.Nested ((/\))
@@ -19,6 +19,7 @@ fromSearch sr = fromFoldable
           [ k, v ] -> Just $ k /\ v
           _ -> Nothing
       )
+  $ filter (_ /= "")
   $ split (Pattern "&")
   $ sr
 
