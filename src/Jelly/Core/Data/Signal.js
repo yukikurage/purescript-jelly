@@ -1,24 +1,24 @@
 "use strict";
 export const newAtom = (value) => () => ({
     value,
-    listeners: new Set(),
-    cleaners: new Set(),
+    observers: new Set(),
 });
 export const listenAtom = (atom) => (listener) => () => {
-    atom.listeners.add(listener);
+    const observer = {
+        listener,
+        cleaner: listener(atom.value)(),
+    };
+    atom.observers.add(observer);
     return () => {
-        atom.listeners.delete(listener);
+        atom.observers.delete(observer);
+        observer.cleaner();
     };
 };
 export const writeAtom = (atom) => (value) => () => {
-    atom.cleaners.forEach((cleaner) => {
-        cleaner();
-    });
-    atom.cleaners.clear();
     atom.value = value;
-    atom.listeners.forEach((listener) => {
-        const cleaner = listener(value)();
-        atom.cleaners.add(cleaner);
+    atom.observers.forEach((observer) => {
+        observer.cleaner();
+        observer.cleaner = observer.listener(value)();
     });
 };
 export const readAtom = (atom) => () => atom.value;

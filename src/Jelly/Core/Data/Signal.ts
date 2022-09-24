@@ -2,29 +2,37 @@
 
 type Atom<T> = {
   value: T;
-  listeners: Set<Listener<T>>;
-  cleaners: Set<Effect<void>>;
+  observers: Set<Observer<T>>;
 };
 
 type Effect<T> = () => T;
 
-type Listener<T> = (value: T) => () => Effect<void>;
+type Listener<T> = (value: T) => Effect<Effect<void>>;
+
+type Observer<T> = {
+  listener: Listener<T>;
+  cleaner: Effect<void>;
+};
 
 export const newAtom =
   <T>(value: T): Effect<Atom<T>> =>
   () => ({
     value,
-    listeners: new Set<Listener<T>>(),
-    cleaners: new Set<Effect<void>>(),
+    observers: new Set<Observer<T>>(),
   });
 
 export const listenAtom =
   <T>(atom: Atom<T>) =>
   (listener: Listener<T>): Effect<Effect<void>> =>
   () => {
-    atom.listeners.add(listener);
+    const observer: Observer<T> = {
+      listener,
+      cleaner: listener(atom.value)(),
+    };
+    atom.observers.add(observer);
     return () => {
-      atom.listeners.delete(listener);
+      atom.observers.delete(observer);
+      observer.cleaner();
     };
   };
 
@@ -32,14 +40,10 @@ export const writeAtom =
   <T>(atom: Atom<T>) =>
   (value: T): Effect<void> =>
   () => {
-    atom.cleaners.forEach((cleaner) => {
-      cleaner();
-    });
-    atom.cleaners.clear();
     atom.value = value;
-    atom.listeners.forEach((listener) => {
-      const cleaner = listener(value)();
-      atom.cleaners.add(cleaner);
+    atom.observers.forEach((observer) => {
+      observer.cleaner();
+      observer.cleaner = observer.listener(value)();
     });
   };
 

@@ -2,27 +2,41 @@ module Test.Main where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Jelly.Core.Data.Signal (listen, new, writeAtom)
+import Effect.Timer (setInterval)
+import Jelly.Core.Aff (awaitQuerySelector)
+import Jelly.Core.Data.Component (Component, elC, textC)
+import Jelly.Core.Data.Hooks (hooks)
+import Jelly.Core.Data.Prop ((:=))
+import Jelly.Core.Data.Signal (modifyAtom_, signal)
+import Jelly.Core.Mount (mount)
+import Jelly.Core.Render (render)
+import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit
-main = do
-  signal1 /\ atom1 <- new 0
-  signal2 /\ atom2 <- new 0
-  let
-    signal3 = add <$> signal1 <*> signal2
+main = launchAff_ do
+  app <- awaitQuerySelector $ QuerySelector "#app"
 
-  unListen <- listen signal3 \x -> do
-    log $ "signal3: " <> show x
-    pure do
-      log "signal3: done"
+  case app of
+    Just el -> do
+      liftEffect $ void $ mount {} testComp el
+      log <=< liftEffect $ render {} testComp
 
-  writeAtom atom1 3
-  writeAtom atom2 7
+    Nothing -> mempty
 
-  unListen
+testComp :: Component ()
+testComp = elC "div" [ "class" := "test" ] stateful
 
-  writeAtom atom1 3
-  writeAtom atom2 4
+stateful :: Component ()
+stateful = hooks do
+  timeSig /\ timeAtom <- signal 0
+
+  _ <- liftEffect $ setInterval 1000 do
+    modifyAtom_ timeAtom (_ + 1)
+
+  pure $ textC $ show <$> timeSig
