@@ -28,6 +28,30 @@ type Router =
 
 type RouterContext context = (__router :: Router | context)
 
+-- | Create a mock router
+-- | It is useful for rendering a component on node.js
+mockRouter :: Url -> (Url -> Aff Url) -> Aff Router
+mockRouter initialUrl transition = do
+  newInitialUrl <- transition initialUrl
+
+  currentUrlSig /\ currentUrlAtom <- signal newInitialUrl
+  isTransitioningSig /\ isTransitioningAtom <- signal false
+
+  let
+    handleUrl url = do
+      writeAtom isTransitioningAtom true
+      launchAff_ do
+        newUrl <- transition url
+        writeAtom currentUrlAtom newUrl
+        writeAtom isTransitioningAtom false
+
+  pure
+    { currentUrlSig
+    , pushUrl: handleUrl
+    , isTransitioningSig
+    , replaceUrl: handleUrl
+    }
+
 -- | Create a router
 -- | On push or replace Url:
 -- |   1. Set isTransitioning to true
@@ -73,8 +97,8 @@ newRouter transition = do
             (URL $ urlToString newUrl) =<< history w
         writeAtom currentUrlAtom newUrl
         writeAtom isTransitioningAtom false
-    pushUrl page = handleUrl pushState page
-    replaceUrl page = handleUrl replaceState page
+    pushUrl url = handleUrl pushState url
+    replaceUrl url = handleUrl replaceState url
 
   pure
     { currentUrlSig
