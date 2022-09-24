@@ -17,3 +17,6 @@ export const updateChildren = (elem) => (children) => () => {
     }
 };
 export const createDocumentType = (name) => (publicId) => (systemId) => (doc) => () => doc.implementation.createDocumentType(name, publicId, systemId);
+export const setInnerHtml = (elem) => (html) => () => {
+    elem.innerHTML = html;
+};

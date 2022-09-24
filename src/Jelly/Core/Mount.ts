@@ -29,3 +29,10 @@ export const createDocumentType =
   (doc: Document) =>
   () =>
     doc.implementation.createDocumentType(name, publicId, systemId);
+
+export const setInnerHtml =
+  (elem: Element) =>
+  (html: string): Effect<void> =>
+  () => {
+    elem.innerHTML = html;
+  };

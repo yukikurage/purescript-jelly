@@ -25,6 +25,8 @@ foreign import updateChildren :: Element -> Array Node -> Effect Unit
 foreign import createDocumentType
   :: String -> String -> String -> Document -> Effect DocumentType
 
+foreign import setInnerHtml :: Element -> String -> Effect Unit
+
 registerChildren :: Element -> Signal (Array Node) -> Effect (Effect Unit)
 registerChildren elem chlSig = listen chlSig \chl -> do
   updateChildren elem chl
@@ -33,6 +35,11 @@ registerChildren elem chlSig = listen chlSig \chl -> do
 registerText :: Text -> Signal String -> Effect (Effect Unit)
 registerText txt txtSig = listen txtSig \tx -> do
   setTextContent tx $ Text.toNode txt
+  mempty
+
+registerInnerHtml :: Element -> Signal String -> Effect (Effect Unit)
+registerInnerHtml elem htmlSig = listen htmlSig \html -> do
+  setInnerHtml elem html
   mempty
 
 -- | Component を node の 列の Signal に変換
@@ -98,6 +105,29 @@ makeNodesSig realNodeRef ctx cmp = do
           onUnmount = unRegisterText
 
         tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
+
+        pure free
+      ComponentRawElement { tag, props, innerHtml } free -> do
+        realNodeMaybe <- liftEffect $ read realNodeRef
+        let
+          realElMaybe = Element.fromNode =<< realNodeMaybe
+
+        el <- liftEffect $ case realElMaybe of
+          Just realEl -> do
+            nxs <- nextSibling $ Element.toNode realEl
+            write nxs realNodeRef
+            pure realEl
+          Nothing -> createElement tag d
+
+        unRegisterProps <- liftEffect $ registerProps el props
+        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
+
+        let
+          onUnmount = do
+            unRegisterProps
+            unRegisterInnerHtml
+
+        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
 
         pure free
       ComponentDocType { name, publicId, systemId } free -> do

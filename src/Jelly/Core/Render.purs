@@ -23,6 +23,11 @@ render ctx cmp = do
       ComponentText textSig free -> do
         tell =<< get textSig
         pure free
+      ComponentRawElement { tag, props, innerHtml } free -> do
+        propsRendered <- liftEffect $ renderProps props
+        innerHtmlRendered <- get innerHtml
+        tell $ "<" <> tag <> propsRendered <> ">" <> innerHtmlRendered <> "</" <> tag <> ">"
+        pure free
       ComponentDocType { name, publicId, systemId } free -> do
         tell $ "<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">"
         pure free

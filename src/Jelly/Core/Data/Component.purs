@@ -16,6 +16,12 @@ type ComponentElementSpec context =
 
 type ComponentTextSpec = Signal String
 
+type ComponentRawElementSpec =
+  { tag :: String
+  , props :: Array Prop
+  , innerHtml :: Signal String
+  }
+
 type ComponentDocTypeSpec =
   { name :: String
   , publicId :: String
@@ -34,6 +40,7 @@ type ComponentLifeCycleSpec context =
 data ComponentF context f
   = ComponentElement (ComponentElementSpec context) f
   | ComponentText ComponentTextSpec f
+  | ComponentRawElement ComponentRawElementSpec f
   | ComponentDocType ComponentDocTypeSpec f
   | ComponentSignal (ComponentSignalSpec context) f
   | ComponentLifeCycle (ComponentLifeCycleSpec context) f
@@ -63,6 +70,12 @@ el tag props children = ComponentM $ liftF $ ComponentElement { tag, props, chil
 
 el_ :: forall context. String -> Component context -> Component context
 el_ tag children = el tag [] children
+
+rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
+rawEl tag props innerHtml = ComponentM $ liftF $ ComponentRawElement { tag, props, innerHtml } unit
+
+rawEl_ :: forall context. String -> Signal String -> Component context
+rawEl_ tag innerHtml = rawEl tag [] innerHtml
 
 text :: forall context. Signal String -> Component context
 text signal = ComponentM $ liftF $ ComponentText signal unit
