@@ -4,9 +4,9 @@ import Prelude
 
 import Jelly.Core.Data.Component (Component, el)
 import Jelly.Core.Data.Hooks (hooks)
-import Jelly.Core.Data.Prop (Prop, on)
+import Jelly.Core.Data.Prop (Prop, on, (:=))
 import Jelly.Router.Data.Router (RouterContext, useRouter)
-import Jelly.Router.Data.Url (Url)
+import Jelly.Router.Data.Url (Url, urlToString)
 import Web.Event.Event (preventDefault)
 import Web.HTML.Event.EventTypes (click)
 
@@ -23,7 +23,7 @@ link url props component = hooks do
       preventDefault e
       pushUrl url
 
-  pure $ el "a" (props <> [ on click handleClick ]) component
+  pure $ el "a" (props <> [ on click handleClick, "href" := urlToString url ]) component
 
 link_
   :: forall context. Url -> Component (RouterContext context) -> Component (RouterContext context)
