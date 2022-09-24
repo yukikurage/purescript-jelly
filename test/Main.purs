@@ -10,7 +10,7 @@ import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Timer (setInterval)
 import Jelly.Core.Aff (awaitQuerySelector)
-import Jelly.Core.Data.Component (Component, elC, textC)
+import Jelly.Core.Data.Component (Component, el, text)
 import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Prop ((:=))
 import Jelly.Core.Data.Signal (modifyAtom_, signal)
@@ -30,7 +30,7 @@ main = launchAff_ do
     Nothing -> mempty
 
 testComp :: Component ()
-testComp = elC "div" [ "class" := "test" ] stateful
+testComp = el "div" [ "class" := "test" ] stateful
 
 stateful :: Component ()
 stateful = hooks do
@@ -39,4 +39,4 @@ stateful = hooks do
   _ <- liftEffect $ setInterval 1000 do
     modifyAtom_ timeAtom (_ + 1)
 
-  pure $ textC $ show <$> timeSig
+  pure $ text $ show <$> timeSig
