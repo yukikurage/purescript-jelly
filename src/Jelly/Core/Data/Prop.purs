@@ -70,7 +70,26 @@ registerProp element = case _ of
     addEventListener eventType el false $ Element.toEventTarget element
     mempty
 
+-- | After the second time
+registerPropUpdate :: Element -> Prop -> Effect (Effect Unit)
+registerPropUpdate element = case _ of
+  PropAttribute name valueSig -> do
+    listen valueSig \_ -> pure do
+      value <- get valueSig
+      case value of
+        Nothing -> removeAttribute name element
+        Just v -> setAttribute name v element
+  PropHandler eventType handler -> do
+    el <- eventListener handler
+    addEventListener eventType el false $ Element.toEventTarget element
+    mempty
+
 registerProps :: Element -> Array Prop -> Effect (Effect Unit)
 registerProps element props = do
   unregisters <- traverse (registerProp element) props
+  pure $ fold unregisters
+
+registerPropsUpdate :: Element -> Array Prop -> Effect (Effect Unit)
+registerPropsUpdate element props = do
+  unregisters <- traverse (registerPropUpdate element) props
   pure $ fold unregisters

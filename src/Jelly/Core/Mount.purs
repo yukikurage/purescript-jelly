@@ -9,7 +9,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Core.Data.Prop (registerProps)
+import Jelly.Core.Data.Prop (registerProps, registerPropsUpdate)
 import Jelly.Core.Data.Signal (Signal, listen, signal, writeAtom)
 import Web.DOM (Document, DocumentType, Element, Node, Text)
 import Web.DOM.Document (createElement, createTextNode)
@@ -65,17 +65,24 @@ makeNodesSig realNodeRef ctx cmp = do
         let
           realElMaybe = Element.fromNode =<< realNodeMaybe
 
-        el <- liftEffect $ case realElMaybe of
+        el /\ unRegisterProps <- liftEffect $ case realElMaybe of
           Just realEl -> do
             nxs <- nextSibling $ Element.toNode realEl
+
+            unRegisterProps <- liftEffect $ registerPropsUpdate realEl props
+
             write nxs realNodeRef
-            pure realEl
-          Nothing -> createElement tag d
+            pure $ realEl /\ unRegisterProps
+          Nothing -> do
+            el <- createElement tag d
+
+            unRegisterProps <- liftEffect $ registerProps el props
+
+            pure $ el /\ unRegisterProps
 
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ makeNodesSig rnr ctx children
 
-        unRegisterProps <- liftEffect $ registerProps el props
         unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
 
         let
