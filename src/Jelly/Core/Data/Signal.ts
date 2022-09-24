@@ -36,7 +36,7 @@ export const listenAtom =
     };
   };
 
-export const writeAtom =
+export const writeAtomImpl =
   <T>(atom: Atom<T>) =>
   (value: T): Effect<void> =>
   () => {

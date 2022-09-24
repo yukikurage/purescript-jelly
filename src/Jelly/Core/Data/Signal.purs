@@ -14,7 +14,7 @@ type Listener a = a -> Effect (Effect Unit)
 
 foreign import newAtom :: forall a. a -> Effect (Atom a)
 foreign import listenAtom :: forall a. Atom a -> Listener a -> Effect (Effect Unit)
-foreign import writeAtom :: forall a. Atom a -> a -> Effect Unit
+foreign import writeAtomImpl :: forall a. Atom a -> a -> Effect Unit
 foreign import readAtom :: forall a. Atom a -> Effect a
 
 newtype Signal a = Signal
@@ -74,10 +74,13 @@ signal init = liftEffect do
       , get: readAtom atom
       } /\ atom
 
+writeAtom :: forall m a. MonadEffect m => Atom a -> a -> m Unit
+writeAtom atom a = liftEffect $ writeAtomImpl atom a
+
 modifyAtom :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m a
 modifyAtom atom f = liftEffect do
   a <- readAtom atom
-  writeAtom atom $ f a
+  writeAtomImpl atom $ f a
   pure a
 
 modifyAtom_

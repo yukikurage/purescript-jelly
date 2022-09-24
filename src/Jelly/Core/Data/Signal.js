@@ -14,7 +14,7 @@ export const listenAtom = (atom) => (listener) => () => {
         observer.cleaner();
     };
 };
-export const writeAtom = (atom) => (value) => () => {
+export const writeAtomImpl = (atom) => (value) => () => {
     atom.value = value;
     atom.observers.forEach((observer) => {
         observer.cleaner();
