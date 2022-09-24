@@ -5,7 +5,7 @@ import Prelude
 import Affjax.ResponseFormat (string)
 import Affjax.Web (get)
 import Data.Either (hush)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Fiber, joinFiber, launchSuspendedAff)
 import Jelly.Router.Data.Path (makeAbsoluteFilePath)
@@ -21,3 +21,6 @@ newStaticData dataPath = do
 
 loadStaticData :: forall a. ReadForeign a => StaticData a -> Aff (Maybe a)
 loadStaticData staticData = joinFiber staticData
+
+mockStaticData :: forall a. a -> StaticData a
+mockStaticData = pure <<< Just
