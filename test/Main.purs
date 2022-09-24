@@ -16,6 +16,7 @@ import Jelly.Core.Data.Prop ((:=))
 import Jelly.Core.Data.Signal (modifyAtom_, signal)
 import Jelly.Core.Mount (mount)
 import Jelly.Core.Render (render)
+import Web.DOM.Element as Element
 import Web.DOM.ParentNode (QuerySelector(..))
 
 main :: Effect Unit
@@ -24,7 +25,7 @@ main = launchAff_ do
 
   case app of
     Just el -> do
-      liftEffect $ void $ mount {} testComp el
+      liftEffect $ void $ mount {} testComp $ Element.toNode el
       log <=< liftEffect $ render {} testComp
 
     Nothing -> mempty

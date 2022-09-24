@@ -21,13 +21,13 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (document)
 
-foreign import updateChildren :: Element -> Array Node -> Effect Unit
+foreign import updateChildren :: Node -> Array Node -> Effect Unit
 foreign import createDocumentType
   :: String -> String -> String -> Document -> Effect DocumentType
 
 foreign import setInnerHtml :: Element -> String -> Effect Unit
 
-registerChildren :: Element -> Signal (Array Node) -> Effect (Effect Unit)
+registerChildren :: Node -> Signal (Array Node) -> Effect (Effect Unit)
 registerChildren elem chlSig = listen chlSig \chl -> do
   updateChildren elem chl
   mempty
@@ -76,7 +76,7 @@ makeNodesSig realNodeRef ctx cmp = do
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ makeNodesSig rnr ctx children
 
         unRegisterProps <- liftEffect $ registerProps el props
-        unRegisterChildren <- liftEffect $ registerChildren el nds
+        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
 
         let
           onUnmount = do
@@ -172,18 +172,18 @@ makeNodesSig realNodeRef ctx cmp = do
   pure { onUnmount, nodesSig }
 
 mount
-  :: forall context. Record context -> Component context -> Element -> Effect (Effect Unit)
-mount ctx cmp elem = do
+  :: forall context. Record context -> Component context -> Node -> Effect (Effect Unit)
+mount ctx cmp node = do
   realNodeRef <- new Nothing
   { onUnmount, nodesSig } <- makeNodesSig realNodeRef ctx cmp
 
-  unRegisterChildren <- registerChildren elem nodesSig
+  unRegisterChildren <- registerChildren node nodesSig
   pure $ onUnmount *> unRegisterChildren
 
 hydrate
-  :: forall context. Record context -> Component context -> Element -> Effect (Effect Unit)
-hydrate ctx cmp elem = do
-  realNodeRef <- new =<< firstChild (Element.toNode elem)
+  :: forall context. Record context -> Component context -> Node -> Effect (Effect Unit)
+hydrate ctx cmp node = do
+  realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- makeNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren elem nodesSig
+  unRegisterChildren <- registerChildren node nodesSig
   pure $ onUnmount *> unRegisterChildren
