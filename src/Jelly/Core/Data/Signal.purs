@@ -1,4 +1,17 @@
-module Jelly.Core.Data.Signal where
+module Jelly.Core.Data.Signal
+  ( Atom
+  , Signal
+  , get
+  , launch
+  , launchWithoutInit
+  , launchWithoutInit_
+  , launch_
+  , patch
+  , patch_
+  , send
+  , signal
+  , subscribe
+  ) where
 
 import Prelude
 
@@ -62,15 +75,21 @@ signal init = liftEffect do
 get :: forall a m. MonadEffect m => Signal a -> m a
 get = liftEffect <<< getImpl
 
-run :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
-run = liftEffect <<< runImpl
+launch :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+launch = liftEffect <<< runImpl
 
-runWithoutInit :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
-runWithoutInit sig = do
+launch_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
+launch_ = void <<< launch
+
+launchWithoutInit :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+launchWithoutInit sig = do
   isInit <- liftEffect $ new true
-  run $ sig <#> \eff -> do
+  launch $ sig <#> \eff -> do
     isInit' <- read isInit
     if isInit' then do
       write false isInit
       mempty
     else eff
+
+launchWithoutInit_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
+launchWithoutInit_ = void <<< launchWithoutInit

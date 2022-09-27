@@ -10,21 +10,21 @@ import Jelly.Router.Data.Url (Url, urlToString)
 import Web.Event.Event (preventDefault)
 import Web.HTML.Event.EventTypes (click)
 
-link
+routerLink
   :: forall context
    . Url
   -> Array Prop
   -> Component (RouterContext context)
   -> Component (RouterContext context)
-link url props component = hooks do
-  { pushUrl } <- useRouter
+routerLink url props component = hooks do
+  { pushUrl, basePath } <- useRouter
   let
     handleClick e = do
       preventDefault e
       pushUrl url
 
-  pure $ el "a" (props <> [ on click handleClick, "href" := urlToString url ]) component
+  pure $ el "a" (props <> [ on click handleClick, "href" := urlToString basePath url ]) component
 
-link_
+routerLink_
   :: forall context. Url -> Component (RouterContext context) -> Component (RouterContext context)
-link_ url component = link url [] component
+routerLink_ url component = routerLink url [] component

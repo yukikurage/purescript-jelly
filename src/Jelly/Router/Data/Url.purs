@@ -3,7 +3,7 @@ module Jelly.Router.Data.Url where
 import Prelude
 
 import Effect (Effect)
-import Jelly.Router.Data.Path (makeAbsoluteDirPath, stringToPath)
+import Jelly.Router.Data.Path (Path, dropBasePath, makeAbsoluteDirPath, stringToPath)
 import Jelly.Router.Data.Query (Query, fromSearch, toSearch)
 import Web.HTML (Location)
 import Web.HTML.Location (hash, pathname, search)
@@ -14,10 +14,10 @@ type Url =
   , hash :: String
   }
 
-urlToString :: Url -> String
-urlToString { path, query, hash } =
+urlToString :: Path -> Url -> String
+urlToString basePath { path, query, hash } =
   let
-    pt = makeAbsoluteDirPath $ path
+    pt = makeAbsoluteDirPath $ basePath <> path
     sr = case toSearch query of
       "" -> ""
       s -> "?" <> s
@@ -27,9 +27,9 @@ urlToString { path, query, hash } =
   in
     pt <> sr <> hs
 
-locationToUrl :: Location -> Effect Url
-locationToUrl loc = do
-  path <- stringToPath <$> pathname loc
+locationToUrl :: Path -> Location -> Effect Url
+locationToUrl basePath loc = do
+  path <- dropBasePath basePath <<< stringToPath <$> pathname loc
   query <- fromSearch <$> search loc
   hash <- hash loc
   pure { path, query, hash }

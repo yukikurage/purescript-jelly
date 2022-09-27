@@ -2,7 +2,7 @@ module Jelly.Router.Data.Path where
 
 import Prelude
 
-import Data.Array (filter, foldMap)
+import Data.Array (drop, filter, foldMap, length)
 import Data.String (Pattern(..), joinWith, split)
 
 type Path = Array String
@@ -21,3 +21,6 @@ makeRelativeDirPath path = makeRelativeFilePath path <> "/"
 
 stringToPath :: String -> Array String
 stringToPath path = filter (_ /= "") $ split (Pattern "/") path
+
+dropBasePath :: Path -> Path -> Path
+dropBasePath basePath path = drop (length basePath) path

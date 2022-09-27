@@ -4,9 +4,9 @@ import Prelude
 
 import Effect (Effect)
 import Jelly.Core.Data.Hooks (Hooks)
-import Jelly.Core.Data.Signal (Signal, run)
+import Jelly.Core.Data.Signal (Signal, launch)
 import Jelly.Core.Hooks.UseUnmountEffect (useUnmountEffect)
 
 useSignal :: forall context. Signal (Effect (Effect Unit)) -> Hooks context Unit
 useSignal sig = do
-  useUnmountEffect =<< run sig
+  useUnmountEffect =<< launch sig

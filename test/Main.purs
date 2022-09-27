@@ -13,7 +13,7 @@ import Jelly.Core.Aff (awaitQuerySelector)
 import Jelly.Core.Data.Component (Component, el, text)
 import Jelly.Core.Data.Hooks (hooks)
 import Jelly.Core.Data.Prop ((:=))
-import Jelly.Core.Data.Signal (Signal, patch_, run, signal)
+import Jelly.Core.Data.Signal (Signal, launch, patch_, signal)
 import Jelly.Core.Mount (mount)
 import Jelly.Core.Render (render)
 import Web.DOM.Element as Element
@@ -30,7 +30,7 @@ helloEffect = name <#> \s -> do
 
 main :: Effect Unit
 main = do
-  stop <- run helloEffect
+  stop <- launch helloEffect
   stop
 
   launchAff_ do

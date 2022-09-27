@@ -46,10 +46,9 @@ logStdOut cp = do
 generateScript :: Array String -> String -> Aff Unit
 generateScript output clientMain = do
   let
-    cmd /\ args = bundleCommand output clientMain
-  log $ "💫  " <> makeRelativeFilePath output <> " generating..."
+    jsPath = output <> [ "index.js" ]
+    cmd /\ args = bundleCommand jsPath clientMain
   log $ "🍝  Running \"" <> cmd <> "" <> fold (map (" " <> _) args) <> "\""
   cp <- liftEffect $ spawn cmd args defaultSpawnOptions
   liftEffect $ logStdOut cp
   waitExit cp
-  log $ "🚩  " <> makeRelativeFilePath output <> " generated"

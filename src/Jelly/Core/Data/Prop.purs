@@ -2,15 +2,11 @@ module Jelly.Core.Data.Prop where
 
 import Prelude
 
-import Data.Array (fold, foldMap)
+import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Jelly.Core.Data.Signal (Signal, get)
-import Web.DOM (Element)
-import Web.DOM.Element (removeAttribute, setAttribute)
-import Web.DOM.Element as Element
 import Web.Event.Event (Event, EventType)
-import Web.Event.EventTarget (addEventListener, eventListener)
 
 data Prop
   = PropAttribute String (Signal (Maybe String))
