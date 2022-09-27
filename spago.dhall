@@ -32,6 +32,7 @@ to generate this file without the comments in this block.
   , "node-fs"
   , "node-fs-aff"
   , "node-streams"
+  , "parallel"
   , "posix-types"
   , "prelude"
   , "record"
