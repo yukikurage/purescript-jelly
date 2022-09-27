@@ -8,7 +8,7 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Foreign (unsafeToForeign)
 import Jelly.Core.Data.Hooks (Hooks)
-import Jelly.Core.Data.Signal (Signal, signal, writeAtom)
+import Jelly.Core.Data.Signal (Signal, send, signal)
 import Jelly.Core.Hooks.UseContext (useContext)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
 import Record (union)
@@ -39,11 +39,11 @@ mockRouter initialUrl transition = do
 
   let
     handleUrl url = do
-      writeAtom isTransitioningAtom true
+      send isTransitioningAtom true
       launchAff_ do
         newUrl <- transition url
-        writeAtom currentUrlAtom newUrl
-        writeAtom isTransitioningAtom false
+        send currentUrlAtom newUrl
+        send isTransitioningAtom false
 
   pure
     { currentUrlSig
@@ -83,20 +83,20 @@ newRouter transition = do
       liftEffect $
         replaceState (unsafeToForeign {}) (DocumentTitle "")
           (URL $ urlToString newUrl) =<< history w
-      writeAtom currentUrlAtom newUrl
+      send currentUrlAtom newUrl
 
   liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
   let
     handleUrl handleFn url = do
-      writeAtom isTransitioningAtom true
+      send isTransitioningAtom true
       launchAff_ do
         newUrl <- transition url
         liftEffect $
           handleFn (unsafeToForeign {}) (DocumentTitle "")
             (URL $ urlToString newUrl) =<< history w
-        writeAtom currentUrlAtom newUrl
-        writeAtom isTransitioningAtom false
+        send currentUrlAtom newUrl
+        send isTransitioningAtom false
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url
 

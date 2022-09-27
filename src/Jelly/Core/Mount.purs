@@ -9,8 +9,8 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Core.Data.Prop (registerProps, registerPropsUpdate)
-import Jelly.Core.Data.Signal (Signal, listen, signal, writeAtom)
+import Jelly.Core.Data.Prop (registerPropsSig)
+import Jelly.Core.Data.Signal (Signal, run, runWithoutInit, send, signal)
 import Web.DOM (Document, DocumentType, Element, Node, Text)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.DocumentType as DocumentType
@@ -27,18 +27,18 @@ foreign import createDocumentType
 
 foreign import setInnerHtml :: Element -> String -> Effect Unit
 
-registerChildren :: Node -> Signal (Array Node) -> Effect (Effect Unit)
-registerChildren elem chlSig = listen chlSig \chl -> do
+registerChildrenSig :: Node -> Signal (Array Node) -> Signal (Effect (Effect Unit))
+registerChildrenSig elem chlSig = chlSig <#> \chl -> do
   updateChildren elem chl
   mempty
 
-registerText :: Text -> Signal String -> Effect (Effect Unit)
-registerText txt txtSig = listen txtSig \tx -> do
+registerTextSig :: Text -> Signal String -> Signal (Effect (Effect Unit))
+registerTextSig txt txtSig = txtSig <#> \tx -> do
   setTextContent tx $ Text.toNode txt
   mempty
 
-registerInnerHtml :: Element -> Signal String -> Effect (Effect Unit)
-registerInnerHtml elem htmlSig = listen htmlSig \html -> do
+registerInnerHtmlSig :: Element -> Signal String -> Signal (Effect (Effect Unit))
+registerInnerHtmlSig elem htmlSig = htmlSig <#> \html -> do
   setInnerHtml elem html
   mempty
 
@@ -69,21 +69,21 @@ makeNodesSig realNodeRef ctx cmp = do
           Just realEl -> do
             nxs <- nextSibling $ Element.toNode realEl
 
-            unRegisterProps <- liftEffect $ registerPropsUpdate realEl props
+            unRegisterProps <- liftEffect $ runWithoutInit $ registerPropsSig realEl props
 
             write nxs realNodeRef
             pure $ realEl /\ unRegisterProps
           Nothing -> do
             el <- createElement tag d
 
-            unRegisterProps <- liftEffect $ registerProps el props
+            unRegisterProps <- liftEffect $ run $ registerPropsSig el props
 
             pure $ el /\ unRegisterProps
 
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ makeNodesSig rnr ctx children
 
-        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
+        unRegisterChildren <- liftEffect $ run $ registerChildrenSig (Element.toNode el) nds
 
         let
           onUnmount = do
@@ -106,7 +106,7 @@ makeNodesSig realNodeRef ctx cmp = do
             pure txt
           Nothing -> liftEffect $ createTextNode "" d
 
-        unRegisterText <- liftEffect $ registerText txt textSig
+        unRegisterText <- liftEffect $ run $ registerTextSig txt textSig
 
         let
           onUnmount = unRegisterText
@@ -126,8 +126,8 @@ makeNodesSig realNodeRef ctx cmp = do
             pure realEl
           Nothing -> createElement tag d
 
-        unRegisterProps <- liftEffect $ registerProps el props
-        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
+        unRegisterProps <- liftEffect $ run $ registerPropsSig el props
+        unRegisterInnerHtml <- liftEffect $ run $ registerInnerHtmlSig el innerHtml
 
         let
           onUnmount = do
@@ -158,9 +158,9 @@ makeNodesSig realNodeRef ctx cmp = do
       ComponentSignal cmpSig free -> do
         nodesSig /\ nodesAtom <- signal $ pure []
 
-        unListen <- listen cmpSig \c -> do
+        unListen <- run $ cmpSig <#> \c -> do
           { onUnmount: onu, nodesSig: nds } <- makeNodesSig realNodeRef ctx c
-          writeAtom nodesAtom nds
+          send nodesAtom nds
           pure $ onu
 
         tell { onUnmount: unListen, nodesSig: join nodesSig }
@@ -184,7 +184,7 @@ mount ctx cmp node = do
   realNodeRef <- new Nothing
   { onUnmount, nodesSig } <- makeNodesSig realNodeRef ctx cmp
 
-  unRegisterChildren <- registerChildren node nodesSig
+  unRegisterChildren <- run $ registerChildrenSig node nodesSig
   pure $ onUnmount *> unRegisterChildren
 
 hydrate
@@ -192,5 +192,5 @@ hydrate
 hydrate ctx cmp node = do
   realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- makeNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren node nodesSig
+  unRegisterChildren <- run $ registerChildrenSig node nodesSig
   pure $ onUnmount *> unRegisterChildren

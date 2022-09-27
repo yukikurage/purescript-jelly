@@ -9,49 +9,32 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (new, read, write)
 
 foreign import data Atom :: Type -> Type
+foreign import data Signal :: Type -> Type
 
 type Listener a = a -> Effect (Effect Unit)
 
-foreign import newAtom :: forall a. a -> Effect (Atom a)
-foreign import listenAtom :: forall a. Atom a -> Listener a -> Effect (Effect Unit)
-foreign import writeAtomImpl :: forall a. Atom a -> a -> Effect Unit
-foreign import readAtom :: forall a. Atom a -> Effect a
-
-newtype Signal a = Signal
-  { listen :: Listener a -> Effect (Effect Unit)
-  , get :: Effect a
-  }
+foreign import atomImpl :: forall a. a -> Effect (Atom a)
+foreign import subscribe :: forall a. Atom a -> Signal a
+foreign import sendImpl :: forall a. Atom a -> a -> Effect Unit
+foreign import patchImpl :: forall a. Atom a -> (a -> a) -> Effect a
+foreign import getImpl :: forall a. Signal a -> Effect a
+foreign import runImpl :: Signal (Effect (Effect Unit)) -> Effect (Effect Unit)
+foreign import mapImpl :: forall a b. (a -> b) -> Signal a -> Signal b
+foreign import applyImpl :: forall a b. Signal (a -> b) -> Signal a -> Signal b
+foreign import pureImpl :: forall a. a -> Signal a
+foreign import bindImpl :: forall a b. Signal a -> (a -> Signal b) -> Signal b
 
 instance Functor Signal where
-  map f sig = Signal
-    { listen: \callback -> listen sig \a -> callback $ f a
-    , get: f <$> get sig
-    }
+  map = mapImpl
 
 instance Apply Signal where
-  apply signalF signalA = Signal
-    { listen: \callback -> do
-        listen signalF \f -> listen signalA \a -> callback $ f a
-    , get: get signalF <*> get signalA
-    }
+  apply = applyImpl
 
 instance Applicative Signal where
-  pure a = Signal
-    { listen: \callback -> callback a
-    , get: pure a
-    }
+  pure = pureImpl
 
 instance Bind Signal where
-  bind signalA f = Signal
-    { listen: \callback -> do
-        unListenA <- listen signalA \a -> do
-          unListenB <- listen (f a) callback
-          pure $ unListenB
-        pure unListenA
-    , get: do
-        a <- get signalA
-        get $ f a
-    }
+  bind = bindImpl
 
 instance Semigroup a => Semigroup (Signal a) where
   append = lift2 append
@@ -59,38 +42,35 @@ instance Semigroup a => Semigroup (Signal a) where
 instance Monoid a => Monoid (Signal a) where
   mempty = pure mempty
 
-get :: forall m a. MonadEffect m => Signal a -> m a
-get (Signal { get: g }) = liftEffect g
+atom :: forall a m. MonadEffect m => a -> m (Atom a)
+atom = liftEffect <<< atomImpl
 
-listen :: forall m a. MonadEffect m => Signal a -> Listener a -> m (Effect Unit)
-listen (Signal { listen: l }) callback = liftEffect $ l callback
+send :: forall a m. MonadEffect m => Atom a -> a -> m Unit
+send a = liftEffect <<< sendImpl a
+
+patch :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m a
+patch a = liftEffect <<< patchImpl a
+
+patch_ :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m Unit
+patch_ a f = void $ patch a f
 
 signal :: forall m a. MonadEffect m => a -> m (Signal a /\ Atom a)
 signal init = liftEffect do
-  atom <- newAtom init
-  pure $
-    Signal
-      { listen: \callback -> listenAtom atom callback
-      , get: readAtom atom
-      } /\ atom
+  atm <- atom init
+  pure $ subscribe atm /\ atm
 
-writeAtom :: forall m a. MonadEffect m => Atom a -> a -> m Unit
-writeAtom atom a = liftEffect $ writeAtomImpl atom a
+get :: forall a m. MonadEffect m => Signal a -> m a
+get = liftEffect <<< getImpl
 
-modifyAtom :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m a
-modifyAtom atom f = liftEffect do
-  a <- readAtom atom
-  writeAtomImpl atom $ f a
-  pure a
+run :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+run = liftEffect <<< runImpl
 
-modifyAtom_
-  :: forall m a. MonadEffect m => Atom a -> (a -> a) -> m Unit
-modifyAtom_ atom f = void $ modifyAtom atom f
-
-perform :: forall m a. MonadEffect m => Signal a -> Listener a -> m Unit
-perform sgn lsn = liftEffect do
-  unListenRef <- new $ pure unit
-  flip write unListenRef =<< listen sgn \a -> do
-    callback <- lsn a
-    pure $ callback *> join (read unListenRef)
-  pure unit
+runWithoutInit :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+runWithoutInit sig = do
+  isInit <- liftEffect $ new true
+  run $ sig <#> \eff -> do
+    isInit' <- read isInit
+    if isInit' then do
+      write false isInit
+      mempty
+    else eff
