@@ -9,65 +9,22 @@ Jelly is a framework with the following features
 - Simple component separation
 - SSG & SPA Routing support
 
-See [Jelly's home page](https://jelly.yukikurage.net/) for more details.
+## About Signal
 
-## Signal
+The Signal system is similar to [purescript-signal](https://github.com/bodil/purescript-signal) with the following differences.
 
-Signal system is like [purescript-signal](https://github.com/bodil/purescript-signal), but can stop running signal.
+- No functions for merging or filtering
+- It is a monad
+- Can stop an Effect Signal from running
+
+In other words, it is a monad instead of a reduced flexibility.
 
 ## Installation
 
-This package is not in package-sets, so add following to `packages.dhall`
-
-```dhall
-...
-let upstream = ...
-in  upstream
-  with jelly =
-    { dependencies =
-      [ "aff"
-      , "affjax"
-      , "affjax-web"
-      , "arrays"
-      , "console"
-      , "effect"
-      , "either"
-      , "foreign"
-      , "foreign-object"
-      , "free"
-      , "js-timers"
-      , "maybe"
-      , "newtype"
-      , "node-buffer"
-      , "node-child-process"
-      , "node-fs"
-      , "node-fs-aff"
-      , "node-streams"
-      , "parallel"
-      , "posix-types"
-      , "prelude"
-      , "record"
-      , "refs"
-      , "simple-json"
-      , "strings"
-      , "tailrec"
-      , "transformers"
-      , "tuples"
-      , "web-dom"
-      , "web-events"
-      , "web-html"
-      , "web-uievents"
-      ]
-    , repo =
-        "https://github.com/yukikurage/purescript-jelly"
-    , version =
-        "v0.5.0"
-    }
-...
 ```
-
-and run `spago install jelly` (or `npx spago install jelly`)
+spago install jelly
+```
 
 ## Documents
 
-See [docs directory](./docs) for more details.
+See [Jelly's home page](https://jelly.yukikurage.net/) for more details.
