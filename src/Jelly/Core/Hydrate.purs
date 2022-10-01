@@ -2,33 +2,35 @@ module Jelly.Core.Hydrate where
 
 import Prelude
 
-import Control.Monad.Error.Class (throwError)
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Exception (error)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Core.Data.Signal (Signal, launch, send, signal)
+import Jelly.Core.Mount (createDocumentType)
 import Jelly.Core.Register (registerChildren, registerInnerHtml, registerPropsWithoutInit, registerText)
 import Web.DOM (Node)
+import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
 import Web.DOM.Node (firstChild, nextSibling)
 import Web.DOM.Text as Text
+import Web.HTML (window)
+import Web.HTML.HTMLDocument as HTMLDocument
+import Web.HTML.Window (document)
 
-hydrateNode :: forall a. Ref (Maybe Node) -> (Node -> Maybe a) -> String -> Effect a
-hydrateNode ref convert name = do
+hydrateNode :: forall a. Ref (Maybe Node) -> (Node -> Maybe a) -> Effect a -> String -> Effect a
+hydrateNode ref convert make name = do
   maybeNode <- read ref
   case maybeNode of
     Just node | Just a <- convert node -> do
       ns <- nextSibling node
       write ns ref
       pure a
-    _ -> throwError $ error $ "Cannot hydrate " <> name <>
-      " because there are no more nodes"
+    _ -> make
 
 -- | Component を node の 列の Signal に変換
 -- | realNodeRef : Hydration するときに使う
@@ -39,14 +41,16 @@ hydrateNodesSig
   -> Component context
   -> Effect { onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }
 hydrateNodesSig realNodeRef ctx cmp = do
+  w <- window
+  d <- HTMLDocument.toDocument <$> document w
   let
     interpreter
       :: forall a
        . ComponentF context a
       -> WriterT ({ onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }) Effect a
     interpreter = case _ of
-      ComponentElement { props, children } free -> do
-        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode "Element"
+      ComponentElement { tag, props, children } free -> do
+        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d) "Element"
 
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
@@ -64,7 +68,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentText textSig free -> do
-        txt <- liftEffect $ hydrateNode realNodeRef Text.fromNode "Text"
+        txt <- liftEffect $ hydrateNode realNodeRef Text.fromNode (createTextNode "" d) "Text"
 
         unRegisterText <- liftEffect $ registerText txt textSig
 
@@ -74,8 +78,9 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
 
         pure free
-      ComponentRawElement { props, innerHtml } free -> do
-        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode "RawElement"
+      ComponentRawElement { tag, props, innerHtml } free -> do
+        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d)
+          "RawElement"
 
         unRegisterProps <- liftEffect $ registerPropsWithoutInit el props
         unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
@@ -88,8 +93,10 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
 
         pure free
-      ComponentDocType {} free -> do
-        dt <- liftEffect $ hydrateNode realNodeRef DocumentType.fromNode "DocType"
+      ComponentDocType { name, publicId, systemId } free -> do
+        dt <- liftEffect $ hydrateNode realNodeRef DocumentType.fromNode
+          (createDocumentType name publicId systemId d)
+          "DocType"
 
         tell { onUnmount: mempty, nodesSig: pure [ DocumentType.toNode dt ] }
 
