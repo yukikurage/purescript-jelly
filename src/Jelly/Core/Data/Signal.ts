@@ -66,7 +66,10 @@ export const patchImpl =
     return atom.value;
   };
 
-export const getImpl = <T>(signal: Signal<T>): T => signal.get();
+export const getImpl =
+  <T>(signal: Signal<T>): Effect<T> =>
+  () =>
+    signal.get();
 
 export const runImpl = (
   signal: Signal<Effect<Effect<Unit>>>

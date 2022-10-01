@@ -28,7 +28,7 @@ export const patchImpl = (atom) => (f) => () => {
     atom.observers.forEach((observer) => (observer.cleaner = observer.listener(atom.value)()));
     return atom.value;
 };
-export const getImpl = (signal) => signal.get();
+export const getImpl = (signal) => () => signal.get();
 export const runImpl = (signal) => signal.listen((eff) => eff);
 export const mapImpl = (f) => (signal) => ({
     get: () => f(signal.get()),
