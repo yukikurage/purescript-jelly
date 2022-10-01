@@ -9,7 +9,7 @@ Jelly is a framework with the following features
 - Simple component separation
 - SSG & SPA Routing support
 
-See [docs directory](./docs) for more details.
+See [Jelly's home page](https://jelly.yukikurage.net/) for more details.
 
 ## Signal
 
@@ -32,24 +32,23 @@ in  upstream
       , "console"
       , "effect"
       , "either"
-      , "foldable-traversable"
       , "foreign"
-      , "integers"
+      , "foreign-object"
+      , "free"
       , "js-timers"
       , "maybe"
+      , "newtype"
       , "node-buffer"
       , "node-child-process"
       , "node-fs"
       , "node-fs-aff"
-      , "node-path"
       , "node-streams"
-      , "ordered-collections"
       , "parallel"
       , "posix-types"
       , "prelude"
       , "record"
       , "refs"
-      , "safely"
+      , "simple-json"
       , "strings"
       , "tailrec"
       , "transformers"
@@ -57,11 +56,12 @@ in  upstream
       , "web-dom"
       , "web-events"
       , "web-html"
+      , "web-uievents"
       ]
     , repo =
         "https://github.com/yukikurage/purescript-jelly"
     , version =
-        "v0.4.1"
+        "v0.5.0"
     }
 ...
 ```
