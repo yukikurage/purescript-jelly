@@ -17,8 +17,6 @@ The Signal system is similar to [purescript-signal](https://github.com/bodil/pur
 - It is a monad
 - Can stop an Effect Signal from running
 
-In other words, it is a monad instead of a reduced flexibility.
-
 ## Installation
 
 ```
