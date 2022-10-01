@@ -4,7 +4,7 @@ import Prelude
 
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
@@ -22,15 +22,18 @@ import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (document)
 
-hydrateNode :: forall a. Ref (Maybe Node) -> (Node -> Maybe a) -> Effect a -> String -> Effect a
+hydrateNode
+  :: forall a. Ref (Maybe Node) -> (Node -> Maybe a) -> Effect a -> String -> Effect (a /\ Boolean)
 hydrateNode ref convert make _ = do
   maybeNode <- read ref
   case maybeNode of
     Just node | Just a <- convert node -> do
       ns <- nextSibling node
       write ns ref
-      pure a
-    _ -> make
+      pure $ a /\ true
+    _ -> do
+      a <- make
+      pure $ a /\ false
 
 -- | Component を node の 列の Signal に変換
 -- | realNodeRef : Hydration するときに使う
@@ -50,12 +53,14 @@ hydrateNodesSig realNodeRef ctx cmp = do
       -> WriterT ({ onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }) Effect a
     interpreter = case _ of
       ComponentElement { tag, props, children } free -> do
-        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d) "Element"
+        el /\ frag <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d)
+          "Element"
 
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
 
-        unRegisterProps <- liftEffect $ registerPropsWithoutInit el props
+        unRegisterProps <- liftEffect $
+          if frag then registerPropsWithoutInit el props else registerPropsWithoutInit el props
         unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
 
         let
@@ -68,7 +73,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentText textSig free -> do
-        txt <- liftEffect $ hydrateNode realNodeRef Text.fromNode (createTextNode "" d) "Text"
+        txt /\ _ <- liftEffect $ hydrateNode realNodeRef Text.fromNode (createTextNode "" d) "Text"
 
         unRegisterText <- liftEffect $ registerText txt textSig
 
@@ -79,10 +84,11 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentRawElement { tag, props, innerHtml } free -> do
-        el <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d)
+        el /\ frag <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d)
           "RawElement"
 
-        unRegisterProps <- liftEffect $ registerPropsWithoutInit el props
+        unRegisterProps <- liftEffect $
+          if frag then registerPropsWithoutInit el props else registerPropsWithoutInit el props
         unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
 
         let
@@ -94,7 +100,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentDocType { name, publicId, systemId } free -> do
-        dt <- liftEffect $ hydrateNode realNodeRef DocumentType.fromNode
+        dt /\ _ <- liftEffect $ hydrateNode realNodeRef DocumentType.fromNode
           (createDocumentType name publicId systemId d)
           "DocType"
 
