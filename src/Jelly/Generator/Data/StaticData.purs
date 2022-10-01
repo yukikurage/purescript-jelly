@@ -29,7 +29,7 @@ newStaticData basePath = do
   pageData <- fromFoldable <$> flip parTraverse paths \path -> liftEffect do
     fiber <- launchSuspendedAff do
       dataResEither <- get string $ makeAbsoluteFilePath $ basePath <> path <> [ "data" ]
-      pure $ fromMaybe "" $ readJSON_ <<< (_.body) =<< hush dataResEither
+      pure $ fromMaybe "" $ (_.body) <$> hush dataResEither
     pure $ makeAbsoluteDirPath path /\ fiber
 
   let
@@ -39,7 +39,7 @@ newStaticData basePath = do
 
   globalResEither <- get string $ makeAbsoluteFilePath $ basePath <> [ "global" ]
   let
-    globalData = fromMaybe "" $ readJSON_ <<< (_.body) =<< hush globalResEither
+    globalData = fromMaybe "" $ (_.body) <$> hush globalResEither
 
   pure
     { loadData

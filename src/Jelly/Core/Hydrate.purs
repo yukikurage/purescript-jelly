@@ -23,7 +23,7 @@ import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window (document)
 
 hydrateNode :: forall a. Ref (Maybe Node) -> (Node -> Maybe a) -> Effect a -> String -> Effect a
-hydrateNode ref convert make name = do
+hydrateNode ref convert make _ = do
   maybeNode <- read ref
   case maybeNode of
     Just node | Just a <- convert node -> do

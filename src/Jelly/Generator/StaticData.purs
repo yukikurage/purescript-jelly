@@ -12,6 +12,7 @@ import Jelly.Router.Data.Path (Path, makeAbsoluteDirPath, makeRelativeFilePath)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', writeTextFile)
 import Node.FS.Perms (all, mkPerms)
+import Simple.JSON (writeJSON)
 
 mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> Aff String -> Aff StaticData
 mockStaticData output paths getPageData getGlobalData = do
@@ -33,6 +34,10 @@ mockStaticData output paths getPageData getGlobalData = do
   let
     globalPath = makeRelativeFilePath $ output <> [ "global" ]
   writeTextFile UTF8 globalPath globalData
+
+  let
+    pathsPath = makeRelativeFilePath $ output <> [ "paths.json" ]
+  writeTextFile UTF8 pathsPath $ writeJSON paths
 
   pure
     { loadData
