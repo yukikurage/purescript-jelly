@@ -11,7 +11,7 @@ import Effect.Ref (Ref, new, read, write)
 import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Core.Data.Signal (Signal, launch, send, signal)
 import Jelly.Core.Mount (createDocumentType)
-import Jelly.Core.Register (registerChildren, registerInnerHtml, registerPropsWithoutInit, registerText)
+import Jelly.Core.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
 import Web.DOM (Node)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.DocumentType as DocumentType
@@ -60,7 +60,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
 
         unRegisterProps <- liftEffect $
-          if frag then registerPropsWithoutInit el props else registerPropsWithoutInit el props
+          if frag then registerPropsWithoutInit el props else registerProps el props
         unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
 
         let
@@ -88,7 +88,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
           "RawElement"
 
         unRegisterProps <- liftEffect $
-          if frag then registerPropsWithoutInit el props else registerPropsWithoutInit el props
+          if frag then registerPropsWithoutInit el props else registerProps el props
         unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
 
         let
