@@ -7,7 +7,7 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Jelly.Core.Data.Component (Component)
 import Jelly.Core.Render (render)
-import Jelly.Router.Data.Path (Path, makeRelativeFilePath)
+import Jelly.Router.Data.Path (Path, makeAbsoluteFilePath, makeRelativeFilePath)
 import Jelly.Router.Data.Router (RouterContext, mockRouter, provideRouterContext)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (mkdir', writeTextFile)
@@ -25,5 +25,5 @@ generateHTML output paths context component = flip parTraverse_ paths \path -> d
     htmlPath = makeRelativeFilePath $ output <> path <> [ "index.html" ]
   router <- liftEffect $ mockRouter { path, query: mempty, hash: mempty }
   rendered <- liftEffect $ render (provideRouterContext router context) component
-  mkdir' htmlPath { recursive: true, mode: mkPerms all all all }
+  mkdir' (makeAbsoluteFilePath (output <> path)) { recursive: true, mode: mkPerms all all all }
   writeTextFile UTF8 htmlPath $ rendered

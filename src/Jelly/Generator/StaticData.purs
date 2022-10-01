@@ -19,7 +19,7 @@ mockStaticData output paths getPageData getGlobalData = do
     dt <- getPageData path
     let
       dataPath = makeRelativeFilePath $ output <> path <> [ "data" ]
-    mkdir' (makeRelativeFilePath path)
+    mkdir' (makeRelativeFilePath (output <> path))
       { recursive: true, mode: mkPerms all all all }
     writeTextFile UTF8 dataPath dt
     pure $ makeAbsoluteDirPath path /\ dt
