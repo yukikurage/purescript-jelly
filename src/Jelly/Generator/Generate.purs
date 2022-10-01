@@ -5,9 +5,10 @@ import Prelude
 import Effect.Aff (Aff)
 import Effect.Class.Console (log)
 import Jelly.Core.Data.Component (Component)
-import Jelly.Generator.Data.StaticData (StaticDataContext, mockStaticData, provideStaticDataContext)
+import Jelly.Generator.Data.StaticData (StaticDataContext, provideStaticDataContext)
 import Jelly.Generator.HTML (generateHTML)
 import Jelly.Generator.Script (generateScript)
+import Jelly.Generator.StaticData (mockStaticData)
 import Jelly.Router.Data.Path (Path)
 import Jelly.Router.Data.Router (RouterContext)
 
