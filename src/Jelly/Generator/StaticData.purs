@@ -14,8 +14,8 @@ import Node.FS.Aff (mkdir', writeTextFile)
 import Node.FS.Perms (all, mkPerms)
 import Simple.JSON (writeJSON)
 
-mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> Aff String -> Aff StaticData
-mockStaticData output paths getPageData getGlobalData = do
+mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> String -> Aff StaticData
+mockStaticData output paths getPageData globalData = do
   pageData <- fromFoldable <$> flip parTraverse paths \path -> do
     dt <- getPageData path
     let
@@ -30,7 +30,6 @@ mockStaticData output paths getPageData getGlobalData = do
       Just dt -> pure $ Just dt
       Nothing -> pure Nothing
 
-  globalData <- getGlobalData
   let
     globalPath = makeRelativeFilePath $ output <> [ "global" ]
   writeTextFile UTF8 globalPath globalData
