@@ -20,7 +20,7 @@ import Node.FS.Perms (all, mkPerms)
 import Record (union)
 import Simple.JSON (readJSON_)
 
-type StaticData = Object (Fiber String)
+type StaticData = { pageData :: Object (Fiber String), globalData :: String }
 
 type StaticDataContext context = (__staticData :: StaticData | context)
 
@@ -29,21 +29,30 @@ newStaticData basePath = do
   pathsResEither <- get string $ makeAbsoluteFilePath $ basePath <> [ "paths.json" ]
   let paths = fromMaybe [] $ readJSON_ <<< (_.body) =<< hush pathsResEither
 
-  fromFoldable <$> flip parTraverse paths \path -> liftEffect do
+  pageData <- fromFoldable <$> flip parTraverse paths \path -> liftEffect do
     fiber <- launchSuspendedAff do
       dataResEither <- get string $ makeAbsoluteFilePath $ basePath <> path <> [ "data" ]
       pure $ fromMaybe "" $ readJSON_ <<< (_.body) =<< hush dataResEither
     pure $ makeAbsoluteDirPath path /\ fiber
 
+  globalResEither <- get string $ makeAbsoluteFilePath $ basePath <> [ "global" ]
+  let
+    globalData = fromMaybe "" $ readJSON_ <<< (_.body) =<< hush globalResEither
+
+  pure
+    { pageData
+    , globalData
+    }
+
 loadStaticData :: StaticData -> Path -> Aff (Maybe String)
-loadStaticData staticData path = case lookup (makeAbsoluteDirPath path) staticData of
+loadStaticData staticData path = case lookup (makeAbsoluteDirPath path) staticData.pageData of
   Just fiber -> Just <$> joinFiber fiber
   Nothing -> pure Nothing
 
-mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> Aff StaticData
-mockStaticData output paths get = do
-  fromFoldable <$> flip parTraverse paths \path -> do
-    fiber <- liftEffect $ launchSuspendedAff $ get path
+mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> Aff String -> Aff StaticData
+mockStaticData output paths getPageData getGlobalData = do
+  pageData <- fromFoldable <$> flip parTraverse paths \path -> do
+    fiber <- liftEffect $ launchSuspendedAff $ getPageData path
     dt <- joinFiber fiber
     let
       dataPath = makeRelativeFilePath $ output <> path <> [ "data" ]
@@ -51,6 +60,16 @@ mockStaticData output paths get = do
       { recursive: true, mode: mkPerms all all all }
     writeTextFile UTF8 dataPath dt
     pure $ makeAbsoluteDirPath path /\ fiber
+
+  globalData <- getGlobalData
+  let
+    globalPath = makeRelativeFilePath $ output <> [ "global" ]
+  writeTextFile UTF8 globalPath globalData
+
+  pure
+    { pageData
+    , globalData
+    }
 
 provideStaticDataContext
   :: forall context. StaticData -> Record context -> Record (StaticDataContext context)

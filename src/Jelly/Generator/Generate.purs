@@ -16,8 +16,8 @@ generate
    . Record context
   -> Config context
   -> Aff Unit
-generate context { output, clientMain, paths, getStaticData, component } = do
-  staticData <- mockStaticData output paths getStaticData
+generate context { output, clientMain, paths, getStaticData, getGlobalData, component } = do
+  staticData <- mockStaticData output paths getStaticData getGlobalData
   let
     context' = provideStaticDataContext staticData context
   log $ "💫  Script generating..."
@@ -32,5 +32,6 @@ type Config context =
   , clientMain :: String
   , paths :: Array Path
   , getStaticData :: Path -> Aff String
+  , getGlobalData :: Aff String
   , component :: Component (RouterContext (StaticDataContext context))
   }
