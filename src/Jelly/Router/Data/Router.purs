@@ -23,6 +23,7 @@ import Web.HTML.Window as Window
 type Router =
   { basePath :: Path
   , currentUrlSig :: Signal Url
+  , temporaryUrlSig :: Signal Url
   , isTransitioningSig :: Signal Boolean
   , pushUrl :: Url -> Effect Unit
   , replaceUrl :: Url -> Effect Unit
@@ -36,6 +37,7 @@ mockRouter :: Url -> Effect Router
 mockRouter initialUrl = pure
   { basePath: []
   , currentUrlSig: pure initialUrl
+  , temporaryUrlSig: pure initialUrl
   , pushUrl: mempty
   , isTransitioningSig: pure false
   , replaceUrl: mempty
@@ -57,28 +59,35 @@ newRouter basePath transition = do
   loc <- liftEffect $ location w
 
   initialUrl <- liftEffect $ locationToUrl basePath loc
+
+  temporaryUrlSig /\ temporaryUrlAtom <- signal initialUrl
+
   newInitialUrl <- transition initialUrl
   liftEffect $
     replaceState (unsafeToForeign {}) (DocumentTitle "")
       (URL $ urlToString basePath newInitialUrl) =<< history w
 
   currentUrlSig /\ currentUrlAtom <- signal newInitialUrl
+  send temporaryUrlAtom newInitialUrl
   isTransitioningSig /\ isTransitioningAtom <- signal false
 
   listener <- liftEffect $ eventListener \_ -> do
     url <- locationToUrl basePath loc
     launchAff_ do
+      send temporaryUrlAtom url
       newUrl <- transition url
       liftEffect $
         replaceState (unsafeToForeign {}) (DocumentTitle "")
           (URL $ urlToString basePath newUrl) =<< history w
       send currentUrlAtom newUrl
+      send temporaryUrlAtom newUrl
 
   liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
   let
     handleUrl handleFn url = do
       send isTransitioningAtom true
+      send temporaryUrlAtom url
       launchAff_ do
         newUrl <- transition url
         liftEffect $
@@ -86,12 +95,14 @@ newRouter basePath transition = do
             (URL $ urlToString basePath newUrl) =<< history w
         send currentUrlAtom newUrl
         send isTransitioningAtom false
+        send temporaryUrlAtom newUrl
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url
 
   pure
     { basePath
     , currentUrlSig
+    , temporaryUrlSig
     , pushUrl
     , isTransitioningSig
     , replaceUrl
