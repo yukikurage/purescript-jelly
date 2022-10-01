@@ -8,9 +8,9 @@ import Control.Parallel (parTraverse)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\))
-import Effect.Aff (Aff, Fiber, joinFiber, launchSuspendedAff)
+import Effect.Aff (Aff, joinFiber, launchSuspendedAff)
 import Effect.Class (liftEffect)
-import Foreign.Object (Object, fromFoldable, lookup)
+import Foreign.Object (fromFoldable, lookup)
 import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Core.Hooks.UseContext (useContext)
 import Jelly.Router.Data.Path (Path, makeAbsoluteDirPath, makeAbsoluteFilePath, makeRelativeFilePath)
@@ -20,7 +20,7 @@ import Node.FS.Perms (all, mkPerms)
 import Record (union)
 import Simple.JSON (readJSON_)
 
-type StaticData = { pageData :: Object (Fiber String), globalData :: String }
+type StaticData = { loadData :: Path -> Aff (Maybe String), globalData :: String }
 
 type StaticDataContext context = (__staticData :: StaticData | context)
 
@@ -35,31 +35,35 @@ newStaticData basePath = do
       pure $ fromMaybe "" $ readJSON_ <<< (_.body) =<< hush dataResEither
     pure $ makeAbsoluteDirPath path /\ fiber
 
+  let
+    loadData path = case lookup (makeAbsoluteDirPath path) pageData of
+      Just fiber -> Just <$> joinFiber fiber
+      Nothing -> pure Nothing
+
   globalResEither <- get string $ makeAbsoluteFilePath $ basePath <> [ "global" ]
   let
     globalData = fromMaybe "" $ readJSON_ <<< (_.body) =<< hush globalResEither
 
   pure
-    { pageData
+    { loadData
     , globalData
     }
-
-loadStaticData :: StaticData -> Path -> Aff (Maybe String)
-loadStaticData staticData path = case lookup (makeAbsoluteDirPath path) staticData.pageData of
-  Just fiber -> Just <$> joinFiber fiber
-  Nothing -> pure Nothing
 
 mockStaticData :: Array String -> Array Path -> (Path -> Aff String) -> Aff String -> Aff StaticData
 mockStaticData output paths getPageData getGlobalData = do
   pageData <- fromFoldable <$> flip parTraverse paths \path -> do
-    fiber <- liftEffect $ launchSuspendedAff $ getPageData path
-    dt <- joinFiber fiber
+    dt <- getPageData path
     let
       dataPath = makeRelativeFilePath $ output <> path <> [ "data" ]
     mkdir' (makeRelativeFilePath path)
       { recursive: true, mode: mkPerms all all all }
     writeTextFile UTF8 dataPath dt
-    pure $ makeAbsoluteDirPath path /\ fiber
+    pure $ makeAbsoluteDirPath path /\ dt
+
+  let
+    loadData path = case lookup (makeAbsoluteDirPath path) pageData of
+      Just dt -> pure $ Just dt
+      Nothing -> pure Nothing
 
   globalData <- getGlobalData
   let
@@ -67,7 +71,7 @@ mockStaticData output paths getPageData getGlobalData = do
   writeTextFile UTF8 globalPath globalData
 
   pure
-    { pageData
+    { loadData
     , globalData
     }
 
