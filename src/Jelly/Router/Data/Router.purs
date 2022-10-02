@@ -6,7 +6,7 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Ref (modify_, new, read)
+import Effect.Ref (modify_, new, read, write)
 import Foreign (unsafeToForeign)
 import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Core.Data.Signal (Signal, send, signal)
@@ -97,13 +97,13 @@ newRouter basePath transition = do
       launchAff_ do
         newUrl <- transition url
         finished <- liftEffect $ read finishedRef
-        when (current > finished) do
-          liftEffect $
-            handleFn (unsafeToForeign {}) (DocumentTitle "")
-              (URL $ urlToString basePath newUrl) =<< history w
+        when (current > finished) $ liftEffect do
+          handleFn (unsafeToForeign {}) (DocumentTitle "")
+            (URL $ urlToString basePath newUrl) =<< history w
           send currentUrlAtom newUrl
           send isTransitioningAtom false
           send temporaryUrlAtom newUrl
+          write current finishedRef
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url
 

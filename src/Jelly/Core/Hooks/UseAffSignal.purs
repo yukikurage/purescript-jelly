@@ -24,7 +24,7 @@ useAffSignal sig = do
       finished <- liftEffect $ read finishedRef
       if current > finished then do
         send vAtom $ Just v
-        liftEffect $ write finished finishedRef
+        liftEffect $ write current finishedRef
       else pure unit
     mempty
   pure vSig
