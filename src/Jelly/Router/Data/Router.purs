@@ -6,6 +6,7 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Ref (modify_, new, read)
 import Foreign (unsafeToForeign)
 import Jelly.Core.Data.Hooks (Hooks)
 import Jelly.Core.Data.Signal (Signal, send, signal)
@@ -84,18 +85,25 @@ newRouter basePath transition = do
 
   liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
+  currentRef <- liftEffect $ new 0
+  finishedRef <- liftEffect $ new 0
+
   let
     handleUrl handleFn url = do
+      modify_ (_ + 1) currentRef
+      current <- read currentRef
       send isTransitioningAtom true
       send temporaryUrlAtom url
       launchAff_ do
         newUrl <- transition url
-        liftEffect $
-          handleFn (unsafeToForeign {}) (DocumentTitle "")
-            (URL $ urlToString basePath newUrl) =<< history w
-        send currentUrlAtom newUrl
-        send isTransitioningAtom false
-        send temporaryUrlAtom newUrl
+        finished <- liftEffect $ read finishedRef
+        when (current > finished) do
+          liftEffect $
+            handleFn (unsafeToForeign {}) (DocumentTitle "")
+              (URL $ urlToString basePath newUrl) =<< history w
+          send currentUrlAtom newUrl
+          send isTransitioningAtom false
+          send temporaryUrlAtom newUrl
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url
 
