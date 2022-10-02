@@ -55,6 +55,17 @@ makeNodesSig ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
 
         pure free
+      ComponentVoidElement { tag, props } free -> do
+        el <- liftEffect $ createElement tag d
+
+        unRegisterProps <- liftEffect $ registerProps el props
+
+        let
+          onUnmount = unRegisterProps
+
+        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+
+        pure free
       ComponentText textSig free -> do
         txt <- liftEffect $ createTextNode "" d
 
