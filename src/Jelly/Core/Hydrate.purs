@@ -72,6 +72,19 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
 
         pure free
+      ComponentVoidElement { tag, props } free -> do
+        el /\ frag <- liftEffect $ hydrateNode realNodeRef Element.fromNode (createElement tag d)
+          "VoidElement"
+
+        unRegisterProps <- liftEffect $
+          if frag then registerPropsWithoutInit el props else registerProps el props
+
+        let
+          onUnmount = unRegisterProps
+
+        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+
+        pure free
       ComponentText textSig free -> do
         txt /\ _ <- liftEffect $ hydrateNode realNodeRef Text.fromNode (createTextNode "" d) "Text"
 

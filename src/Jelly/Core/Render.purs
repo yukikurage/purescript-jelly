@@ -20,6 +20,10 @@ render ctx cmp = do
         childrenRendered <- liftEffect $ render ctx children
         tell $ "<" <> tag <> propsRendered <> ">" <> childrenRendered <> "</" <> tag <> ">"
         pure free
+      ComponentVoidElement { tag, props } free -> do
+        propsRendered <- liftEffect $ renderProps props
+        tell $ "<" <> tag <> propsRendered <> ">"
+        pure free
       ComponentText textSig free -> do
         tell =<< get textSig
         pure free
