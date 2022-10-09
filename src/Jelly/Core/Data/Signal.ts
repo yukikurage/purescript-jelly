@@ -5,14 +5,14 @@ type Unit = undefined;
 type Effect<T> = () => T;
 
 type Atom<T> = {
-  value: T;
-  observers: Set<Observer<T>>;
+  value: T; // mutable
+  observers: Set<Observer<T>>; // mutable
 };
 
 type Listener<T> = (value: T) => Effect<Effect<Unit>>;
 
 type Observer<T> = {
-  cleaner: Effect<Unit>; // let
+  cleaner: Effect<Unit>; // mutable
   listener: Listener<T>;
 };
 
