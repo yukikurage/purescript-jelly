@@ -74,23 +74,33 @@ foldComponent f (ComponentM c) = foldFree f c
 el :: forall context. String -> Array Prop -> Component context -> Component context
 el tag props children = ComponentM $ liftF $ ComponentElement { tag, props, children } unit
 
-el_ :: forall context. String -> Component context -> Component context
-el_ tag children = el tag [] children
+el' :: forall context. String -> Component context -> Component context
+el' tag = el tag []
 
 voidEl :: forall context. String -> Array Prop -> Component context
 voidEl tag props = ComponentM $ liftF $ ComponentVoidElement { tag, props } unit
 
-voidEl_ :: forall context. String -> Component context
-voidEl_ tag = voidEl tag []
+voidEl' :: forall context. String -> Component context
+voidEl' tag = voidEl tag []
 
-rawEl :: forall context. String -> Array Prop -> Signal String -> Component context
-rawEl tag props innerHtml = ComponentM $ liftF $ ComponentRawElement { tag, props, innerHtml } unit
+rawElSig :: forall context. String -> Array Prop -> Signal String -> Component context
+rawElSig tag props innerHtml = ComponentM $ liftF $ ComponentRawElement { tag, props, innerHtml }
+  unit
 
-rawEl_ :: forall context. String -> Signal String -> Component context
-rawEl_ tag innerHtml = rawEl tag [] innerHtml
+rawElSig' :: forall context. String -> Signal String -> Component context
+rawElSig' tag = rawElSig tag []
 
-text :: forall context. Signal String -> Component context
-text signal = ComponentM $ liftF $ ComponentText signal unit
+rawEl :: forall context. String -> Array Prop -> String -> Component context
+rawEl tag props innerHtml = rawElSig tag props (pure innerHtml)
+
+rawEl' :: forall context. String -> String -> Component context
+rawEl' tag = rawEl tag []
+
+textSig :: forall context. Signal String -> Component context
+textSig signal = ComponentM $ liftF $ ComponentText signal unit
+
+text :: forall context. String -> Component context
+text = textSig <<< pure
 
 doctype :: forall context. String -> String -> String -> Component context
 doctype name publicId systemId = ComponentM $ liftF $ ComponentDocType { name, publicId, systemId }
