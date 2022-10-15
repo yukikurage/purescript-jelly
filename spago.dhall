@@ -6,7 +6,6 @@
   , "effect"
   , "either"
   , "foreign"
-  , "foreign-object"
   , "free"
   , "js-timers"
   , "maybe"
@@ -18,6 +17,7 @@
   , "tailrec"
   , "transformers"
   , "tuples"
+  , "unordered-collections"
   , "web-dom"
   , "web-events"
   , "web-html"
@@ -26,5 +26,4 @@
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 , license = "MIT"
 , repository = "https://github.com/yukikurage/purescript-jelly.git"
-, backend = "purs-backend-es build"
 }
