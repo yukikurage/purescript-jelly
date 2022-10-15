@@ -11,3 +11,5 @@
 /public
 /purescript-dependency-graph
 /examples/public/SSG
+/output/
+/output-es/

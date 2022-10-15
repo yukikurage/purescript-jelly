@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "bundle": "npx spago bundle-app -m Test.Main -t public/index.js",
+    "bundle": "npx spago -x spago_prod.dhall build && purs-backend-es bundle-app -s -t public/index.js -y -m Test.Main ",
     "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc",
     "prepare": "husky install"
   },
@@ -20,6 +20,7 @@
   "description": "",
   "type": "module",
   "dependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "purs-backend-es": "^1.1.1"
   }
 }
