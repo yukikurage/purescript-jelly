@@ -2,9 +2,6 @@
   "name": "purescript-jelly",
   "version": "1.0.0",
   "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
     "bundle": "npx spago bundle-app -m Test.Main -t public/index.js",
     "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc",
