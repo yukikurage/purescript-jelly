@@ -102,9 +102,9 @@ hydrateNodesSig realNodeRef ctx cmp = do
       ComponentRawElement { tag, props, innerHtml } free -> do
         el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
 
+        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
         unRegisterProps <- liftEffect $
           if isHydrate then registerPropsWithoutInit el props else registerProps el props
-        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
 
         let
           onUnmount = do
