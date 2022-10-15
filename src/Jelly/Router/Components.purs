@@ -25,6 +25,6 @@ routerLink url props component = hooks do
 
   pure $ el "a" (props <> [ on click handleClick, "href" := urlToString basePath url ]) component
 
-routerLink_
+routerLink'
   :: forall context. Url -> Component (RouterContext context) -> Component (RouterContext context)
-routerLink_ url component = routerLink url [] component
+routerLink' url component = routerLink url [] component
