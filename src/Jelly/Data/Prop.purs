@@ -1,11 +1,11 @@
-module Jelly.Core.Data.Prop where
+module Jelly.Data.Prop where
 
 import Prelude
 
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Jelly.Core.Data.Signal (Signal, get)
+import Jelly.Data.Signal (Signal, get)
 import Web.Event.Event (Event, EventType)
 
 data Prop

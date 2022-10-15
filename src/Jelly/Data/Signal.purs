@@ -1,4 +1,4 @@
-module Jelly.Core.Data.Signal
+module Jelly.Data.Signal
   ( Atom
   , Signal
   , get

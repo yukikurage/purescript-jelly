@@ -2,9 +2,9 @@ module Jelly.Router.Components where
 
 import Prelude
 
-import Jelly.Core.Data.Component (Component, el)
-import Jelly.Core.Data.Hooks (hooks)
-import Jelly.Core.Data.Prop (Prop, on, (:=))
+import Jelly.Data.Component (Component, el)
+import Jelly.Data.Hooks (hooks)
+import Jelly.Data.Prop (Prop, on, (:=))
 import Jelly.Router.Data.Router (RouterContext, useRouter)
 import Jelly.Router.Data.Url (Url, urlToString)
 import Web.Event.Event (preventDefault)

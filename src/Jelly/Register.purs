@@ -1,12 +1,12 @@
-module Jelly.Core.Register where
+module Jelly.Register where
 
 import Prelude
 
 import Data.Array (foldMap)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Jelly.Core.Data.Prop (Prop(..))
-import Jelly.Core.Data.Signal (Signal, launch, launchWithoutInit)
+import Jelly.Data.Prop (Prop(..))
+import Jelly.Data.Signal (Signal, launch, launchWithoutInit)
 import Web.DOM (Element, Node, Text)
 import Web.DOM.Element (removeAttribute, setAttribute)
 import Web.DOM.Element as Element

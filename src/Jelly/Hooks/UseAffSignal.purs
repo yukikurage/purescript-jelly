@@ -1,4 +1,4 @@
-module Jelly.Core.Hooks.UseAffSignal where
+module Jelly.Hooks.UseAffSignal where
 
 import Prelude
 
@@ -7,9 +7,9 @@ import Data.Tuple.Nested ((/\))
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Ref (modify_, new, read, write)
-import Jelly.Core.Data.Hooks (Hooks)
-import Jelly.Core.Data.Signal (Signal, send, signal)
-import Jelly.Core.Hooks.UseSignal (useSignal)
+import Jelly.Data.Hooks (Hooks)
+import Jelly.Data.Signal (Signal, send, signal)
+import Jelly.Hooks.UseSignal (useSignal)
 
 useAffSignal :: forall context a. Signal (Aff a) -> Hooks context (Signal (Maybe a))
 useAffSignal sig = do

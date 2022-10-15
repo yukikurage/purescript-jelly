@@ -1,4 +1,4 @@
-module Jelly.Core.Hydrate where
+module Jelly.Hydrate where
 
 import Prelude
 
@@ -8,9 +8,9 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
-import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Core.Data.Signal (Signal, launch, send, signal)
-import Jelly.Core.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
+import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
+import Jelly.Data.Signal (Signal, launch, send, signal)
+import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
 import Web.DOM (Document, DocumentType, Node)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.DocumentType as DocumentType

@@ -1,4 +1,4 @@
-module Jelly.Core.Data.Hooks where
+module Jelly.Data.Hooks where
 
 import Prelude
 
@@ -9,7 +9,7 @@ import Data.Newtype (class Newtype)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Jelly.Core.Data.Component (Component, lifeCycleC)
+import Jelly.Data.Component (Component, lifeCycleC)
 
 newtype Hooks context a = Hooks (ReaderT (Record context) (WriterT (Effect Unit) Effect) a)
 

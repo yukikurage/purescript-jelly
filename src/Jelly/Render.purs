@@ -1,4 +1,4 @@
-module Jelly.Core.Render where
+module Jelly.Render where
 
 import Prelude
 
@@ -6,9 +6,9 @@ import Control.Monad.Writer (WriterT, runWriterT, tell)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Jelly.Core.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Core.Data.Prop (renderProps)
-import Jelly.Core.Data.Signal (get)
+import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
+import Jelly.Data.Prop (renderProps)
+import Jelly.Data.Signal (get)
 
 render :: forall context. Record context -> Component context -> Effect String
 render ctx cmp = do

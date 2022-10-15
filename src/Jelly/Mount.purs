@@ -1,11 +1,11 @@
-module Jelly.Core.Mount where
+module Jelly.Mount where
 
 import Prelude
 
 import Effect (Effect)
-import Jelly.Core.Data.Component (Component)
-import Jelly.Core.Hydrate (hydrate)
-import Jelly.Core.Register (updateChildren)
+import Jelly.Data.Component (Component)
+import Jelly.Hydrate (hydrate)
+import Jelly.Register (updateChildren)
 import Web.DOM (Node)
 
 mount

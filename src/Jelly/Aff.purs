@@ -1,4 +1,4 @@
-module Jelly.Core.Aff where
+module Jelly.Aff where
 
 import Prelude
 

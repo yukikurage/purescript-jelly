@@ -1,12 +1,12 @@
-module Jelly.Core.Data.Component where
+module Jelly.Data.Component where
 
 import Prelude
 
 import Control.Monad.Free (Free, foldFree, liftF)
 import Control.Monad.Rec.Class (class MonadRec)
 import Effect (Effect)
-import Jelly.Core.Data.Prop (Prop)
-import Jelly.Core.Data.Signal (Signal)
+import Jelly.Data.Prop (Prop)
+import Jelly.Data.Signal (Signal)
 
 type ComponentElementSpec context =
   { tag :: String
