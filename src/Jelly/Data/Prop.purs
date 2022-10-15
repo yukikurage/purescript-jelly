@@ -6,11 +6,13 @@ import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Jelly.Data.Signal (Signal, get)
+import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
 data Prop
   = PropAttribute String (Signal (Maybe String))
   | PropHandler EventType (Event -> Effect Unit)
+  | PropMountEffect (Element -> Effect Unit)
 
 class AttrValue a where
   toAttrValue :: a -> Maybe String
@@ -40,6 +42,9 @@ infix 0 attrSig as :=@
 on :: EventType -> (Event -> Effect Unit) -> Prop
 on = PropHandler
 
+onMount :: (Element -> Effect Unit) -> Prop
+onMount = PropMountEffect
+
 renderProp :: Prop -> Effect String
 renderProp = case _ of
   PropAttribute name valueSig -> do
@@ -48,6 +53,7 @@ renderProp = case _ of
       Nothing -> ""
       Just v -> " " <> name <> "=\"" <> v <> "\""
   PropHandler _ _ -> pure ""
+  PropMountEffect _ -> pure ""
 
 renderProps :: Array Prop -> Effect String
 renderProps props = fold $ map renderProp props

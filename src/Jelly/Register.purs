@@ -30,6 +30,9 @@ registerProp element = case _ of
     el <- eventListener handler
     addEventListener eventType el false $ Element.toEventTarget element
     pure $ pure unit
+  PropMountEffect effect -> do
+    effect element
+    mempty
 
 registerProps :: Element -> Array Prop -> Effect (Effect Unit)
 registerProps element props = foldMap (registerProp element) props
@@ -46,6 +49,9 @@ registerPropWithoutInit element = case _ of
     el <- eventListener handler
     addEventListener eventType el false $ Element.toEventTarget element
     pure $ pure unit
+  PropMountEffect effect -> do
+    effect element
+    mempty
 
 registerPropsWithoutInit :: Element -> Array Prop -> Effect (Effect Unit)
 registerPropsWithoutInit element props = foldMap (registerPropWithoutInit element) props
