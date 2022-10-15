@@ -63,9 +63,9 @@ hydrateNodesSig realNodeRef ctx cmp = do
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
 
+        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
         unRegisterProps <- liftEffect $
           if isHydrate then registerPropsWithoutInit el props else registerProps el props
-        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
 
         let
           onUnmount = do
