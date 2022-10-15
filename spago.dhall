@@ -13,8 +13,6 @@ to generate this file without the comments in this block.
 { name = "jelly"
 , dependencies =
   [ "aff"
-  , "affjax"
-  , "affjax-web"
   , "arrays"
   , "console"
   , "effect"
@@ -25,17 +23,9 @@ to generate this file without the comments in this block.
   , "js-timers"
   , "maybe"
   , "newtype"
-  , "node-buffer"
-  , "node-child-process"
-  , "node-fs"
-  , "node-fs-aff"
-  , "node-streams"
-  , "parallel"
-  , "posix-types"
   , "prelude"
   , "record"
   , "refs"
-  , "simple-json"
   , "strings"
   , "tailrec"
   , "transformers"
@@ -43,7 +33,6 @@ to generate this file without the comments in this block.
   , "web-dom"
   , "web-events"
   , "web-html"
-  , "web-uievents"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
