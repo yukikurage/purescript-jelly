@@ -20,7 +20,10 @@ export const subscribe = (atom) => ({
 });
 export const sendImpl = (atom) => (value) => () => {
     atom.value = value;
-    atom.observers.forEach((observer) => (observer.cleaner = observer.listener(atom.value)()));
+    atom.observers.forEach((observer) => {
+        observer.cleaner();
+        observer.cleaner = observer.listener(value)();
+    });
     return undefined;
 };
 export const patchImpl = (atom) => (f) => () => {

@@ -49,9 +49,10 @@ export const sendImpl =
   (value: T): Effect<Unit> =>
   () => {
     atom.value = value;
-    atom.observers.forEach(
-      (observer) => (observer.cleaner = observer.listener(atom.value)())
-    );
+    atom.observers.forEach((observer) => {
+      observer.cleaner();
+      observer.cleaner = observer.listener(value)();
+    });
     return undefined;
   };
 
