@@ -1,5 +1,11 @@
 "use strict";
 export const atomImpl = (value) => () => ({
+    eq: () => () => false,
+    value,
+    observers: new Set(),
+});
+export const atomWithEqImpl = (eq) => (value) => () => ({
+    eq,
     value,
     observers: new Set(),
 });
@@ -19,6 +25,9 @@ export const subscribe = (atom) => ({
     },
 });
 export const sendImpl = (atom) => (value) => () => {
+    if (atom.eq(atom.value)(value)) {
+        return undefined;
+    }
     atom.value = value;
     atom.observers.forEach((observer) => {
         observer.cleaner();
@@ -27,9 +36,9 @@ export const sendImpl = (atom) => (value) => () => {
     return undefined;
 };
 export const patchImpl = (atom) => (f) => () => {
-    atom.value = f(atom.value);
-    atom.observers.forEach((observer) => (observer.cleaner = observer.listener(atom.value)()));
-    return atom.value;
+    const value = f(atom.value);
+    sendImpl(atom)(value)();
+    return value;
 };
 export const getImpl = (signal) => () => signal.get();
 export const runImpl = (signal) => signal.listen((eff) => eff);

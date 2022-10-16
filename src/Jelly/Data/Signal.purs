@@ -1,6 +1,8 @@
 module Jelly.Data.Signal
   ( Atom
   , Signal
+  , atomEq
+  , atomEqFunction
   , get
   , launch
   , launchWithoutInit
@@ -10,6 +12,8 @@ module Jelly.Data.Signal
   , patch_
   , send
   , signal
+  , signalEq
+  , signalEqFunction
   , subscribe
   ) where
 
@@ -27,6 +31,7 @@ foreign import data Signal :: Type -> Type
 type Listener a = a -> Effect (Effect Unit)
 
 foreign import atomImpl :: forall a. a -> Effect (Atom a)
+foreign import atomWithEqImpl :: forall a. (a -> a -> Boolean) -> a -> Effect (Atom a)
 foreign import subscribe :: forall a. Atom a -> Signal a
 foreign import sendImpl :: forall a. Atom a -> a -> Effect Unit
 foreign import patchImpl :: forall a. Atom a -> (a -> a) -> Effect a
@@ -58,6 +63,12 @@ instance Monoid a => Monoid (Signal a) where
 atom :: forall a m. MonadEffect m => a -> m (Atom a)
 atom = liftEffect <<< atomImpl
 
+atomEq :: forall a m. MonadEffect m => Eq a => a -> m (Atom a)
+atomEq = liftEffect <<< atomWithEqImpl eq
+
+atomEqFunction :: forall a m. MonadEffect m => (a -> a -> Boolean) -> a -> m (Atom a)
+atomEqFunction f = liftEffect <<< atomWithEqImpl f
+
 send :: forall a m. MonadEffect m => Atom a -> a -> m Unit
 send a = liftEffect <<< sendImpl a
 
@@ -70,6 +81,16 @@ patch_ a f = void $ patch a f
 signal :: forall m a. MonadEffect m => a -> m (Signal a /\ Atom a)
 signal init = liftEffect do
   atm <- atom init
+  pure $ subscribe atm /\ atm
+
+signalEq :: forall m a. MonadEffect m => Eq a => a -> m (Signal a /\ Atom a)
+signalEq init = liftEffect do
+  atm <- atomEq init
+  pure $ subscribe atm /\ atm
+
+signalEqFunction :: forall m a. MonadEffect m => (a -> a -> Boolean) -> a -> m (Signal a /\ Atom a)
+signalEqFunction f init = liftEffect do
+  atm <- atomEqFunction f init
   pure $ subscribe atm /\ atm
 
 get :: forall a m. MonadEffect m => Signal a -> m a

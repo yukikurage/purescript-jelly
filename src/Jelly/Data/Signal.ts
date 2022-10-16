@@ -5,6 +5,7 @@ type Unit = undefined;
 type Effect<T> = () => T;
 
 type Atom<T> = {
+  eq: (a: T) => (b: T) => boolean;
   value: T; // mutable
   observers: Set<Observer<T>>; // mutable
 };
@@ -24,6 +25,16 @@ type Signal<T> = {
 export const atomImpl =
   <T>(value: T): Effect<Atom<T>> =>
   () => ({
+    eq: () => () => false,
+    value,
+    observers: new Set<Observer<T>>(),
+  });
+
+export const atomWithEqImpl =
+  <T>(eq: (a: T) => (b: T) => boolean) =>
+  (value: T): Effect<Atom<T>> =>
+  () => ({
+    eq,
     value,
     observers: new Set<Observer<T>>(),
   });
@@ -48,6 +59,9 @@ export const sendImpl =
   <T>(atom: Atom<T>) =>
   (value: T): Effect<Unit> =>
   () => {
+    if (atom.eq(atom.value)(value)) {
+      return undefined;
+    }
     atom.value = value;
     atom.observers.forEach((observer) => {
       observer.cleaner();
@@ -60,11 +74,9 @@ export const patchImpl =
   <T>(atom: Atom<T>) =>
   (f: (value: T) => T): Effect<T> =>
   () => {
-    atom.value = f(atom.value);
-    atom.observers.forEach(
-      (observer) => (observer.cleaner = observer.listener(atom.value)())
-    );
-    return atom.value;
+    const value = f(atom.value);
+    sendImpl(atom)(value)();
+    return value;
   };
 
 export const getImpl =
