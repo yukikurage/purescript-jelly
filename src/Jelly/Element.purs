@@ -83,8 +83,8 @@ div :: forall context. Array Prop -> Component context -> Component context
 div = el "div"
 
 -- | Alias for `div`
-box :: forall context. Array Prop -> Component context -> Component context
-box = div
+elDiv :: forall context. Array Prop -> Component context -> Component context
+elDiv = div
 
 dl :: forall context. Array Prop -> Component context -> Component context
 dl = el "dl"
