@@ -29,6 +29,12 @@ instance AttrValue Boolean where
 instance AttrValue (Maybe Boolean) where
   toAttrValue v = toAttrValue =<< v
 
+instance AttrValue (Array String) where
+  toAttrValue = Just <<< fold <<< map (\s -> s <> " ")
+
+instance AttrValue (Maybe (Array String)) where
+  toAttrValue v = toAttrValue =<< v
+
 attr :: forall a. AttrValue a => String -> a -> Prop
 attr name value = PropAttribute name $ pure $ toAttrValue value
 
