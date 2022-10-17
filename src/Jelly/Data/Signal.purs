@@ -1,6 +1,7 @@
 module Jelly.Data.Signal
   ( Atom
   , Signal
+  , atom
   , atomEq
   , atomEqFunction
   , get
@@ -27,8 +28,6 @@ import Effect.Ref (new, read, write)
 
 foreign import data Atom :: Type -> Type
 foreign import data Signal :: Type -> Type
-
-type Listener a = a -> Effect (Effect Unit)
 
 foreign import atomImpl :: forall a. a -> Effect (Atom a)
 foreign import atomWithEqImpl :: forall a. (a -> a -> Boolean) -> a -> Effect (Atom a)
