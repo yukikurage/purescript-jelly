@@ -23,6 +23,7 @@ import Web.HTML.Window as Window
 type Router =
   { basePath :: Path
   , currentUrlSig :: Signal Url
+  , temporaryUrlSig :: Signal Url
   , isTransitioningSig :: Signal Boolean
   , pushUrl :: Url -> Effect Unit
   , replaceUrl :: Url -> Effect Unit
@@ -40,6 +41,7 @@ newMockRouter :: Url -> Effect Router
 newMockRouter initialUrl = pure
   { basePath: []
   , currentUrlSig: pure initialUrl
+  , temporaryUrlSig: pure initialUrl
   , pushUrl: mempty
   , isTransitioningSig: pure false
   , replaceUrl: mempty
@@ -65,26 +67,14 @@ newRouter basePath transition = do
 
   initialUrl <- liftEffect $ locationToUrl basePath loc
 
-  currentUrlSig /\ currentUrlAtom <- newStateEq initialUrl
-
   newInitialUrl <- transition initialUrl
   liftEffect $
     replaceState (unsafeToForeign {}) (DocumentTitle "")
       (URL $ urlToString basePath newInitialUrl) =<< history w
 
-  writeAtom currentUrlAtom newInitialUrl
+  currentUrlSig /\ currentUrlAtom <- newStateEq newInitialUrl
+  temporaryUrlSig /\ temporaryUrlAtom <- newStateEq newInitialUrl
   isTransitioningSig /\ isTransitioningAtom <- newStateEq false
-
-  listener <- liftEffect $ eventListener \_ -> do
-    url <- locationToUrl basePath loc
-    launchAff_ do
-      newUrl <- transition url
-      liftEffect $
-        replaceState (unsafeToForeign {}) (DocumentTitle "")
-          (URL $ urlToString basePath newUrl) =<< history w
-      writeAtom currentUrlAtom newUrl
-
-  liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
   currentRef <- liftEffect $ new 0
 
@@ -101,12 +91,18 @@ newRouter basePath transition = do
             (URL $ urlToString basePath newUrl) =<< history w
           writeAtom isTransitioningAtom false
           writeAtom currentUrlAtom newUrl
-    pushUrl url = handleUrl pushState url
-    replaceUrl url = handleUrl replaceState url
+          writeAtom temporaryUrlAtom newUrl
+    pushUrl = handleUrl pushState
+    replaceUrl = handleUrl replaceState
+
+  listener <- liftEffect $ eventListener \_ -> locationToUrl basePath loc >>= handleUrl replaceState
+
+  liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
   pure
     { basePath
     , currentUrlSig
+    , temporaryUrlSig
     , pushUrl
     , isTransitioningSig
     , replaceUrl
