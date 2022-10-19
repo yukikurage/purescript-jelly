@@ -147,7 +147,7 @@ hydrate
 hydrate ctx cmp node = do
   realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- hydrateNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren false node nodesSig
+  unRegisterChildren <- registerChildren true node nodesSig
   pure $ onUnmount *> unRegisterChildren
 
 hydrate_
