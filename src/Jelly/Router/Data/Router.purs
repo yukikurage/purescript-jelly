@@ -83,6 +83,7 @@ newRouter basePath transition = do
       modify_ (_ + 1) currentRef
       current <- read currentRef
       writeAtom isTransitioningAtom true
+      writeAtom temporaryUrlAtom url
       launchAff_ do
         newUrl <- transition url
         finished <- liftEffect $ read currentRef
