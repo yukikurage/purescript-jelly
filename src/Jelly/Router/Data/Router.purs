@@ -13,7 +13,6 @@ import Jelly.Data.Signal (Signal, newStateEq, writeAtom)
 import Jelly.Hooks.UseContext (useContext)
 import Jelly.Router.Data.Path (Path)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
-import Record (union)
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.HTML (window)
 import Web.HTML.Event.PopStateEvent.EventTypes (popstate)
@@ -24,21 +23,23 @@ import Web.HTML.Window as Window
 type Router =
   { basePath :: Path
   , currentUrlSig :: Signal Url
-  , temporaryUrlSig :: Signal Url
   , isTransitioningSig :: Signal Boolean
   , pushUrl :: Url -> Effect Unit
   , replaceUrl :: Url -> Effect Unit
   }
 
-type RouterContext context = (__router :: Router | context)
+class RouterContext context where
+  getRouter :: context -> Router
+
+useRouter :: forall context. RouterContext context => Hooks context Router
+useRouter = getRouter <$> useContext
 
 -- | Create a mock router
 -- | It is useful for rendering a component on node.js
-mockRouter :: Url -> Effect Router
-mockRouter initialUrl = pure
+newMockRouter :: Url -> Effect Router
+newMockRouter initialUrl = pure
   { basePath: []
   , currentUrlSig: pure initialUrl
-  , temporaryUrlSig: pure initialUrl
   , pushUrl: mempty
   , isTransitioningSig: pure false
   , replaceUrl: mempty
@@ -61,27 +62,25 @@ newRouter basePath transition = do
 
   initialUrl <- liftEffect $ locationToUrl basePath loc
 
-  temporaryUrlSig /\ temporaryUrlAtom <- newStateEq initialUrl
+  currentUrlSig /\ currentUrlAtom <- newStateEq initialUrl
 
   newInitialUrl <- transition initialUrl
   liftEffect $
     replaceState (unsafeToForeign {}) (DocumentTitle "")
       (URL $ urlToString basePath newInitialUrl) =<< history w
 
-  currentUrlSig /\ currentUrlAtom <- newStateEq newInitialUrl
-  writeAtom temporaryUrlAtom newInitialUrl
+  writeAtom currentUrlAtom newInitialUrl
   isTransitioningSig /\ isTransitioningAtom <- newStateEq false
 
   listener <- liftEffect $ eventListener \_ -> do
     url <- locationToUrl basePath loc
     launchAff_ do
-      writeAtom temporaryUrlAtom url
+      writeAtom currentUrlAtom url
       newUrl <- transition url
       liftEffect $
         replaceState (unsafeToForeign {}) (DocumentTitle "")
           (URL $ urlToString basePath newUrl) =<< history w
       writeAtom currentUrlAtom newUrl
-      writeAtom temporaryUrlAtom newUrl
 
   liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
@@ -93,16 +92,15 @@ newRouter basePath transition = do
       modify_ (_ + 1) currentRef
       current <- read currentRef
       writeAtom isTransitioningAtom true
-      writeAtom temporaryUrlAtom url
+      writeAtom currentUrlAtom url
       launchAff_ do
         newUrl <- transition url
         finished <- liftEffect $ read finishedRef
         when (current > finished) $ liftEffect do
           handleFn (unsafeToForeign {}) (DocumentTitle "")
             (URL $ urlToString basePath newUrl) =<< history w
-          writeAtom currentUrlAtom newUrl
           writeAtom isTransitioningAtom false
-          writeAtom temporaryUrlAtom newUrl
+          writeAtom currentUrlAtom newUrl
           write current finishedRef
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url
@@ -110,14 +108,7 @@ newRouter basePath transition = do
   pure
     { basePath
     , currentUrlSig
-    , temporaryUrlSig
     , pushUrl
     , isTransitioningSig
     , replaceUrl
     }
-
-provideRouterContext :: forall context. Router -> Record context -> Record (RouterContext context)
-provideRouterContext router context = union { __router: router } context
-
-useRouter :: forall context. Hooks (RouterContext context) Router
-useRouter = (_.__router) <$> useContext

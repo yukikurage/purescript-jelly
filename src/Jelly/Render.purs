@@ -10,7 +10,7 @@ import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Data.Prop (renderProps)
 import Jelly.Data.Signal (readSignal)
 
-render :: forall context. Record context -> Component context -> Effect String
+render :: forall context. context -> Component context -> Effect String
 render ctx cmp = do
   let
     interpreter :: forall a. ComponentF context a -> WriterT String Effect a

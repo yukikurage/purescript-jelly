@@ -11,7 +11,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Jelly.Data.Component (Component, lifeCycleC)
 
-newtype Hooks context a = Hooks (ReaderT (Record context) (WriterT (Effect Unit) Effect) a)
+newtype Hooks context a = Hooks (ReaderT context (WriterT (Effect Unit) Effect) a)
 
 derive instance Newtype (Hooks context a) _
 derive newtype instance Functor (Hooks context)
@@ -21,8 +21,8 @@ derive newtype instance Bind (Hooks context)
 derive newtype instance Monad (Hooks context)
 derive newtype instance MonadRec (Hooks context)
 derive newtype instance MonadEffect (Hooks context)
-derive newtype instance MonadAsk (Record context) (Hooks context)
-derive newtype instance MonadReader (Record context) (Hooks context)
+derive newtype instance MonadAsk context (Hooks context)
+derive newtype instance MonadReader context (Hooks context)
 derive newtype instance MonadTell (Effect Unit) (Hooks context)
 derive newtype instance MonadWriter (Effect Unit) (Hooks context)
 

@@ -36,7 +36,7 @@ type ComponentDocTypeSpec =
 type ComponentSignalSpec context = Signal (Component context)
 
 type ComponentLifeCycleSpec context =
-  Record context
+  context
   -> Effect
        { onUnmount :: Effect Unit
        , component :: Component context
@@ -120,6 +120,6 @@ whenC sig cmp = ifC sig cmp mempty
 
 lifeCycleC
   :: forall context
-   . (Record context -> Effect { onUnmount :: Effect Unit, component :: Component context })
+   . (context -> Effect { onUnmount :: Effect Unit, component :: Component context })
   -> Component context
 lifeCycleC effect = ComponentM $ liftF $ ComponentLifeCycle effect unit

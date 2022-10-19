@@ -29,7 +29,7 @@ foreign import createDocumentType
 hydrateNodesSig
   :: forall context
    . Ref (Maybe Node)
-  -> Record context
+  -> context
   -> Component context
   -> Effect { onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }
 hydrateNodesSig realNodeRef ctx cmp = do
@@ -146,7 +146,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
   pure { onUnmount, nodesSig }
 
 hydrate
-  :: forall context. Record context -> Component context -> Node -> Effect (Effect Unit)
+  :: forall context. context -> Component context -> Node -> Effect (Effect Unit)
 hydrate ctx cmp node = do
   realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- hydrateNodesSig realNodeRef ctx cmp
@@ -154,5 +154,5 @@ hydrate ctx cmp node = do
   pure $ onUnmount *> unRegisterChildren
 
 hydrate_
-  :: forall context. Record context -> Component context -> Node -> Effect Unit
+  :: forall context. context -> Component context -> Node -> Effect Unit
 hydrate_ ctx cmp node = void $ hydrate ctx cmp node

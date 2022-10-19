@@ -2,20 +2,22 @@ module Jelly.Router.Components where
 
 import Prelude
 
-import Jelly.Data.Component (Component, el)
+import Jelly.Data.Component (Component)
 import Jelly.Data.Hooks (hooks)
 import Jelly.Data.Prop (Prop, on, (:=))
-import Jelly.Router.Data.Router (RouterContext, useRouter)
+import Jelly.Element as JE
+import Jelly.Router.Data.Router (class RouterContext, useRouter)
 import Jelly.Router.Data.Url (Url, urlToString)
 import Web.Event.Event (preventDefault)
 import Web.HTML.Event.EventTypes (click)
 
 routerLink
   :: forall context
-   . Url
+   . RouterContext context
+  => Url
   -> Array Prop
-  -> Component (RouterContext context)
-  -> Component (RouterContext context)
+  -> Component context
+  -> Component context
 routerLink url props component = hooks do
   { pushUrl, basePath } <- useRouter
   let
@@ -23,8 +25,12 @@ routerLink url props component = hooks do
       preventDefault e
       pushUrl url
 
-  pure $ el "a" (props <> [ on click handleClick, "href" := urlToString basePath url ]) component
+  pure $ JE.a ([ on click handleClick, "href" := urlToString basePath url ] <> props) component
 
 routerLink'
-  :: forall context. Url -> Component (RouterContext context) -> Component (RouterContext context)
+  :: forall context
+   . RouterContext context
+  => Url
+  -> Component context
+  -> Component context
 routerLink' url component = routerLink url [] component
