@@ -51,6 +51,8 @@ instance Applicative Signal where
 instance Bind Signal where
   bind = bindImpl
 
+instance Monad Signal
+
 instance Semigroup a => Semigroup (Signal a) where
   append = lift2 append
 
