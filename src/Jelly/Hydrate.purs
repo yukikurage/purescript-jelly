@@ -10,7 +10,7 @@ import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Data.Signal (Signal, newState, runSignal, writeAtom)
-import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
+import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerText)
 import Web.DOM (Document, DocumentType, Node)
 import Web.DOM.Document (createElement, createTextNode)
 import Web.DOM.DocumentType as DocumentType
@@ -63,9 +63,8 @@ hydrateNodesSig realNodeRef ctx cmp = do
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
 
-        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
 
         let
           onUnmount = do
@@ -79,8 +78,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
       ComponentVoidElement { tag, props } free -> do
         el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
 
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
 
         let
           onUnmount = unRegisterProps
@@ -89,9 +87,9 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentText textSig free -> do
-        txt /\ _ <- liftEffect $ hydrateNode Text.fromNode (createTextNode "" d)
+        txt /\ isHydrate <- liftEffect $ hydrateNode Text.fromNode (createTextNode "" d)
 
-        unRegisterText <- liftEffect $ registerText txt textSig
+        unRegisterText <- liftEffect $ registerText (not isHydrate) txt textSig
 
         let
           onUnmount = unRegisterText
@@ -102,9 +100,8 @@ hydrateNodesSig realNodeRef ctx cmp = do
       ComponentRawElement { tag, props, innerHtml } free -> do
         el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
 
-        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+        unRegisterInnerHtml <- liftEffect $ registerInnerHtml (not isHydrate) el innerHtml
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
 
         let
           onUnmount = do
@@ -150,7 +147,7 @@ hydrate
 hydrate ctx cmp node = do
   realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- hydrateNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren node nodesSig
+  unRegisterChildren <- registerChildren false node nodesSig
   pure $ onUnmount *> unRegisterChildren
 
 hydrate_
