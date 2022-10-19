@@ -8,7 +8,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Data.Prop (renderProps)
-import Jelly.Data.Signal (get)
+import Jelly.Data.Signal (readSignal)
 
 render :: forall context. Record context -> Component context -> Effect String
 render ctx cmp = do
@@ -25,18 +25,18 @@ render ctx cmp = do
         tell $ "<" <> tag <> propsRendered <> ">"
         pure free
       ComponentText textSig free -> do
-        tell =<< get textSig
+        tell =<< readSignal textSig
         pure free
       ComponentRawElement { tag, props, innerHtml } free -> do
         propsRendered <- liftEffect $ renderProps props
-        innerHtmlRendered <- get innerHtml
+        innerHtmlRendered <- readSignal innerHtml
         tell $ "<" <> tag <> propsRendered <> ">" <> innerHtmlRendered <> "</" <> tag <> ">"
         pure free
       ComponentDocType { name, publicId, systemId } free -> do
         tell $ "<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">"
         pure free
       ComponentSignal cmpSig free -> do
-        component <- get cmpSig
+        component <- readSignal cmpSig
         tell =<< liftEffect (render ctx component)
         pure free
       ComponentLifeCycle eff free -> do

@@ -9,7 +9,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Data.Signal (Signal, launch, send, signal)
+import Jelly.Data.Signal (Signal, newState, runSignal, writeAtom)
 import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
 import Web.DOM (Document, DocumentType, Node)
 import Web.DOM.Document (createElement, createTextNode)
@@ -122,11 +122,11 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentSignal cmpSig free -> do
-        nodesSig /\ nodesAtom <- signal $ pure []
+        nodesSig /\ nodesAtom <- newState $ pure []
 
-        unListen <- launch $ cmpSig <#> \c -> do
+        unListen <- runSignal $ cmpSig <#> \c -> do
           { onUnmount: onu, nodesSig: nds } <- hydrateNodesSig realNodeRef ctx c
-          send nodesAtom nds
+          writeAtom nodesAtom nds
           pure $ onu
 
         tell { onUnmount: unListen, nodesSig: join nodesSig }

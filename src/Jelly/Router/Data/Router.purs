@@ -9,7 +9,7 @@ import Effect.Class (liftEffect)
 import Effect.Ref (modify_, new, read, write)
 import Foreign (unsafeToForeign)
 import Jelly.Data.Hooks (Hooks)
-import Jelly.Data.Signal (Signal, send, signal)
+import Jelly.Data.Signal (Signal, newStateEq, writeAtom)
 import Jelly.Hooks.UseContext (useContext)
 import Jelly.Router.Data.Path (Path)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
@@ -61,27 +61,27 @@ newRouter basePath transition = do
 
   initialUrl <- liftEffect $ locationToUrl basePath loc
 
-  temporaryUrlSig /\ temporaryUrlAtom <- signal initialUrl
+  temporaryUrlSig /\ temporaryUrlAtom <- newStateEq initialUrl
 
   newInitialUrl <- transition initialUrl
   liftEffect $
     replaceState (unsafeToForeign {}) (DocumentTitle "")
       (URL $ urlToString basePath newInitialUrl) =<< history w
 
-  currentUrlSig /\ currentUrlAtom <- signal newInitialUrl
-  send temporaryUrlAtom newInitialUrl
-  isTransitioningSig /\ isTransitioningAtom <- signal false
+  currentUrlSig /\ currentUrlAtom <- newStateEq newInitialUrl
+  writeAtom temporaryUrlAtom newInitialUrl
+  isTransitioningSig /\ isTransitioningAtom <- newStateEq false
 
   listener <- liftEffect $ eventListener \_ -> do
     url <- locationToUrl basePath loc
     launchAff_ do
-      send temporaryUrlAtom url
+      writeAtom temporaryUrlAtom url
       newUrl <- transition url
       liftEffect $
         replaceState (unsafeToForeign {}) (DocumentTitle "")
           (URL $ urlToString basePath newUrl) =<< history w
-      send currentUrlAtom newUrl
-      send temporaryUrlAtom newUrl
+      writeAtom currentUrlAtom newUrl
+      writeAtom temporaryUrlAtom newUrl
 
   liftEffect $ addEventListener popstate listener false $ Window.toEventTarget w
 
@@ -92,17 +92,17 @@ newRouter basePath transition = do
     handleUrl handleFn url = do
       modify_ (_ + 1) currentRef
       current <- read currentRef
-      send isTransitioningAtom true
-      send temporaryUrlAtom url
+      writeAtom isTransitioningAtom true
+      writeAtom temporaryUrlAtom url
       launchAff_ do
         newUrl <- transition url
         finished <- liftEffect $ read finishedRef
         when (current > finished) $ liftEffect do
           handleFn (unsafeToForeign {}) (DocumentTitle "")
             (URL $ urlToString basePath newUrl) =<< history w
-          send currentUrlAtom newUrl
-          send isTransitioningAtom false
-          send temporaryUrlAtom newUrl
+          writeAtom currentUrlAtom newUrl
+          writeAtom isTransitioningAtom false
+          writeAtom temporaryUrlAtom newUrl
           write current finishedRef
     pushUrl url = handleUrl pushState url
     replaceUrl url = handleUrl replaceState url

@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Hooks (Hooks)
-import Jelly.Hooks.UseUnmountEffect (useUnmountEffect)
+import Jelly.Hooks.UseCleanup (useCleanup)
 import Web.Event.Event (EventType)
 import Web.Event.EventTarget (EventTarget, addEventListener, eventListener, removeEventListener)
 import Web.Event.Internal.Types (Event)
@@ -17,4 +17,4 @@ useEventListener eventType listener eventTarget = do
 
   liftEffect $ addEventListener eventType l false eventTarget
 
-  useUnmountEffect $ removeEventListener eventType l false eventTarget
+  useCleanup $ removeEventListener eventType l false eventTarget

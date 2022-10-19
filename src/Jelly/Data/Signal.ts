@@ -22,7 +22,7 @@ type Signal<T> = {
   listen: (listener: Listener<T>) => Effect<Effect<Unit>>; // return unlisten effect
 };
 
-export const atomImpl =
+export const newAtomImpl =
   <T>(value: T): Effect<Atom<T>> =>
   () => ({
     eq: () => () => false,
@@ -30,7 +30,7 @@ export const atomImpl =
     observers: new Set<Observer<T>>(),
   });
 
-export const atomWithEqImpl =
+export const newAtomEqImpl =
   <T>(eq: (a: T) => (b: T) => boolean) =>
   (value: T): Effect<Atom<T>> =>
   () => ({
@@ -55,7 +55,7 @@ export const subscribe = <T>(atom: Atom<T>): Signal<T> => ({
   },
 });
 
-export const sendImpl =
+export const writeAtomImpl =
   <T>(atom: Atom<T>) =>
   (value: T): Effect<Unit> =>
   () => {
@@ -70,21 +70,21 @@ export const sendImpl =
     return undefined;
   };
 
-export const patchImpl =
+export const modifyAtomImpl =
   <T>(atom: Atom<T>) =>
   (f: (value: T) => T): Effect<T> =>
   () => {
     const value = f(atom.value);
-    sendImpl(atom)(value)();
+    writeAtomImpl(atom)(value)();
     return value;
   };
 
-export const getImpl =
+export const readSignalImpl =
   <T>(signal: Signal<T>): Effect<T> =>
   () =>
     signal.get();
 
-export const runImpl = (
+export const runSignalImpl = (
   signal: Signal<Effect<Effect<Unit>>>
 ): Effect<Effect<Unit>> => signal.listen((eff: Effect<Effect<Unit>>) => eff);
 

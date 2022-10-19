@@ -1,21 +1,19 @@
 module Jelly.Data.Signal
   ( Atom
   , Signal
-  , atom
-  , atomEq
-  , atomEqFunction
-  , get
-  , launch
-  , launchWithoutInit
-  , launchWithoutInit_
-  , launch_
-  , patch
-  , patch_
-  , send
-  , signal
-  , signalEq
-  , signalEqFunction
+  , modifyAtom
+  , modifyAtom_
+  , newAtom
+  , newAtomEq
+  , newState
+  , newStateEq
+  , readSignal
+  , runSignal
+  , runSignalWithoutInit
+  , runSignalWithoutInit_
+  , runSignal_
   , subscribe
+  , writeAtom
   ) where
 
 import Prelude
@@ -29,13 +27,13 @@ import Effect.Ref (new, read, write)
 foreign import data Atom :: Type -> Type
 foreign import data Signal :: Type -> Type
 
-foreign import atomImpl :: forall a. a -> Effect (Atom a)
-foreign import atomWithEqImpl :: forall a. (a -> a -> Boolean) -> a -> Effect (Atom a)
+foreign import newAtomImpl :: forall a. a -> Effect (Atom a)
+foreign import newAtomEqImpl :: forall a. (a -> a -> Boolean) -> a -> Effect (Atom a)
 foreign import subscribe :: forall a. Atom a -> Signal a
-foreign import sendImpl :: forall a. Atom a -> a -> Effect Unit
-foreign import patchImpl :: forall a. Atom a -> (a -> a) -> Effect a
-foreign import getImpl :: forall a. Signal a -> Effect a
-foreign import runImpl :: Signal (Effect (Effect Unit)) -> Effect (Effect Unit)
+foreign import writeAtomImpl :: forall a. Atom a -> a -> Effect Unit
+foreign import modifyAtomImpl :: forall a. Atom a -> (a -> a) -> Effect a
+foreign import readSignalImpl :: forall a. Signal a -> Effect a
+foreign import runSignalImpl :: Signal (Effect (Effect Unit)) -> Effect (Effect Unit)
 foreign import mapImpl :: forall a b. (a -> b) -> Signal a -> Signal b
 foreign import applyImpl :: forall a b. Signal (a -> b) -> Signal a -> Signal b
 foreign import pureImpl :: forall a. a -> Signal a
@@ -59,57 +57,49 @@ instance Semigroup a => Semigroup (Signal a) where
 instance Monoid a => Monoid (Signal a) where
   mempty = pure mempty
 
-atom :: forall a m. MonadEffect m => a -> m (Atom a)
-atom = liftEffect <<< atomImpl
+newAtom :: forall a m. MonadEffect m => a -> m (Atom a)
+newAtom = liftEffect <<< newAtomImpl
 
-atomEq :: forall a m. MonadEffect m => Eq a => a -> m (Atom a)
-atomEq = liftEffect <<< atomWithEqImpl eq
+newAtomEq :: forall a m. MonadEffect m => Eq a => a -> m (Atom a)
+newAtomEq = liftEffect <<< newAtomEqImpl eq
 
-atomEqFunction :: forall a m. MonadEffect m => (a -> a -> Boolean) -> a -> m (Atom a)
-atomEqFunction f = liftEffect <<< atomWithEqImpl f
+writeAtom :: forall a m. MonadEffect m => Atom a -> a -> m Unit
+writeAtom a = liftEffect <<< writeAtomImpl a
 
-send :: forall a m. MonadEffect m => Atom a -> a -> m Unit
-send a = liftEffect <<< sendImpl a
+modifyAtom :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m a
+modifyAtom a = liftEffect <<< modifyAtomImpl a
 
-patch :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m a
-patch a = liftEffect <<< patchImpl a
+modifyAtom_ :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m Unit
+modifyAtom_ a f = void $ modifyAtom a f
 
-patch_ :: forall a m. MonadEffect m => Atom a -> (a -> a) -> m Unit
-patch_ a f = void $ patch a f
-
-signal :: forall m a. MonadEffect m => a -> m (Signal a /\ Atom a)
-signal init = liftEffect do
-  atm <- atom init
+newState :: forall m a. MonadEffect m => a -> m (Signal a /\ Atom a)
+newState init = liftEffect do
+  atm <- newAtom init
   pure $ subscribe atm /\ atm
 
-signalEq :: forall m a. MonadEffect m => Eq a => a -> m (Signal a /\ Atom a)
-signalEq init = liftEffect do
-  atm <- atomEq init
+newStateEq :: forall m a. MonadEffect m => Eq a => a -> m (Signal a /\ Atom a)
+newStateEq init = liftEffect do
+  atm <- newAtomEq init
   pure $ subscribe atm /\ atm
 
-signalEqFunction :: forall m a. MonadEffect m => (a -> a -> Boolean) -> a -> m (Signal a /\ Atom a)
-signalEqFunction f init = liftEffect do
-  atm <- atomEqFunction f init
-  pure $ subscribe atm /\ atm
+readSignal :: forall a m. MonadEffect m => Signal a -> m a
+readSignal = liftEffect <<< readSignalImpl
 
-get :: forall a m. MonadEffect m => Signal a -> m a
-get = liftEffect <<< getImpl
+runSignal :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+runSignal = liftEffect <<< runSignalImpl
 
-launch :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
-launch = liftEffect <<< runImpl
+runSignal_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
+runSignal_ = void <<< runSignal
 
-launch_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
-launch_ = void <<< launch
-
-launchWithoutInit :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
-launchWithoutInit sig = do
+runSignalWithoutInit :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m (Effect Unit)
+runSignalWithoutInit sig = do
   isInit <- liftEffect $ new true
-  launch $ sig <#> \eff -> do
+  runSignal $ sig <#> \eff -> do
     isInit' <- read isInit
     if isInit' then do
       write false isInit
       mempty
     else eff
 
-launchWithoutInit_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
-launchWithoutInit_ = void <<< launchWithoutInit
+runSignalWithoutInit_ :: forall m. MonadEffect m => Signal (Effect (Effect Unit)) -> m Unit
+runSignalWithoutInit_ = void <<< runSignalWithoutInit

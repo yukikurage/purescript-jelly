@@ -12,7 +12,7 @@ import Jelly.Aff (awaitBody)
 import Jelly.Data.Component (Component, el, textSig)
 import Jelly.Data.Hooks (hooks)
 import Jelly.Data.Prop ((:=))
-import Jelly.Data.Signal (Signal, launch, patch_, signal)
+import Jelly.Data.Signal (Signal, modifyAtom_, newState, runSignal)
 import Jelly.Hooks.UseInterval (useInterval)
 import Jelly.Mount (mount_)
 
@@ -27,7 +27,7 @@ helloEffect = name <#> \s -> do
 
 main :: Effect Unit
 main = do
-  stop <- launch helloEffect
+  stop <- runSignal helloEffect
   stop
 
   launchAff_ do
@@ -42,9 +42,9 @@ testComp = el "div" [ "class" := "test" ] stateful
 
 stateful :: Component ()
 stateful = hooks do
-  timeSig /\ timeAtom <- signal 0
+  timeSig /\ timeAtom <- newState 0
 
   useInterval 1000 do
-    patch_ timeAtom (_ + 1)
+    modifyAtom_ timeAtom (_ + 1)
 
   pure $ textSig $ show <$> timeSig
