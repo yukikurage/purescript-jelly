@@ -4,6 +4,8 @@ module Jelly.Register
   , registerProp
   , registerProps
   , registerText
+  , setInnerHtml
+  , updateChildren
   ) where
 
 import Prelude

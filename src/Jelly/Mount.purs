@@ -8,8 +8,7 @@ import Jelly.Hydrate (hydrate)
 import Jelly.Register (updateChildren)
 import Web.DOM (Node)
 
-mount
-  :: forall context. context -> Component context -> Node -> Effect (Effect Unit)
+mount :: forall context. context -> Component context -> Node -> Effect (Effect Unit)
 mount ctx cmp node = do
   updateChildren node []
   hydrate ctx cmp node
