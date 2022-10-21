@@ -4,12 +4,19 @@ import Prelude
 
 import Control.Monad.Free (Free, foldFree, liftF)
 import Control.Monad.Rec.Class (class MonadRec)
-import Effect (Effect)
+import Jelly.Data.Hooks (Hooks)
 import Jelly.Data.Prop (Prop)
 import Jelly.Data.Signal (Signal)
 
 type ComponentElementSpec context =
   { tag :: String
+  , props :: Array Prop
+  , children :: Component context
+  }
+
+type ComponentElementSpecNS context =
+  { namespace :: String
+  , tag :: String
   , props :: Array Prop
   , children :: Component context
   }
@@ -21,11 +28,7 @@ type ComponentVoidElementSpec =
 
 type ComponentTextSpec = Signal String
 
-type ComponentRawElementSpec =
-  { tag :: String
-  , props :: Array Prop
-  , innerHtml :: Signal String
-  }
+type ComponentRawSpec = Signal String
 
 type ComponentDocTypeSpec =
   { name :: String
@@ -35,21 +38,19 @@ type ComponentDocTypeSpec =
 
 type ComponentSignalSpec context = Signal (Component context)
 
-type ComponentLifeCycleSpec context =
-  Record context
-  -> Effect
-       { onUnmount :: Effect Unit
-       , component :: Component context
-       }
+type ComponentLifeCycleSpec context = Hooks context (Component context)
 
 data ComponentF context f
   = ComponentElement (ComponentElementSpec context) f
+  | ComponentElementNS (ComponentElementSpecNS context) f
   | ComponentVoidElement ComponentVoidElementSpec f
   | ComponentText ComponentTextSpec f
-  | ComponentRawElement ComponentRawElementSpec f
+  | ComponentRaw ComponentRawSpec f
   | ComponentDocType ComponentDocTypeSpec f
   | ComponentSignal (ComponentSignalSpec context) f
   | ComponentLifeCycle (ComponentLifeCycleSpec context) f
+
+derive instance Functor (ComponentF context)
 
 newtype ComponentM context a = ComponentM (Free (ComponentF context) a)
 
@@ -77,24 +78,25 @@ el tag props children = ComponentM $ liftF $ ComponentElement { tag, props, chil
 el' :: forall context. String -> Component context -> Component context
 el' tag = el tag []
 
+elNS :: forall context. String -> String -> Array Prop -> Component context -> Component context
+elNS namespace tag props children = ComponentM $ liftF $ ComponentElementNS
+  { namespace, tag, props, children }
+  unit
+
+elNS' :: forall context. String -> String -> Component context -> Component context
+elNS' namespace tag = elNS namespace tag []
+
 voidEl :: forall context. String -> Array Prop -> Component context
 voidEl tag props = ComponentM $ liftF $ ComponentVoidElement { tag, props } unit
 
 voidEl' :: forall context. String -> Component context
 voidEl' tag = voidEl tag []
 
-rawElSig :: forall context. String -> Array Prop -> Signal String -> Component context
-rawElSig tag props innerHtml = ComponentM $ liftF $ ComponentRawElement { tag, props, innerHtml }
-  unit
+rawCSig :: forall context. Signal String -> Component context
+rawCSig innerHtml = ComponentM $ liftF $ ComponentRaw innerHtml unit
 
-rawElSig' :: forall context. String -> Signal String -> Component context
-rawElSig' tag = rawElSig tag []
-
-rawEl :: forall context. String -> Array Prop -> String -> Component context
-rawEl tag props innerHtml = rawElSig tag props (pure innerHtml)
-
-rawEl' :: forall context. String -> String -> Component context
-rawEl' tag = rawEl tag []
+rawC :: forall context. String -> Component context
+rawC innerHtml = rawCSig (pure innerHtml)
 
 textSig :: forall context. Signal String -> Component context
 textSig signal = ComponentM $ liftF $ ComponentText signal unit
@@ -118,8 +120,5 @@ ifC sig cmpTrue cmpFalse = signalC $ sig <#> \b -> if b then cmpTrue else cmpFal
 whenC :: forall context. Signal Boolean -> Component context -> Component context
 whenC sig cmp = ifC sig cmp mempty
 
-lifeCycleC
-  :: forall context
-   . (Record context -> Effect { onUnmount :: Effect Unit, component :: Component context })
-  -> Component context
-lifeCycleC effect = ComponentM $ liftF $ ComponentLifeCycle effect unit
+hooks :: forall context. Hooks context (Component context) -> Component context
+hooks h = ComponentM $ liftF $ ComponentLifeCycle h unit

@@ -21,10 +21,3 @@ export const updateChildren =
       elem.insertBefore(node, itrNode);
     }
   };
-
-export const setInnerHtml =
-  (elem: Element) =>
-  (html: string): Effect<void> =>
-  () => {
-    elem.innerHTML = html;
-  };

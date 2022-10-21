@@ -3,16 +3,18 @@ module Jelly.Hydrate where
 import Prelude
 
 import Control.Monad.Writer (WriterT, runWriterT, tell)
+import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Data.Signal (Signal, launch, send, signal)
-import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerPropsWithoutInit, registerText)
+import Jelly.Data.Hooks (runHooks)
+import Jelly.Data.Signal (Signal, newState, readSignal, runSignal, unwrapEffectSignal, writeAtom)
+import Jelly.Register (registerChildren, registerProps, registerText)
 import Web.DOM (Document, DocumentType, Node)
-import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
 import Web.DOM.Node (firstChild, nextSibling)
@@ -23,6 +25,8 @@ import Web.HTML.Window (document)
 
 foreign import createDocumentType
   :: String -> String -> String -> Document -> Effect DocumentType
+
+foreign import convertInnerHtmlToNodes :: String -> Effect (Array Node)
 
 -- | Component を node の 列の Signal に変換
 -- | realNodeRef : Hydration するときに使う
@@ -63,9 +67,27 @@ hydrateNodesSig realNodeRef ctx cmp = do
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
 
-        unRegisterChildren <- liftEffect $ registerChildren (Element.toNode el) nds
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+
+        let
+          onUnmount = do
+            unRegisterProps
+            unRegisterChildren
+            onu
+
+        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+
+        pure free
+      ComponentElementNS { namespace, tag, props, children } free -> do
+        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode
+          (createElementNS (Just namespace) tag d)
+
+        rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
+        { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
+
+        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
 
         let
           onUnmount = do
@@ -79,8 +101,7 @@ hydrateNodesSig realNodeRef ctx cmp = do
       ComponentVoidElement { tag, props } free -> do
         el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
 
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
 
         let
           onUnmount = unRegisterProps
@@ -89,9 +110,15 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentText textSig free -> do
-        txt /\ _ <- liftEffect $ hydrateNode Text.fromNode (createTextNode "" d)
+        initText <- readSignal textSig
 
-        unRegisterText <- liftEffect $ registerText txt textSig
+        txt /\ isHydrate <- liftEffect
+          if initText == "" then do
+            txt <- createTextNode "" d
+            pure $ txt /\ false
+          else hydrateNode Text.fromNode (createTextNode "" d)
+
+        unRegisterText <- liftEffect $ registerText (not isHydrate) txt textSig
 
         let
           onUnmount = unRegisterText
@@ -99,19 +126,22 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
 
         pure free
-      ComponentRawElement { tag, props, innerHtml } free -> do
-        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
-
-        unRegisterInnerHtml <- liftEffect $ registerInnerHtml el innerHtml
-        unRegisterProps <- liftEffect $
-          if isHydrate then registerPropsWithoutInit el props else registerProps el props
+      ComponentRaw innerHtmlSig free -> do
+        nodesSig /\ onUnmount <- unwrapEffectSignal $ innerHtmlSig <#> convertInnerHtmlToNodes
 
         let
-          onUnmount = do
-            unRegisterProps
-            unRegisterInnerHtml
+          skipRef = do
+            maybeNode <- read realNodeRef
+            case maybeNode of
+              Just node -> do
+                ns <- nextSibling node
+                write ns realNodeRef
+              Nothing -> write Nothing realNodeRef
 
-        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+        nodes <- readSignal nodesSig
+        liftEffect $ for_ nodes \_ -> skipRef
+
+        tell { onUnmount, nodesSig }
 
         pure free
       ComponentDocType { name, publicId, systemId } free -> do
@@ -122,18 +152,18 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentSignal cmpSig free -> do
-        nodesSig /\ nodesAtom <- signal $ pure []
+        nodesSig /\ nodesAtom <- newState $ pure []
 
-        unListen <- launch $ cmpSig <#> \c -> do
+        unListen <- runSignal $ cmpSig <#> \c -> do
           { onUnmount: onu, nodesSig: nds } <- hydrateNodesSig realNodeRef ctx c
-          send nodesAtom nds
+          writeAtom nodesAtom nds
           pure $ onu
 
         tell { onUnmount: unListen, nodesSig: join nodesSig }
 
         pure free
-      ComponentLifeCycle eff free -> do
-        { component: cmpL, onUnmount: onuL } <- liftEffect $ eff ctx
+      ComponentLifeCycle hooks free -> do
+        cmpL /\ onuL <- liftEffect $ runHooks hooks ctx
 
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig realNodeRef ctx cmpL
 
@@ -150,7 +180,7 @@ hydrate
 hydrate ctx cmp node = do
   realNodeRef <- new =<< firstChild node
   { onUnmount, nodesSig } <- hydrateNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren node nodesSig
+  unRegisterChildren <- registerChildren true node nodesSig
   pure $ onUnmount *> unRegisterChildren
 
 hydrate_

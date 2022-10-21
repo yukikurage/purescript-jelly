@@ -5,7 +5,7 @@ import Prelude
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Jelly.Data.Signal (Signal, get)
+import Jelly.Data.Signal (Signal, readSignal)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
@@ -54,7 +54,7 @@ onMount = PropMountEffect
 renderProp :: Prop -> Effect String
 renderProp = case _ of
   PropAttribute name valueSig -> do
-    value <- get valueSig
+    value <- readSignal valueSig
     pure case value of
       Nothing -> ""
       Just v -> " " <> name <> "=\"" <> v <> "\""
