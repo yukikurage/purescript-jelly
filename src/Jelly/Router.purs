@@ -9,5 +9,5 @@ module Jelly.Router
 import Jelly.Router.Components (routerLink, routerLink')
 import Jelly.Router.Data.Path (Path, dropBasePath, makeAbsoluteDirPath, makeAbsoluteFilePath, makeRelativeDirPath, makeRelativeFilePath, stringToPath)
 import Jelly.Router.Data.Query (Query, fromSearch, toSearch)
-import Jelly.Router.Data.Router (Router, RouterContext, newMockRouter, newRouter, useRouter)
+import Jelly.Router.Data.Router (Router, RouterContext, newMockRouter, newRouter, provideRouter, useRouter)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
