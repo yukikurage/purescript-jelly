@@ -8,9 +8,9 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Ref (modify_, new, read)
 import Foreign (unsafeToForeign)
-import Jelly.Data.Hooks (Hooks)
+import Jelly (Hooks, type (+))
 import Jelly.Data.Signal (Signal, newStateEq, writeAtom)
-import Jelly.Hooks.UseContext (useContext)
+import Jelly.Hooks (useContext)
 import Jelly.Router.Data.Path (Path)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
 import Web.Event.EventTarget (addEventListener, eventListener)
@@ -29,11 +29,10 @@ type Router =
   , replaceUrl :: Url -> Effect Unit
   }
 
-class RouterContext context where
-  getRouter :: context -> Router
+type RouterContext context = (__JELLY_ROUTER__ :: Router | context)
 
-useRouter :: forall context. RouterContext context => Hooks context Router
-useRouter = getRouter <$> useContext
+useRouter :: forall context. Hooks (RouterContext + context) Router
+useRouter = _.__JELLY_ROUTER__ <$> useContext
 
 -- | Create a mock router
 -- | It is useful for rendering a component on node.js

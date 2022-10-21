@@ -43,13 +43,13 @@ main = do
     bodyMaybe <- awaitBody
     case bodyMaybe of
       Just body -> do
-        liftEffect $ mount_ unit testComp body
+        liftEffect $ mount_ {} testComp body
       Nothing -> pure unit
 
-testComp :: Component Unit
+testComp :: Component ()
 testComp = el "div" [ "class" := "test" ] stateful
 
-stateful :: Component Unit
+stateful :: Component ()
 stateful = hooks do
   timeSig /\ timeAtom <- newState 0
 

@@ -16,6 +16,7 @@
   , "tailrec"
   , "transformers"
   , "tuples"
+  , "typelevel-prelude"
   , "unordered-collections"
   , "web-dom"
   , "web-events"

@@ -5,6 +5,7 @@ module Jelly
   , module Jelly.Hydrate
   , module Jelly.Mount
   , module Jelly.Data.Hooks
+  , module Type.Row
   ) where
 
 import Jelly.Aff (awaitBody, awaitDocument, awaitDomContentLoaded, awaitQuerySelector)
@@ -13,3 +14,4 @@ import Jelly.Data.Hooks (Hooks(..))
 import Jelly.Data.Prop (Prop, attr, attrSig, on, onMount, (:=), (:=@))
 import Jelly.Hydrate (hydrate, hydrate_)
 import Jelly.Mount (mount, mount_)
+import Type.Row (type (+))

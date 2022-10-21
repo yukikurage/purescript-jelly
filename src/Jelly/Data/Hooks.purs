@@ -10,7 +10,7 @@ import Data.Tuple.Nested (type (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-newtype Hooks context a = Hooks (ReaderT context (WriterT (Effect Unit) Effect) a)
+newtype Hooks context a = Hooks (ReaderT (Record context) (WriterT (Effect Unit) Effect) a)
 
 derive instance Newtype (Hooks context a) _
 derive newtype instance Functor (Hooks context)
@@ -20,10 +20,10 @@ derive newtype instance Bind (Hooks context)
 derive newtype instance Monad (Hooks context)
 derive newtype instance MonadRec (Hooks context)
 derive newtype instance MonadEffect (Hooks context)
-derive newtype instance MonadAsk context (Hooks context)
-derive newtype instance MonadReader context (Hooks context)
+derive newtype instance MonadAsk (Record context) (Hooks context)
+derive newtype instance MonadReader (Record context) (Hooks context)
 derive newtype instance MonadTell (Effect Unit) (Hooks context)
 derive newtype instance MonadWriter (Effect Unit) (Hooks context)
 
-runHooks :: forall context a. Hooks context a -> context -> Effect (a /\ Effect Unit)
+runHooks :: forall context a. Hooks context a -> Record context -> Effect (a /\ Effect Unit)
 runHooks (Hooks m) c = runWriterT $ runReaderT m c
