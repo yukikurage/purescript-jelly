@@ -8,11 +8,12 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Ref (modify_, new, read)
 import Foreign (unsafeToForeign)
-import Jelly (Hooks, type (+))
+import Jelly (type (+), Hooks)
 import Jelly.Data.Signal (Signal, newStateEq, writeAtom)
 import Jelly.Hooks (useContext)
 import Jelly.Router.Data.Path (Path)
 import Jelly.Router.Data.Url (Url, locationToUrl, urlToString)
+import Record (union)
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.HTML (window)
 import Web.HTML.Event.PopStateEvent.EventTypes (popstate)
@@ -33,6 +34,9 @@ type RouterContext context = (__JELLY_ROUTER__ :: Router | context)
 
 useRouter :: forall context. Hooks (RouterContext + context) Router
 useRouter = _.__JELLY_ROUTER__ <$> useContext
+
+provideRouter :: forall context. Router -> Record context -> Record (RouterContext + context)
+provideRouter router context = { __JELLY_ROUTER__: router } `union` context
 
 -- | Create a mock router
 -- | It is useful for rendering a component on node.js

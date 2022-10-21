@@ -12,6 +12,7 @@
   , "maybe"
   , "newtype"
   , "prelude"
+  , "record"
   , "refs"
   , "strings"
   , "tailrec"
