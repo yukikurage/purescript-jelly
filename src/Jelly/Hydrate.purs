@@ -9,10 +9,11 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
+import Jelly.Data.Hooks (runHooks)
 import Jelly.Data.Signal (Signal, newState, runSignal, writeAtom)
 import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerText)
 import Web.DOM (Document, DocumentType, Node)
-import Web.DOM.Document (createElement, createTextNode)
+import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.DocumentType as DocumentType
 import Web.DOM.Element as Element
 import Web.DOM.Node (firstChild, nextSibling)
@@ -59,6 +60,25 @@ hydrateNodesSig realNodeRef ctx cmp = do
     interpreter = case _ of
       ComponentElement { tag, props, children } free -> do
         el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
+
+        rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
+        { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
+
+        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
+        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+
+        let
+          onUnmount = do
+            unRegisterProps
+            unRegisterChildren
+            onu
+
+        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+
+        pure free
+      ComponentElementNS { namespace, tag, props, children } free -> do
+        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode
+          (createElementNS (Just namespace) tag d)
 
         rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
@@ -129,8 +149,8 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount: unListen, nodesSig: join nodesSig }
 
         pure free
-      ComponentLifeCycle eff free -> do
-        { component: cmpL, onUnmount: onuL } <- liftEffect $ eff ctx
+      ComponentLifeCycle hooks free -> do
+        cmpL /\ onuL <- liftEffect $ runHooks hooks ctx
 
         { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig realNodeRef ctx cmpL
 

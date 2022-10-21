@@ -14,7 +14,5 @@ useEventListener
   :: forall r. EventType -> (Event -> Effect Unit) -> EventTarget -> Hooks r Unit
 useEventListener eventType listener eventTarget = do
   l <- liftEffect $ eventListener listener
-
   liftEffect $ addEventListener eventType l false eventTarget
-
   useCleanup $ removeEventListener eventType l false eventTarget

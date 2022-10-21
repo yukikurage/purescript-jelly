@@ -41,7 +41,18 @@ export const modifyAtomImpl = (atom) => (f) => () => {
     return value;
 };
 export const readSignalImpl = (signal) => () => signal.get();
-export const runSignalImpl = (signal) => signal.listen((eff) => eff);
+export const runSignalImpl = (eq) => (signal) => () => {
+    const atom = newAtomEqImpl(eq)(undefined)();
+    const cleanup = signal.listen((eff) => () => {
+        const { result, cleanup } = eff();
+        writeAtomImpl(atom)(result)();
+        return cleanup;
+    })();
+    return {
+        result: subscribe(atom),
+        cleanup,
+    };
+};
 export const mapImpl = (f) => (signal) => ({
     get: () => f(signal.get()),
     listen: (listener) => signal.listen((t) => listener(f(t))),

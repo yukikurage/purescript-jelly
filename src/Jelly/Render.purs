@@ -7,6 +7,7 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
+import Jelly.Data.Hooks (runHooks)
 import Jelly.Data.Prop (renderProps)
 import Jelly.Data.Signal (readSignal)
 
@@ -19,6 +20,15 @@ render ctx cmp = do
         propsRendered <- liftEffect $ renderProps props
         childrenRendered <- liftEffect $ render ctx children
         tell $ "<" <> tag <> propsRendered <> ">" <> childrenRendered <> "</" <> tag <> ">"
+        pure free
+      ComponentElementNS { namespace, tag, props, children } free -> do
+        propsRendered <- liftEffect $ renderProps props
+        childrenRendered <- liftEffect $ render ctx children
+        tell $ "<" <> tag <> " xmlns=\"" <> namespace <> "\"" <> propsRendered <> ">"
+          <> childrenRendered
+          <> "</"
+          <> tag
+          <> ">"
         pure free
       ComponentVoidElement { tag, props } free -> do
         propsRendered <- liftEffect $ renderProps props
@@ -39,8 +49,8 @@ render ctx cmp = do
         component <- readSignal cmpSig
         tell =<< liftEffect (render ctx component)
         pure free
-      ComponentLifeCycle eff free -> do
-        { component } <- liftEffect $ eff ctx
+      ComponentLifeCycle hooks free -> do
+        component /\ _ <- liftEffect $ runHooks hooks ctx
         tell =<< liftEffect (render ctx component)
         pure free
   _ /\ w <- runWriterT $ foldComponent interpreter cmp

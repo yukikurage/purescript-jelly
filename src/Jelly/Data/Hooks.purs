@@ -6,10 +6,9 @@ import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, runRead
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT)
 import Data.Newtype (class Newtype)
-import Data.Tuple.Nested (type (/\), (/\))
+import Data.Tuple.Nested (type (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
-import Jelly.Data.Component (Component, lifeCycleC)
 
 newtype Hooks context a = Hooks (ReaderT context (WriterT (Effect Unit) Effect) a)
 
@@ -25,11 +24,6 @@ derive newtype instance MonadAsk context (Hooks context)
 derive newtype instance MonadReader context (Hooks context)
 derive newtype instance MonadTell (Effect Unit) (Hooks context)
 derive newtype instance MonadWriter (Effect Unit) (Hooks context)
-
-hooks :: forall context. Hooks context (Component context) -> Component context
-hooks (Hooks m) = lifeCycleC \c -> do
-  component /\ onUnmount <- runWriterT $ runReaderT m c
-  pure { component, onUnmount }
 
 runHooks :: forall context a. Hooks context a -> context -> Effect (a /\ Effect Unit)
 runHooks (Hooks m) c = runWriterT $ runReaderT m c

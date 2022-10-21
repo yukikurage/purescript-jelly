@@ -7,14 +7,10 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Jelly.Aff (awaitBody)
-import Jelly.Data.Component (Component, el, textSig)
-import Jelly.Data.Hooks (hooks)
-import Jelly.Data.Prop ((:=))
-import Jelly.Data.Signal (Signal, modifyAtom_, newState, runSignal)
-import Jelly.Hooks.UseInterval (useInterval)
-import Jelly.Mount (mount_)
+import Effect.Class.Console (log, logShow)
+import Jelly (Component, awaitBody, el, hooks, mount_, textSig, (:=))
+import Jelly.Data.Signal (Signal, modifyAtom_, newState, newStateEq, runSignal, writeAtom)
+import Jelly.Hooks (useInterval)
 
 name :: Signal String
 name = pure "Jelly"
@@ -27,8 +23,21 @@ helloEffect = name <#> \s -> do
 
 main :: Effect Unit
 main = do
+  vSig /\ vAtom <- newStateEq false
   stop <- runSignal helloEffect
   stop
+
+  cleanup <- runSignal $ vSig <#> \v -> do
+    logShow v
+    pure $ log $ "Cleanup:" <> show v
+
+  writeAtom vAtom true
+  writeAtom vAtom false
+  writeAtom vAtom false
+  writeAtom vAtom true
+  cleanup
+  writeAtom vAtom false
+  writeAtom vAtom true
 
   launchAff_ do
     bodyMaybe <- awaitBody

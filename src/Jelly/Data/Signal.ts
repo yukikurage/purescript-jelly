@@ -84,9 +84,25 @@ export const readSignalImpl =
   () =>
     signal.get();
 
-export const runSignalImpl = (
-  signal: Signal<Effect<Effect<Unit>>>
-): Effect<Effect<Unit>> => signal.listen((eff: Effect<Effect<Unit>>) => eff);
+export const runSignalImpl =
+  <T>(eq: (a: T) => (b: T) => boolean) =>
+  (
+    signal: Signal<Effect<{ result: T; cleanup: Effect<Unit> }>>
+  ): Effect<{ result: Signal<T>; cleanup: Effect<Unit> }> =>
+  () => {
+    const atom = newAtomEqImpl(eq)(undefined as any)();
+    const cleanup = signal.listen(
+      (eff: Effect<{ result: T; cleanup: Effect<Unit> }>) => () => {
+        const { result, cleanup } = eff();
+        writeAtomImpl(atom)(result)();
+        return cleanup;
+      }
+    )();
+    return {
+      result: subscribe(atom),
+      cleanup,
+    };
+  };
 
 export const mapImpl =
   <T, U>(f: (t: T) => U) =>
