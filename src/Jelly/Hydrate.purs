@@ -110,7 +110,13 @@ hydrateNodesSig realNodeRef ctx cmp = do
 
         pure free
       ComponentText textSig free -> do
-        txt /\ isHydrate <- liftEffect $ hydrateNode Text.fromNode (createTextNode "" d)
+        initText <- readSignal textSig
+
+        txt /\ isHydrate <- liftEffect
+          if initText == "" then do
+            txt <- createTextNode "" d
+            pure $ txt /\ false
+          else hydrateNode Text.fromNode (createTextNode "" d)
 
         unRegisterText <- liftEffect $ registerText (not isHydrate) txt textSig
 
