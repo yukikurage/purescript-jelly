@@ -3,6 +3,7 @@ module Jelly.Hydrate where
 import Prelude
 
 import Control.Monad.Writer (WriterT, runWriterT, tell)
+import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
@@ -10,8 +11,8 @@ import Effect.Class (liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
 import Jelly.Data.Hooks (runHooks)
-import Jelly.Data.Signal (Signal, newState, runSignal, writeAtom)
-import Jelly.Register (registerChildren, registerInnerHtml, registerProps, registerText)
+import Jelly.Data.Signal (Signal, newState, readSignal, runSignal, unwrapEffectSignal, writeAtom)
+import Jelly.Register (registerChildren, registerProps, registerText)
 import Web.DOM (Document, DocumentType, Node)
 import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.DocumentType as DocumentType
@@ -24,6 +25,8 @@ import Web.HTML.Window (document)
 
 foreign import createDocumentType
   :: String -> String -> String -> Document -> Effect DocumentType
+
+foreign import convertInnerHtmlToNodes :: String -> Effect (Array Node)
 
 -- | Component を node の 列の Signal に変換
 -- | realNodeRef : Hydration するときに使う
@@ -117,18 +120,22 @@ hydrateNodesSig realNodeRef ctx cmp = do
         tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
 
         pure free
-      ComponentRawElement { tag, props, innerHtml } free -> do
-        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
-
-        unRegisterInnerHtml <- liftEffect $ registerInnerHtml (not isHydrate) el innerHtml
-        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+      ComponentRaw innerHtmlSig free -> do
+        nodesSig /\ onUnmount <- unwrapEffectSignal $ innerHtmlSig <#> convertInnerHtmlToNodes
 
         let
-          onUnmount = do
-            unRegisterProps
-            unRegisterInnerHtml
+          skipRef = do
+            maybeNode <- read realNodeRef
+            case maybeNode of
+              Just node -> do
+                ns <- nextSibling node
+                write ns realNodeRef
+              Nothing -> write Nothing realNodeRef
 
-        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+        nodes <- readSignal nodesSig
+        liftEffect $ for_ nodes \_ -> skipRef
+
+        tell { onUnmount, nodesSig }
 
         pure free
       ComponentDocType { name, publicId, systemId } free -> do

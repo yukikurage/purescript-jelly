@@ -5,6 +5,7 @@
   , "console"
   , "effect"
   , "either"
+  , "foldable-traversable"
   , "foreign"
   , "free"
   , "js-timers"

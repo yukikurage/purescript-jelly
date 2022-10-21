@@ -37,10 +37,8 @@ render ctx cmp = do
       ComponentText textSig free -> do
         tell =<< readSignal textSig
         pure free
-      ComponentRawElement { tag, props, innerHtml } free -> do
-        propsRendered <- liftEffect $ renderProps props
-        innerHtmlRendered <- readSignal innerHtml
-        tell $ "<" <> tag <> propsRendered <> ">" <> innerHtmlRendered <> "</" <> tag <> ">"
+      ComponentRaw innerHtmlSig free -> do
+        tell =<< readSignal innerHtmlSig
         pure free
       ComponentDocType { name, publicId, systemId } free -> do
         tell $ "<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">"

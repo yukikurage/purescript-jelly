@@ -1,10 +1,8 @@
 module Jelly.Register
   ( registerChildren
-  , registerInnerHtml
   , registerProp
   , registerProps
   , registerText
-  , setInnerHtml
   , updateChildren
   ) where
 
@@ -23,8 +21,6 @@ import Web.DOM.Text as Text
 import Web.Event.EventTarget (addEventListener, eventListener)
 
 foreign import updateChildren :: Node -> Array Node -> Effect Unit
-
-foreign import setInnerHtml :: Element -> String -> Effect Unit
 
 runSignalRegister
   :: Boolean -> Signal (Effect (Effect Unit)) -> Effect (Effect Unit)
@@ -61,8 +57,3 @@ registerText doInitialize txt txtSig = runSignalRegister doInitialize $
     setTextContent tx $ Text.toNode txt
     mempty
 
-registerInnerHtml :: Boolean -> Element -> Signal String -> Effect (Effect Unit)
-registerInnerHtml doInitialize elem htmlSig =
-  runSignalRegister doInitialize $ htmlSig <#> \html -> do
-    setInnerHtml elem html
-    mempty

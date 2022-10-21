@@ -16,6 +16,3 @@ export const updateChildren = (elem) => (children) => () => {
         elem.insertBefore(node, itrNode);
     }
 };
-export const setInnerHtml = (elem) => (html) => () => {
-    elem.innerHTML = html;
-};

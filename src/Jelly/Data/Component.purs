@@ -28,11 +28,7 @@ type ComponentVoidElementSpec =
 
 type ComponentTextSpec = Signal String
 
-type ComponentRawElementSpec =
-  { tag :: String
-  , props :: Array Prop
-  , innerHtml :: Signal String
-  }
+type ComponentRawSpec = Signal String
 
 type ComponentDocTypeSpec =
   { name :: String
@@ -49,7 +45,7 @@ data ComponentF context f
   | ComponentElementNS (ComponentElementSpecNS context) f
   | ComponentVoidElement ComponentVoidElementSpec f
   | ComponentText ComponentTextSpec f
-  | ComponentRawElement ComponentRawElementSpec f
+  | ComponentRaw ComponentRawSpec f
   | ComponentDocType ComponentDocTypeSpec f
   | ComponentSignal (ComponentSignalSpec context) f
   | ComponentLifeCycle (ComponentLifeCycleSpec context) f
@@ -96,18 +92,11 @@ voidEl tag props = ComponentM $ liftF $ ComponentVoidElement { tag, props } unit
 voidEl' :: forall context. String -> Component context
 voidEl' tag = voidEl tag []
 
-rawElSig :: forall context. String -> Array Prop -> Signal String -> Component context
-rawElSig tag props innerHtml = ComponentM $ liftF $ ComponentRawElement { tag, props, innerHtml }
-  unit
+rawCSig :: forall context. Signal String -> Component context
+rawCSig innerHtml = ComponentM $ liftF $ ComponentRaw innerHtml unit
 
-rawElSig' :: forall context. String -> Signal String -> Component context
-rawElSig' tag = rawElSig tag []
-
-rawEl :: forall context. String -> Array Prop -> String -> Component context
-rawEl tag props innerHtml = rawElSig tag props (pure innerHtml)
-
-rawEl' :: forall context. String -> String -> Component context
-rawEl' tag = rawEl tag []
+rawC :: forall context. String -> Component context
+rawC innerHtml = rawCSig (pure innerHtml)
 
 textSig :: forall context. Signal String -> Component context
 textSig signal = ComponentM $ liftF $ ComponentText signal unit

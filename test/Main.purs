@@ -2,15 +2,17 @@ module Test.Main where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Foldable (traverse_)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log, logShow)
-import Jelly (Component, awaitBody, el, hooks, mount_, textSig, (:=))
-import Jelly.Data.Signal (Signal, modifyAtom_, newState, newStateEq, runSignal, writeAtom)
-import Jelly.Hooks (useInterval)
+import Effect.Class.Console (log)
+import Jelly (Component, awaitBody, hooks, mount_, on, onMount, rawC, text, textSig, whenC, (:=))
+import Jelly.Data.Signal (Signal, modifyAtom_, newState, writeAtom)
+import Jelly.Element as JE
+import Jelly.Hooks (useCleanup, useInterval)
+import Web.HTML.Event.EventTypes (click)
 
 name :: Signal String
 name = pure "Jelly"
@@ -22,38 +24,48 @@ helloEffect = name <#> \s -> do
     log $ "Bye, " <> s <> "!"
 
 main :: Effect Unit
-main = do
-  vSig /\ vAtom <- newStateEq false
-  stop <- runSignal helloEffect
-  stop
+main = launchAff_ do
+  bodyMaybe <- awaitBody
+  liftEffect $ traverse_ (mount_ {} root) bodyMaybe
 
-  cleanup <- runSignal $ vSig <#> \v -> do
-    logShow v
-    pure $ log $ "Cleanup:" <> show v
-
-  writeAtom vAtom true
-  writeAtom vAtom false
-  writeAtom vAtom false
-  writeAtom vAtom true
-  cleanup
-  writeAtom vAtom false
-  writeAtom vAtom true
-
-  launchAff_ do
-    bodyMaybe <- awaitBody
-    case bodyMaybe of
-      Just body -> do
-        liftEffect $ mount_ {} testComp body
-      Nothing -> pure unit
+root :: Component ()
+root = do
+  testComp
+  testCounter
+  testEffect
+  testRaw
 
 testComp :: Component ()
-testComp = el "div" [ "class" := "test" ] stateful
+testComp = JE.div [ "class" := "test" ] $ text "Hello World!"
 
-stateful :: Component ()
-stateful = hooks do
+testState :: Component ()
+testState = hooks do
   timeSig /\ timeAtom <- newState 0
 
   useInterval 1000 do
     modifyAtom_ timeAtom (_ + 1)
 
-  pure $ textSig $ show <$> timeSig
+  pure $ JE.div' $ textSig $ show <$> timeSig
+
+testCounter :: Component ()
+testCounter = hooks do
+  countSig /\ countAtom <- newState 0
+  pure $ JE.div' do
+    JE.button [ on click \_ -> modifyAtom_ countAtom (_ + 1) ] $ text "Increment"
+    JE.div' $ textSig $ show <$> countSig
+
+testEffect :: Component ()
+testEffect = hooks do
+  fragSig /\ fragAtom <- newState true
+
+  pure $ JE.div' do
+    JE.button [ on click \_ -> writeAtom fragAtom true ] $ text "Mount"
+    JE.button [ on click \_ -> writeAtom fragAtom false ] $ text "Unmount"
+    whenC fragSig $ hooks do
+      useCleanup $ log "Unmounted"
+      log "Mounted"
+      pure $ JE.div [ onMount \_ -> log "Mounted(in props)" ] $ text "Mounted Elem"
+
+testRaw :: Component ()
+testRaw = JE.div' do
+  rawC $ "<div>In Raw Element</div>"
