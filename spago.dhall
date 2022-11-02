@@ -14,6 +14,8 @@
   , "prelude"
   , "record"
   , "refs"
+  , "simple-hooks"
+  , "simple-signal"
   , "strings"
   , "tailrec"
   , "transformers"

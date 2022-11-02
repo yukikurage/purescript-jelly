@@ -99,7 +99,32 @@ in  upstream
 -------------------------------
 -}
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20221018/packages.dhall
-        sha256:b1db2e4a17260ace8d17858602f8c56f460982d6e404818d7f6cb9f053324bb1
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20221026/packages.dhall
+        sha256:8dc0b394f5861bb0136f652f3f826a88eaffb2bc0ecf0251468ed668102f5d0c
 
 in  upstream
+  with simple-signal =
+      { dependencies = [ "effect", "prelude", "refs", "tuples", "unsafe-coerce" ]
+      , repo =
+          "https://github.com/yukikurage/purescript-simple-signal.git"
+      , version =
+          "master"
+      }
+  with simple-hooks =
+      { dependencies =
+          [ "aff"
+          , "effect"
+          , "js-timers"
+          , "maybe"
+          , "prelude"
+          , "refs"
+          , "simple-signal"
+          , "transformers"
+          , "tuples"
+          , "web-events"
+          ]
+      , repo =
+          "https://github.com/yukikurage/purescript-simple-hooks.git"
+      , version =
+          "master"
+      }
