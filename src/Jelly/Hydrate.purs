@@ -2,22 +2,24 @@ module Jelly.Hydrate where
 
 import Prelude
 
+import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Control.Monad.Writer (WriterT, runWriterT, tell)
-import Data.Foldable (for_)
+import Data.Foldable (for_, traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref, new, read, write)
-import Jelly.Data.Component (Component, ComponentF(..), foldComponent)
-import Jelly.Data.Hooks (runHooks)
-import Jelly.Data.Signal (Signal, newState, readSignal, runSignal, unwrapEffectSignal, writeAtom)
-import Jelly.Register (registerChildren, registerProps, registerText)
-import Web.DOM (Document, DocumentType, Node)
+import Jelly.Component (Component, ComponentF(..), runComponentM)
+import Jelly.Prop (Prop(..))
+import Signal (Signal, newState, readSignal, runSignal, watchSignal, writeChannel)
+import Signal.Hooks (Hooks, liftHooks, useCleaner, useEvent, useHooks, useHooks_)
+import Web.DOM (Document, DocumentType, Element, Node, Text)
 import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.DocumentType as DocumentType
+import Web.DOM.Element (removeAttribute, setAttribute)
 import Web.DOM.Element as Element
-import Web.DOM.Node (firstChild, nextSibling)
+import Web.DOM.Node (firstChild, nextSibling, setTextContent)
 import Web.DOM.Text as Text
 import Web.HTML (window)
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -28,161 +30,140 @@ foreign import createDocumentType
 
 foreign import convertInnerHtmlToNodes :: String -> Effect (Array Node)
 
--- | Component を node の 列の Signal に変換
--- | realNodeRef : Hydration するときに使う
-hydrateNodesSig
-  :: forall context
-   . Ref (Maybe Node)
-  -> Record context
-  -> Component context
-  -> Effect { onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }
-hydrateNodesSig realNodeRef ctx cmp = do
-  w <- window
-  d <- HTMLDocument.toDocument <$> document w
-  let
-    hydrateNode
-      :: forall a
-       . (Node -> Maybe a)
-      -> Effect a
-      -> Effect (a /\ Boolean)
-    hydrateNode convert make = do
-      maybeNode <- read realNodeRef
-      case maybeNode of
-        Just node | Just a <- convert node -> do
-          ns <- nextSibling node
-          write ns realNodeRef
-          pure $ a /\ true
-        _ -> do
-          a <- make
-          pure $ a /\ false
+foreign import updateChildren :: Node -> Array Node -> Effect Unit
 
-    interpreter
-      :: forall a
-       . ComponentF context a
-      -> WriterT ({ onUnmount :: Effect Unit, nodesSig :: Signal (Array Node) }) Effect a
-    interpreter = case _ of
-      ComponentElement { tag, props, children } free -> do
-        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
+runSignalRegister :: forall m. MonadEffect m => Boolean -> Signal (Effect (Effect Unit)) -> m (Effect Unit)
+runSignalRegister doInitialize = if doInitialize then runSignal else watchSignal
 
-        rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
-        { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
+useRegisterProp :: forall context. Boolean -> Element -> Prop context -> Hooks context Unit
+useRegisterProp doInitialize element = case _ of
+  PropAttribute name valueSig -> do
+    cleaner <- runSignalRegister doInitialize $ valueSig <#> \value -> do
+      case value of
+        Nothing -> removeAttribute name element
+        Just v -> setAttribute name v element
+      mempty
+    useCleaner cleaner
+  PropHandler eventType handler -> do
+    useEvent (Element.toEventTarget element) eventType handler
+  PropMountEffect effect -> do
+    effect element
 
-        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
-        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+useRegisterProps :: forall context. Boolean -> Element -> Array (Prop context) -> Hooks context Unit
+useRegisterProps doInitialize element props = traverse_ (useRegisterProp doInitialize element) props
 
-        let
-          onUnmount = do
-            unRegisterProps
-            unRegisterChildren
-            onu
+useRegisterChildren :: forall context. Boolean -> Node -> Signal (Array Node) -> Hooks context Unit
+useRegisterChildren doInitialize elem chlSig = do
+  cleaner <- runSignalRegister doInitialize $ chlSig <#> \chl -> do
+    updateChildren elem chl
+    mempty
+  useCleaner cleaner
 
-        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+useRegisterText :: forall context. Boolean -> Text -> Signal String -> Hooks context Unit
+useRegisterText doInitialize txt txtSig = do
+  cleaner <- runSignalRegister doInitialize $
+    txtSig <#> \tx -> do
+      setTextContent tx $ Text.toNode txt
+      mempty
+  useCleaner cleaner
 
-        pure free
-      ComponentElementNS { namespace, tag, props, children } free -> do
-        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode
-          (createElementNS (Just namespace) tag d)
+type HydrateM context a = ReaderT (Ref (Maybe Node)) (WriterT (Signal (Array Node)) (Hooks context)) a
 
-        rnr <- liftEffect $ new <=< firstChild $ Element.toNode el
-        { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig rnr ctx children
+hydrateNode
+  :: forall context a
+   . (Node -> Maybe a)
+  -> (a -> Node)
+  -> Effect a
+  -> HydrateM context (a /\ Boolean)
+hydrateNode convertTo convertFrom make = do
+  realNodeRef <- ask
+  maybeNode <- liftEffect $ read realNodeRef
+  case maybeNode of
+    Just node | Just a <- convertTo node -> do
+      ns <- liftEffect $ nextSibling node
+      liftEffect $ write ns realNodeRef
+      tell $ pure [ node ]
+      pure $ a /\ true
+    _ -> do
+      a <- liftEffect $ make
+      tell $ pure [ convertFrom a ]
+      pure $ a /\ false
 
-        unRegisterChildren <- liftEffect $ registerChildren (not isHydrate) (Element.toNode el) nds
-        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+hydrateInterpreter :: forall context. ComponentF context ~> HydrateM context
+hydrateInterpreter cmp = do
+  w <- liftEffect window
+  d <- liftEffect $ HTMLDocument.toDocument <$> document w
+  case cmp of
+    ComponentElement { tag, props, children } free -> do
+      el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
 
-        let
-          onUnmount = do
-            unRegisterProps
-            unRegisterChildren
-            onu
+      liftHooks $ hydrate children $ Element.toNode el
+      liftHooks $ useRegisterProps (not isHydrate) el props
 
-        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+      pure free
+    ComponentElementNS { namespace, tag, props, children } free -> do
+      el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElementNS (Just namespace) tag d
 
-        pure free
-      ComponentVoidElement { tag, props } free -> do
-        el /\ isHydrate <- liftEffect $ hydrateNode Element.fromNode (createElement tag d)
+      liftHooks $ hydrate children $ Element.toNode el
+      liftHooks $ useRegisterProps (not isHydrate) el props
 
-        unRegisterProps <- liftEffect $ registerProps (not isHydrate) el props
+      pure free
+    ComponentVoidElement { tag, props } free -> do
+      el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
 
-        let
-          onUnmount = unRegisterProps
+      liftHooks $ useRegisterProps (not isHydrate) el props
 
-        tell { onUnmount, nodesSig: pure [ Element.toNode el ] }
+      pure free
 
-        pure free
-      ComponentText textSig free -> do
-        initText <- readSignal textSig
+    ComponentText textSig free -> do
+      txt /\ isHydrate <- hydrateNode Text.fromNode Text.toNode (createTextNode "" d)
 
-        txt /\ isHydrate <- liftEffect
-          if initText == "" then do
-            txt <- createTextNode "" d
-            pure $ txt /\ false
-          else hydrateNode Text.fromNode (createTextNode "" d)
+      liftHooks $ useRegisterText (not isHydrate) txt textSig
 
-        unRegisterText <- liftEffect $ registerText (not isHydrate) txt textSig
+      pure free
+    ComponentRaw innerHtmlSig free -> do
+      realNodeRef <- ask
+      nodesSig <- useHooks $ liftEffect <<< convertInnerHtmlToNodes <$> innerHtmlSig
+      let
+        skipRef = do
+          maybeNode <- read realNodeRef
+          case maybeNode of
+            Just node -> do
+              ns <- nextSibling node
+              write ns realNodeRef
+            Nothing -> write Nothing realNodeRef
 
-        let
-          onUnmount = unRegisterText
+      nodes <- readSignal nodesSig
+      liftEffect $ for_ nodes \_ -> skipRef
 
-        tell { onUnmount, nodesSig: pure [ Text.toNode txt ] }
+      tell nodesSig
 
-        pure free
-      ComponentRaw innerHtmlSig free -> do
-        nodesSig /\ onUnmount <- unwrapEffectSignal $ innerHtmlSig <#> convertInnerHtmlToNodes
+      pure free
+    ComponentDocType { name, publicId, systemId } free -> do
+      _ <- hydrateNode DocumentType.fromNode DocumentType.toNode
+        (createDocumentType name publicId systemId d)
 
-        let
-          skipRef = do
-            maybeNode <- read realNodeRef
-            case maybeNode of
-              Just node -> do
-                ns <- nextSibling node
-                write ns realNodeRef
-              Nothing -> write Nothing realNodeRef
+      pure free
+    ComponentSignal cmpSig free -> do
+      nodesSig /\ nodesChannel <- newState $ pure []
+      realNodeRef <- ask
 
-        nodes <- readSignal nodesSig
-        liftEffect $ for_ nodes \_ -> skipRef
+      useHooks_ $ cmpSig <#> \c -> do
+        _ /\ nds <- runWriterT $ runReaderT (runComponentM hydrateInterpreter c) realNodeRef
+        writeChannel nodesChannel nds
 
-        tell { onUnmount, nodesSig }
+      tell $ join nodesSig
 
-        pure free
-      ComponentDocType { name, publicId, systemId } free -> do
-        dt /\ _ <- liftEffect $ hydrateNode DocumentType.fromNode
-          (createDocumentType name publicId systemId d)
-
-        tell { onUnmount: mempty, nodesSig: pure [ DocumentType.toNode dt ] }
-
-        pure free
-      ComponentSignal cmpSig free -> do
-        nodesSig /\ nodesAtom <- newState $ pure []
-
-        unListen <- runSignal $ cmpSig <#> \c -> do
-          { onUnmount: onu, nodesSig: nds } <- hydrateNodesSig realNodeRef ctx c
-          writeAtom nodesAtom nds
-          pure $ onu
-
-        tell { onUnmount: unListen, nodesSig: join nodesSig }
-
-        pure free
-      ComponentLifeCycle hooks free -> do
-        cmpL /\ onuL <- liftEffect $ runHooks hooks ctx
-
-        { onUnmount: onu, nodesSig: nds } <- liftEffect $ hydrateNodesSig realNodeRef ctx cmpL
-
-        tell { onUnmount: onuL *> onu, nodesSig: nds }
-
-        pure free
-
-  _ /\ { onUnmount, nodesSig } <- runWriterT $ foldComponent interpreter cmp
-
-  pure { onUnmount, nodesSig }
+      pure free
 
 hydrate
-  :: forall context. Record context -> Component context -> Node -> Effect (Effect Unit)
-hydrate ctx cmp node = do
-  realNodeRef <- new =<< firstChild node
-  { onUnmount, nodesSig } <- hydrateNodesSig realNodeRef ctx cmp
-  unRegisterChildren <- registerChildren true node nodesSig
-  pure $ onUnmount *> unRegisterChildren
+  :: forall context. Component context -> Node -> Hooks context Unit
+hydrate cmp node = do
+  realNodeRef <- liftEffect $ new =<< firstChild node
+  _ /\ nodesSig <- runWriterT $ runReaderT (runComponentM hydrateInterpreter cmp) realNodeRef
+  useRegisterChildren true node nodesSig
 
-hydrate_
-  :: forall context. Record context -> Component context -> Node -> Effect Unit
-hydrate_ ctx cmp node = void $ hydrate ctx cmp node
+mount :: forall context. Component context -> Node -> Hooks context Unit
+mount cmp node = do
+  liftEffect $ updateChildren node []
+  hydrate cmp node

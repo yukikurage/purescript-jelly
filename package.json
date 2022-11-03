@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "bundle": "npx spago -x spago_prod.dhall build && purs-backend-es bundle-app -s -t public/index.js -y -m Test.Main",
-    "precommit": "npx purs-tidy format-in-place src/**/*.purs test/**/*.purs && tsc",
-    "prepare": "husky install"
+    "test": "npx spago -x spago-test.dhall build && purs-backend-es bundle-app -s -t public/index.js -y -m Test.Main",
+    "serve": "npx http-server public"
   },
   "devDependencies": {
     "esbuild": "^0.15.11",
-    "husky": "^8.0.1",
+    "http-server": "^14.1.1",
     "purescript": "^0.15.4",
+    "purs-backend-es": "^1.2.0",
     "purs-tidy": "^0.9.2",
     "spago": "^0.20.9",
     "typescript": "^4.8.4"
@@ -18,9 +18,5 @@
   "author": "yukikurage",
   "license": "MIT",
   "description": "",
-  "type": "module",
-  "dependencies": {
-    "http-server": "^14.1.1",
-    "purs-backend-es": "^1.1.1"
-  }
+  "type": "module"
 }

@@ -1,18 +1,19 @@
-module Jelly.Data.Prop where
+module Jelly.Prop where
 
 import Prelude
 
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Jelly.Data.Signal (Signal, readSignal)
+import Signal (Signal, readSignal)
+import Signal.Hooks (Hooks)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
-data Prop
+data Prop context
   = PropAttribute String (Signal (Maybe String))
-  | PropHandler EventType (Event -> Effect Unit)
-  | PropMountEffect (Element -> Effect Unit)
+  | PropHandler EventType (Event -> Hooks context Unit)
+  | PropMountEffect (Element -> Hooks context Unit)
 
 class AttrValue a where
   toAttrValue :: a -> Maybe String
@@ -35,23 +36,23 @@ instance AttrValue (Array String) where
 instance AttrValue (Maybe (Array String)) where
   toAttrValue v = toAttrValue =<< v
 
-attr :: forall a. AttrValue a => String -> a -> Prop
+attr :: forall context a. AttrValue a => String -> a -> Prop context
 attr name value = PropAttribute name $ pure $ toAttrValue value
 
 infix 0 attr as :=
 
-attrSig :: forall a. AttrValue a => String -> Signal a -> Prop
+attrSig :: forall context a. AttrValue a => String -> Signal a -> Prop context
 attrSig name value = PropAttribute name $ toAttrValue <$> value
 
 infix 0 attrSig as :=@
 
-on :: EventType -> (Event -> Effect Unit) -> Prop
+on :: forall context. EventType -> (Event -> Hooks context Unit) -> Prop context
 on = PropHandler
 
-onMount :: (Element -> Effect Unit) -> Prop
+onMount :: forall context. (Element -> Hooks context Unit) -> Prop context
 onMount = PropMountEffect
 
-renderProp :: Prop -> Effect String
+renderProp :: forall context. Prop context -> Effect String
 renderProp = case _ of
   PropAttribute name valueSig -> do
     value <- readSignal valueSig
@@ -61,5 +62,5 @@ renderProp = case _ of
   PropHandler _ _ -> pure ""
   PropMountEffect _ -> pure ""
 
-renderProps :: Array Prop -> Effect String
+renderProps :: forall context. Array (Prop context) -> Effect String
 renderProps props = fold $ map renderProp props

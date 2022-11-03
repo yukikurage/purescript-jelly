@@ -2,32 +2,24 @@
 , dependencies =
   [ "aff"
   , "arrays"
-  , "console"
   , "effect"
   , "either"
   , "foldable-traversable"
-  , "foreign"
-  , "free"
-  , "js-timers"
+  , "freet"
   , "maybe"
-  , "newtype"
   , "prelude"
-  , "record"
   , "refs"
   , "simple-hooks"
   , "simple-signal"
-  , "strings"
   , "tailrec"
   , "transformers"
   , "tuples"
-  , "typelevel-prelude"
-  , "unordered-collections"
   , "web-dom"
   , "web-events"
   , "web-html"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 , license = "MIT"
 , repository = "https://github.com/yukikurage/purescript-jelly.git"
 }
