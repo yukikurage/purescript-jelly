@@ -6,14 +6,13 @@ import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Signal (Signal, readSignal)
-import Signal.Hooks (Hooks)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
-data Prop context
+data Prop m
   = PropAttribute String (Signal (Maybe String))
-  | PropHandler EventType (Event -> Hooks context Unit)
-  | PropMountEffect (Element -> Hooks context Unit)
+  | PropHandler EventType (Event -> m Unit)
+  | PropMountEffect (Element -> m Unit)
 
 class AttrValue a where
   toAttrValue :: a -> Maybe String
@@ -36,23 +35,29 @@ instance AttrValue (Array String) where
 instance AttrValue (Maybe (Array String)) where
   toAttrValue v = toAttrValue =<< v
 
-attr :: forall context a. AttrValue a => String -> a -> Prop context
+hoistProp :: forall m n. (m ~> n) -> Prop m -> Prop n
+hoistProp f = case _ of
+  PropAttribute name value -> PropAttribute name value
+  PropHandler eventType handler -> PropHandler eventType (f <<< handler)
+  PropMountEffect effect -> PropMountEffect (f <<< effect)
+
+attr :: forall m a. AttrValue a => String -> a -> Prop m
 attr name value = PropAttribute name $ pure $ toAttrValue value
 
 infix 0 attr as :=
 
-attrSig :: forall context a. AttrValue a => String -> Signal a -> Prop context
+attrSig :: forall m a. AttrValue a => String -> Signal a -> Prop m
 attrSig name value = PropAttribute name $ toAttrValue <$> value
 
 infix 0 attrSig as :=@
 
-on :: forall context. EventType -> (Event -> Hooks context Unit) -> Prop context
+on :: forall m. EventType -> (Event -> m Unit) -> Prop m
 on = PropHandler
 
-onMount :: forall context. (Element -> Hooks context Unit) -> Prop context
+onMount :: forall m. (Element -> m Unit) -> Prop m
 onMount = PropMountEffect
 
-renderProp :: forall context. Prop context -> Effect String
+renderProp :: forall m. Prop m -> Effect String
 renderProp = case _ of
   PropAttribute name valueSig -> do
     value <- readSignal valueSig
@@ -62,5 +67,5 @@ renderProp = case _ of
   PropHandler _ _ -> pure ""
   PropMountEffect _ -> pure ""
 
-renderProps :: forall context. Array (Prop context) -> Effect String
+renderProps :: forall m. Array (Prop m) -> Effect String
 renderProps props = fold $ map renderProp props

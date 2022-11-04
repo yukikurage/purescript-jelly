@@ -5,7 +5,6 @@
   , "effect"
   , "either"
   , "foldable-traversable"
-  , "freet"
   , "maybe"
   , "prelude"
   , "refs"

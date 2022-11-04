@@ -1,682 +1,684 @@
 module Jelly.Element where
 
-import Jelly.Component (Component, el, el', elVoid, elVoid')
+import Prelude
+
+import Jelly.Component (class Component, el, el', elVoid, elVoid')
 import Jelly.Prop (Prop)
 
-html :: forall context. Array (Prop context) -> Component context -> Component context
+html :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 html = el "html"
 
-base :: forall context. Array (Prop context) -> Component context
+base :: forall m. Component m => Array (Prop m) -> m Unit
 base = elVoid "base"
 
-head :: forall context. Array (Prop context) -> Component context -> Component context
+head :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 head = el "head"
 
-link :: forall context. Array (Prop context) -> Component context
+link :: forall m. Component m => Array (Prop m) -> m Unit
 link = elVoid "link"
 
-meta :: forall context. Array (Prop context) -> Component context
+meta :: forall m. Component m => Array (Prop m) -> m Unit
 meta = elVoid "meta"
 
-style :: forall context. Array (Prop context) -> Component context -> Component context
+style :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 style = el "style"
 
-title :: forall context. Array (Prop context) -> Component context -> Component context
+title :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 title = el "title"
 
-body :: forall context. Array (Prop context) -> Component context -> Component context
+body :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 body = el "body"
 
-address :: forall context. Array (Prop context) -> Component context -> Component context
+address :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 address = el "address"
 
-article :: forall context. Array (Prop context) -> Component context -> Component context
+article :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 article = el "article"
 
-aside :: forall context. Array (Prop context) -> Component context -> Component context
+aside :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 aside = el "aside"
 
-footer :: forall context. Array (Prop context) -> Component context -> Component context
+footer :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 footer = el "footer"
 
-header :: forall context. Array (Prop context) -> Component context -> Component context
+header :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 header = el "header"
 
-h1 :: forall context. Array (Prop context) -> Component context -> Component context
+h1 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h1 = el "h1"
 
-h2 :: forall context. Array (Prop context) -> Component context -> Component context
+h2 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h2 = el "h2"
 
-h3 :: forall context. Array (Prop context) -> Component context -> Component context
+h3 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h3 = el "h3"
 
-h4 :: forall context. Array (Prop context) -> Component context -> Component context
+h4 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h4 = el "h4"
 
-h5 :: forall context. Array (Prop context) -> Component context -> Component context
+h5 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h5 = el "h5"
 
-h6 :: forall context. Array (Prop context) -> Component context -> Component context
+h6 :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 h6 = el "h6"
 
-main :: forall context. Array (Prop context) -> Component context -> Component context
+main :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 main = el "main"
 
-nav :: forall context. Array (Prop context) -> Component context -> Component context
+nav :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 nav = el "nav"
 
-section :: forall context. Array (Prop context) -> Component context -> Component context
+section :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 section = el "section"
 
-blockquote :: forall context. Array (Prop context) -> Component context -> Component context
+blockquote :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 blockquote = el "blockquote"
 
-dd :: forall context. Array (Prop context) -> Component context -> Component context
+dd :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 dd = el "dd"
 
-div :: forall context. Array (Prop context) -> Component context -> Component context
+div :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 div = el "div"
 
-dl :: forall context. Array (Prop context) -> Component context -> Component context
+dl :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 dl = el "dl"
 
-dt :: forall context. Array (Prop context) -> Component context -> Component context
+dt :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 dt = el "dt"
 
-figcaption :: forall context. Array (Prop context) -> Component context -> Component context
+figcaption :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 figcaption = el "figcaption"
 
-figure :: forall context. Array (Prop context) -> Component context -> Component context
+figure :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 figure = el "figure"
 
-hr :: forall context. Array (Prop context) -> Component context
+hr :: forall m. Component m => Array (Prop m) -> m Unit
 hr = elVoid "hr"
 
-li :: forall context. Array (Prop context) -> Component context -> Component context
+li :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 li = el "li"
 
-menu :: forall context. Array (Prop context) -> Component context -> Component context
+menu :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 menu = el "menu"
 
-ol :: forall context. Array (Prop context) -> Component context -> Component context
+ol :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 ol = el "ol"
 
-p :: forall context. Array (Prop context) -> Component context -> Component context
+p :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 p = el "p"
 
-pre :: forall context. Array (Prop context) -> Component context -> Component context
+pre :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 pre = el "pre"
 
-ul :: forall context. Array (Prop context) -> Component context -> Component context
+ul :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 ul = el "ul"
 
-a :: forall context. Array (Prop context) -> Component context -> Component context
+a :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 a = el "a"
 
-abbr :: forall context. Array (Prop context) -> Component context -> Component context
+abbr :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 abbr = el "abbr"
 
-b :: forall context. Array (Prop context) -> Component context -> Component context
+b :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 b = el "b"
 
-bdi :: forall context. Array (Prop context) -> Component context -> Component context
+bdi :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 bdi = el "bdi"
 
-bdo :: forall context. Array (Prop context) -> Component context -> Component context
+bdo :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 bdo = el "bdo"
 
-br :: forall context. Array (Prop context) -> Component context
+br :: forall m. Component m => Array (Prop m) -> m Unit
 br = elVoid "br"
 
-cite :: forall context. Array (Prop context) -> Component context -> Component context
+cite :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 cite = el "cite"
 
-code :: forall context. Array (Prop context) -> Component context -> Component context
+code :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 code = el "code"
 
-data_ :: forall context. Array (Prop context) -> Component context -> Component context
+data_ :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 data_ = el "data"
 
-dfn :: forall context. Array (Prop context) -> Component context -> Component context
+dfn :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 dfn = el "dfn"
 
-em :: forall context. Array (Prop context) -> Component context -> Component context
+em :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 em = el "em"
 
-i :: forall context. Array (Prop context) -> Component context -> Component context
+i :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 i = el "i"
 
-kbd :: forall context. Array (Prop context) -> Component context -> Component context
+kbd :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 kbd = el "kbd"
 
-mark :: forall context. Array (Prop context) -> Component context -> Component context
+mark :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 mark = el "mark"
 
-q :: forall context. Array (Prop context) -> Component context -> Component context
+q :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 q = el "q"
 
-rp :: forall context. Array (Prop context) -> Component context -> Component context
+rp :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 rp = el "rp"
 
-rt :: forall context. Array (Prop context) -> Component context -> Component context
+rt :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 rt = el "rt"
 
-ruby :: forall context. Array (Prop context) -> Component context -> Component context
+ruby :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 ruby = el "ruby"
 
-s :: forall context. Array (Prop context) -> Component context -> Component context
+s :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 s = el "s"
 
-samp :: forall context. Array (Prop context) -> Component context -> Component context
+samp :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 samp = el "samp"
 
-small :: forall context. Array (Prop context) -> Component context -> Component context
+small :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 small = el "small"
 
-span :: forall context. Array (Prop context) -> Component context -> Component context
+span :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 span = el "span"
 
-strong :: forall context. Array (Prop context) -> Component context -> Component context
+strong :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 strong = el "strong"
 
-sub :: forall context. Array (Prop context) -> Component context -> Component context
+sub :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 sub = el "sub"
 
-sup :: forall context. Array (Prop context) -> Component context -> Component context
+sup :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 sup = el "sup"
 
-time :: forall context. Array (Prop context) -> Component context -> Component context
+time :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 time = el "time"
 
-u :: forall context. Array (Prop context) -> Component context -> Component context
+u :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 u = el "u"
 
-var :: forall context. Array (Prop context) -> Component context -> Component context
+var :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 var = el "var"
 
-wbr :: forall context. Array (Prop context) -> Component context
+wbr :: forall m. Component m => Array (Prop m) -> m Unit
 wbr = elVoid "wbr"
 
-area :: forall context. Array (Prop context) -> Component context
+area :: forall m. Component m => Array (Prop m) -> m Unit
 area = elVoid "area"
 
-audio :: forall context. Array (Prop context) -> Component context -> Component context
+audio :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 audio = el "audio"
 
-img :: forall context. Array (Prop context) -> Component context
+img :: forall m. Component m => Array (Prop m) -> m Unit
 img = elVoid "img"
 
-map :: forall context. Array (Prop context) -> Component context -> Component context
+map :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 map = el "map"
 
-track :: forall context. Array (Prop context) -> Component context
+track :: forall m. Component m => Array (Prop m) -> m Unit
 track = elVoid "track"
 
-video :: forall context. Array (Prop context) -> Component context -> Component context
+video :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 video = el "video"
 
-embed :: forall context. Array (Prop context) -> Component context
+embed :: forall m. Component m => Array (Prop m) -> m Unit
 embed = elVoid "embed"
 
-iframe :: forall context. Array (Prop context) -> Component context -> Component context
+iframe :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 iframe = el "iframe"
 
-object :: forall context. Array (Prop context) -> Component context -> Component context
+object :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 object = el "object"
 
-picture :: forall context. Array (Prop context) -> Component context -> Component context
+picture :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 picture = el "picture"
 
-portal :: forall context. Array (Prop context) -> Component context -> Component context
+portal :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 portal = el "portal"
 
-source :: forall context. Array (Prop context) -> Component context
+source :: forall m. Component m => Array (Prop m) -> m Unit
 source = elVoid "source"
 
-svg :: forall context. Array (Prop context) -> Component context -> Component context
+svg :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 svg = el "svg"
 
-math :: forall context. Array (Prop context) -> Component context -> Component context
+math :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 math = el "math"
 
-canvas :: forall context. Array (Prop context) -> Component context -> Component context
+canvas :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 canvas = el "canvas"
 
-noscript :: forall context. Array (Prop context) -> Component context -> Component context
+noscript :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 noscript = el "noscript"
 
-script :: forall context. Array (Prop context) -> Component context -> Component context
+script :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 script = el "script"
 
-del :: forall context. Array (Prop context) -> Component context -> Component context
+del :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 del = el "del"
 
-ins :: forall context. Array (Prop context) -> Component context -> Component context
+ins :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 ins = el "ins"
 
-caption :: forall context. Array (Prop context) -> Component context -> Component context
+caption :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 caption = el "caption"
 
-col :: forall context. Array (Prop context) -> Component context
+col :: forall m. Component m => Array (Prop m) -> m Unit
 col = elVoid "col"
 
-colgroup :: forall context. Array (Prop context) -> Component context -> Component context
+colgroup :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 colgroup = el "colgroup"
 
-table :: forall context. Array (Prop context) -> Component context -> Component context
+table :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 table = el "table"
 
-tbody :: forall context. Array (Prop context) -> Component context -> Component context
+tbody :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 tbody = el "tbody"
 
-td :: forall context. Array (Prop context) -> Component context -> Component context
+td :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 td = el "td"
 
-tfoot :: forall context. Array (Prop context) -> Component context -> Component context
+tfoot :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 tfoot = el "tfoot"
 
-th :: forall context. Array (Prop context) -> Component context -> Component context
+th :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 th = el "th"
 
-thead :: forall context. Array (Prop context) -> Component context -> Component context
+thead :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 thead = el "thead"
 
-tr :: forall context. Array (Prop context) -> Component context -> Component context
+tr :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 tr = el "tr"
 
-button :: forall context. Array (Prop context) -> Component context -> Component context
+button :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 button = el "button"
 
-datalist :: forall context. Array (Prop context) -> Component context -> Component context
+datalist :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 datalist = el "datalist"
 
-fieldset :: forall context. Array (Prop context) -> Component context -> Component context
+fieldset :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 fieldset = el "fieldset"
 
-form :: forall context. Array (Prop context) -> Component context -> Component context
+form :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 form = el "form"
 
-input :: forall context. Array (Prop context) -> Component context
+input :: forall m. Component m => Array (Prop m) -> m Unit
 input = elVoid "input"
 
-label :: forall context. Array (Prop context) -> Component context -> Component context
+label :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 label = el "label"
 
-legend :: forall context. Array (Prop context) -> Component context -> Component context
+legend :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 legend = el "legend"
 
-meter :: forall context. Array (Prop context) -> Component context -> Component context
+meter :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 meter = el "meter"
 
-optgroup :: forall context. Array (Prop context) -> Component context -> Component context
+optgroup :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 optgroup = el "optgroup"
 
-option :: forall context. Array (Prop context) -> Component context -> Component context
+option :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 option = el "option"
 
-output :: forall context. Array (Prop context) -> Component context -> Component context
+output :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 output = el "output"
 
-progress :: forall context. Array (Prop context) -> Component context -> Component context
+progress :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 progress = el "progress"
 
-select :: forall context. Array (Prop context) -> Component context -> Component context
+select :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 select = el "select"
 
-textarea :: forall context. Array (Prop context) -> Component context -> Component context
+textarea :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 textarea = el "textarea"
 
-details :: forall context. Array (Prop context) -> Component context -> Component context
+details :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 details = el "details"
 
-dialog :: forall context. Array (Prop context) -> Component context -> Component context
+dialog :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 dialog = el "dialog"
 
-summary :: forall context. Array (Prop context) -> Component context -> Component context
+summary :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 summary = el "summary"
 
-slot :: forall context. Array (Prop context) -> Component context -> Component context
+slot :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 slot = el "slot"
 
-template :: forall context. Array (Prop context) -> Component context -> Component context
+template :: forall m. Component m => Array (Prop m) -> m Unit -> m Unit
 template = el "template"
 
-html' :: forall context. Component context -> Component context
+html' :: forall m. Component m => m Unit -> m Unit
 html' = el' "html"
 
-head' :: forall context. Component context -> Component context
+head' :: forall m. Component m => m Unit -> m Unit
 head' = el' "head"
 
-title' :: forall context. Component context -> Component context
+title' :: forall m. Component m => m Unit -> m Unit
 title' = el' "title"
 
-base' :: forall context. Component context -> Component context
+base' :: forall m. Component m => m Unit -> m Unit
 base' = el' "base"
 
-link' :: forall context. Component context -> Component context
+link' :: forall m. Component m => m Unit -> m Unit
 link' = el' "link"
 
-meta' :: forall context. Component context -> Component context
+meta' :: forall m. Component m => m Unit -> m Unit
 meta' = el' "meta"
 
-style' :: forall context. Component context -> Component context
+style' :: forall m. Component m => m Unit -> m Unit
 style' = el' "style"
 
-body' :: forall context. Component context -> Component context
+body' :: forall m. Component m => m Unit -> m Unit
 body' = el' "body"
 
-address' :: forall context. Component context -> Component context
+address' :: forall m. Component m => m Unit -> m Unit
 address' = el' "address"
 
-article' :: forall context. Component context -> Component context
+article' :: forall m. Component m => m Unit -> m Unit
 article' = el' "article"
 
-aside' :: forall context. Component context -> Component context
+aside' :: forall m. Component m => m Unit -> m Unit
 aside' = el' "aside"
 
-footer' :: forall context. Component context -> Component context
+footer' :: forall m. Component m => m Unit -> m Unit
 footer' = el' "footer"
 
-header' :: forall context. Component context -> Component context
+header' :: forall m. Component m => m Unit -> m Unit
 header' = el' "header"
 
-h1' :: forall context. Component context -> Component context
+h1' :: forall m. Component m => m Unit -> m Unit
 h1' = el' "h1"
 
-h2' :: forall context. Component context -> Component context
+h2' :: forall m. Component m => m Unit -> m Unit
 h2' = el' "h2"
 
-h3' :: forall context. Component context -> Component context
+h3' :: forall m. Component m => m Unit -> m Unit
 h3' = el' "h3"
 
-h4' :: forall context. Component context -> Component context
+h4' :: forall m. Component m => m Unit -> m Unit
 h4' = el' "h4"
 
-h5' :: forall context. Component context -> Component context
+h5' :: forall m. Component m => m Unit -> m Unit
 h5' = el' "h5"
 
-h6' :: forall context. Component context -> Component context
+h6' :: forall m. Component m => m Unit -> m Unit
 h6' = el' "h6"
 
-main' :: forall context. Component context -> Component context
+main' :: forall m. Component m => m Unit -> m Unit
 main' = el' "main"
 
-nav' :: forall context. Component context -> Component context
+nav' :: forall m. Component m => m Unit -> m Unit
 nav' = el' "nav"
 
-section' :: forall context. Component context -> Component context
+section' :: forall m. Component m => m Unit -> m Unit
 section' = el' "section"
 
-blockquote' :: forall context. Component context -> Component context
+blockquote' :: forall m. Component m => m Unit -> m Unit
 blockquote' = el' "blockquote"
 
-dd' :: forall context. Component context -> Component context
+dd' :: forall m. Component m => m Unit -> m Unit
 dd' = el' "dd"
 
-div' :: forall context. Component context -> Component context
+div' :: forall m. Component m => m Unit -> m Unit
 div' = el' "div"
 
-dl' :: forall context. Component context -> Component context
+dl' :: forall m. Component m => m Unit -> m Unit
 dl' = el' "dl"
 
-dt' :: forall context. Component context -> Component context
+dt' :: forall m. Component m => m Unit -> m Unit
 dt' = el' "dt"
 
-figcaption' :: forall context. Component context -> Component context
+figcaption' :: forall m. Component m => m Unit -> m Unit
 figcaption' = el' "figcaption"
 
-figure' :: forall context. Component context -> Component context
+figure' :: forall m. Component m => m Unit -> m Unit
 figure' = el' "figure"
 
-hr' :: forall context. Component context
+hr' :: forall m. Component m => m Unit
 hr' = elVoid' "hr"
 
-li' :: forall context. Component context -> Component context
+li' :: forall m. Component m => m Unit -> m Unit
 li' = el' "li"
 
-menu' :: forall context. Component context -> Component context
+menu' :: forall m. Component m => m Unit -> m Unit
 menu' = el' "menu"
 
-ol' :: forall context. Component context -> Component context
+ol' :: forall m. Component m => m Unit -> m Unit
 ol' = el' "ol"
 
-p' :: forall context. Component context -> Component context
+p' :: forall m. Component m => m Unit -> m Unit
 p' = el' "p"
 
-pre' :: forall context. Component context -> Component context
+pre' :: forall m. Component m => m Unit -> m Unit
 pre' = el' "pre"
 
-ul' :: forall context. Component context -> Component context
+ul' :: forall m. Component m => m Unit -> m Unit
 ul' = el' "ul"
 
-a' :: forall context. Component context -> Component context
+a' :: forall m. Component m => m Unit -> m Unit
 a' = el' "a"
 
-abbr' :: forall context. Component context -> Component context
+abbr' :: forall m. Component m => m Unit -> m Unit
 abbr' = el' "abbr"
 
-b' :: forall context. Component context -> Component context
+b' :: forall m. Component m => m Unit -> m Unit
 b' = el' "b"
 
-bdi' :: forall context. Component context -> Component context
+bdi' :: forall m. Component m => m Unit -> m Unit
 bdi' = el' "bdi"
 
-bdo' :: forall context. Component context -> Component context
+bdo' :: forall m. Component m => m Unit -> m Unit
 bdo' = el' "bdo"
 
-br' :: forall context. Component context
+br' :: forall m. Component m => m Unit
 br' = elVoid' "br"
 
-cite' :: forall context. Component context -> Component context
+cite' :: forall m. Component m => m Unit -> m Unit
 cite' = el' "cite"
 
-code' :: forall context. Component context -> Component context
+code' :: forall m. Component m => m Unit -> m Unit
 code' = el' "code"
 
-data_' :: forall context. Component context -> Component context
+data_' :: forall m. Component m => m Unit -> m Unit
 data_' = el' "data"
 
-dfn' :: forall context. Component context -> Component context
+dfn' :: forall m. Component m => m Unit -> m Unit
 dfn' = el' "dfn"
 
-em' :: forall context. Component context -> Component context
+em' :: forall m. Component m => m Unit -> m Unit
 em' = el' "em"
 
-i' :: forall context. Component context -> Component context
+i' :: forall m. Component m => m Unit -> m Unit
 i' = el' "i"
 
-kbd' :: forall context. Component context -> Component context
+kbd' :: forall m. Component m => m Unit -> m Unit
 kbd' = el' "kbd"
 
-mark' :: forall context. Component context -> Component context
+mark' :: forall m. Component m => m Unit -> m Unit
 mark' = el' "mark"
 
-q' :: forall context. Component context -> Component context
+q' :: forall m. Component m => m Unit -> m Unit
 q' = el' "q"
 
-rp' :: forall context. Component context -> Component context
+rp' :: forall m. Component m => m Unit -> m Unit
 rp' = el' "rp"
 
-rt' :: forall context. Component context -> Component context
+rt' :: forall m. Component m => m Unit -> m Unit
 rt' = el' "rt"
 
-ruby' :: forall context. Component context -> Component context
+ruby' :: forall m. Component m => m Unit -> m Unit
 ruby' = el' "ruby"
 
-s' :: forall context. Component context -> Component context
+s' :: forall m. Component m => m Unit -> m Unit
 s' = el' "s"
 
-samp' :: forall context. Component context -> Component context
+samp' :: forall m. Component m => m Unit -> m Unit
 samp' = el' "samp"
 
-small' :: forall context. Component context -> Component context
+small' :: forall m. Component m => m Unit -> m Unit
 small' = el' "small"
 
-span' :: forall context. Component context -> Component context
+span' :: forall m. Component m => m Unit -> m Unit
 span' = el' "span"
 
-strong' :: forall context. Component context -> Component context
+strong' :: forall m. Component m => m Unit -> m Unit
 strong' = el' "strong"
 
-sub' :: forall context. Component context -> Component context
+sub' :: forall m. Component m => m Unit -> m Unit
 sub' = el' "sub"
 
-sup' :: forall context. Component context -> Component context
+sup' :: forall m. Component m => m Unit -> m Unit
 sup' = el' "sup"
 
-time' :: forall context. Component context -> Component context
+time' :: forall m. Component m => m Unit -> m Unit
 time' = el' "time"
 
-u' :: forall context. Component context -> Component context
+u' :: forall m. Component m => m Unit -> m Unit
 u' = el' "u"
 
-var' :: forall context. Component context -> Component context
+var' :: forall m. Component m => m Unit -> m Unit
 var' = el' "var"
 
-wbr' :: forall context. Component context
+wbr' :: forall m. Component m => m Unit
 wbr' = elVoid' "wbr"
 
-area' :: forall context. Component context
+area' :: forall m. Component m => m Unit
 area' = elVoid' "area"
 
-audio' :: forall context. Component context -> Component context
+audio' :: forall m. Component m => m Unit -> m Unit
 audio' = el' "audio"
 
-img' :: forall context. Component context
+img' :: forall m. Component m => m Unit
 img' = elVoid' "img"
 
-map' :: forall context. Component context -> Component context
+map' :: forall m. Component m => m Unit -> m Unit
 map' = el' "map"
 
-track' :: forall context. Component context
+track' :: forall m. Component m => m Unit
 track' = elVoid' "track"
 
-video' :: forall context. Component context -> Component context
+video' :: forall m. Component m => m Unit -> m Unit
 video' = el' "video"
 
-embed' :: forall context. Component context
+embed' :: forall m. Component m => m Unit
 embed' = elVoid' "embed"
 
-iframe' :: forall context. Component context -> Component context
+iframe' :: forall m. Component m => m Unit -> m Unit
 iframe' = el' "iframe"
 
-object' :: forall context. Component context -> Component context
+object' :: forall m. Component m => m Unit -> m Unit
 object' = el' "object"
 
-picture' :: forall context. Component context -> Component context
+picture' :: forall m. Component m => m Unit -> m Unit
 picture' = el' "picture"
 
-portal' :: forall context. Component context -> Component context
+portal' :: forall m. Component m => m Unit -> m Unit
 portal' = el' "portal"
 
-source' :: forall context. Component context
+source' :: forall m. Component m => m Unit
 source' = elVoid' "source"
 
-svg' :: forall context. Component context -> Component context
+svg' :: forall m. Component m => m Unit -> m Unit
 svg' = el' "svg"
 
-math' :: forall context. Component context -> Component context
+math' :: forall m. Component m => m Unit -> m Unit
 math' = el' "math"
 
-canvas' :: forall context. Component context -> Component context
+canvas' :: forall m. Component m => m Unit -> m Unit
 canvas' = el' "canvas"
 
-noscript' :: forall context. Component context -> Component context
+noscript' :: forall m. Component m => m Unit -> m Unit
 noscript' = el' "noscript"
 
-script' :: forall context. Component context -> Component context
+script' :: forall m. Component m => m Unit -> m Unit
 script' = el' "script"
 
-del'' :: forall context. Component context -> Component context
+del'' :: forall m. Component m => m Unit -> m Unit
 del'' = el' "del'"
 
-ins' :: forall context. Component context -> Component context
+ins' :: forall m. Component m => m Unit -> m Unit
 ins' = el' "ins"
 
-caption' :: forall context. Component context -> Component context
+caption' :: forall m. Component m => m Unit -> m Unit
 caption' = el' "caption"
 
-col' :: forall context. Component context
+col' :: forall m. Component m => m Unit
 col' = elVoid' "col"
 
-colgroup' :: forall context. Component context -> Component context
+colgroup' :: forall m. Component m => m Unit -> m Unit
 colgroup' = el' "colgroup"
 
-table' :: forall context. Component context -> Component context
+table' :: forall m. Component m => m Unit -> m Unit
 table' = el' "table"
 
-tbody' :: forall context. Component context -> Component context
+tbody' :: forall m. Component m => m Unit -> m Unit
 tbody' = el' "tbody"
 
-td' :: forall context. Component context -> Component context
+td' :: forall m. Component m => m Unit -> m Unit
 td' = el' "td"
 
-tfoot' :: forall context. Component context -> Component context
+tfoot' :: forall m. Component m => m Unit -> m Unit
 tfoot' = el' "tfoot"
 
-th' :: forall context. Component context -> Component context
+th' :: forall m. Component m => m Unit -> m Unit
 th' = el' "th"
 
-thead' :: forall context. Component context -> Component context
+thead' :: forall m. Component m => m Unit -> m Unit
 thead' = el' "thead"
 
-tr' :: forall context. Component context -> Component context
+tr' :: forall m. Component m => m Unit -> m Unit
 tr' = el' "tr"
 
-button' :: forall context. Component context -> Component context
+button' :: forall m. Component m => m Unit -> m Unit
 button' = el' "button"
 
-datalist' :: forall context. Component context -> Component context
+datalist' :: forall m. Component m => m Unit -> m Unit
 datalist' = el' "datalist"
 
-fiel'dset' :: forall context. Component context -> Component context
+fiel'dset' :: forall m. Component m => m Unit -> m Unit
 fiel'dset' = el' "fiel'dset"
 
-form' :: forall context. Component context -> Component context
+form' :: forall m. Component m => m Unit -> m Unit
 form' = el' "form"
 
-input' :: forall context. Component context
+input' :: forall m. Component m => m Unit
 input' = elVoid' "input"
 
-label'' :: forall context. Component context -> Component context
+label'' :: forall m. Component m => m Unit -> m Unit
 label'' = el' "label'"
 
-legend' :: forall context. Component context -> Component context
+legend' :: forall m. Component m => m Unit -> m Unit
 legend' = el' "legend"
 
-meter' :: forall context. Component context -> Component context
+meter' :: forall m. Component m => m Unit -> m Unit
 meter' = el' "meter"
 
-optgroup' :: forall context. Component context -> Component context
+optgroup' :: forall m. Component m => m Unit -> m Unit
 optgroup' = el' "optgroup"
 
-option' :: forall context. Component context -> Component context
+option' :: forall m. Component m => m Unit -> m Unit
 option' = el' "option"
 
-output' :: forall context. Component context -> Component context
+output' :: forall m. Component m => m Unit -> m Unit
 output' = el' "output"
 
-progress' :: forall context. Component context -> Component context
+progress' :: forall m. Component m => m Unit -> m Unit
 progress' = el' "progress"
 
-select' :: forall context. Component context -> Component context
+select' :: forall m. Component m => m Unit -> m Unit
 select' = el' "sel'ect"
 
-textarea' :: forall context. Component context -> Component context
+textarea' :: forall m. Component m => m Unit -> m Unit
 textarea' = el' "textarea"
 
-details' :: forall context. Component context -> Component context
+details' :: forall m. Component m => m Unit -> m Unit
 details' = el' "details"
 
-dialog' :: forall context. Component context -> Component context
+dialog' :: forall m. Component m => m Unit -> m Unit
 dialog' = el' "dialog"
 
-summary' :: forall context. Component context -> Component context
+summary' :: forall m. Component m => m Unit -> m Unit
 summary' = el' "summary"
 
-slot' :: forall context. Component context -> Component context
+slot' :: forall m. Component m => m Unit -> m Unit
 slot' = el' "slot"
 
-template' :: forall context. Component context -> Component context
+template' :: forall m. Component m => m Unit -> m Unit
 template' = el' "template"

@@ -2,37 +2,60 @@ module Test.Main where
 
 import Prelude
 
+import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Data.Foldable (traverse_)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log)
 import Jelly.Aff (awaitBody)
-import Jelly.Component (Component, raw, text, textSig, whenC)
+import Jelly.Component (class Component, raw, text, textSig)
 import Jelly.Element as JE
-import Jelly.Hydrate (mount)
+import Jelly.Hydrate (HydrateM, mount)
 import Jelly.Prop (on, onMount, (:=))
 import Signal (modifyChannel, newState, writeChannel)
-import Signal.Hooks (runHooks_, useCleaner, useInterval)
+import Signal.Hooks (class MonadHooks, Hooks, runHooks_, useCleaner, useInterval, useWhen)
+import Web.DOM (Node)
 import Web.HTML.Event.EventTypes (click)
+
+newtype AppT :: forall k. (k -> Type) -> k -> Type
+newtype AppT m a = AppT (ReaderT Int m a)
+
+class UseInt m where
+  useInt :: m Int
+
+derive newtype instance Monad m => Functor (AppT m)
+derive newtype instance Monad m => Apply (AppT m)
+derive newtype instance Monad m => Applicative (AppT m)
+derive newtype instance Monad m => Bind (AppT m)
+derive newtype instance Monad m => Monad (AppT m)
+derive newtype instance MonadEffect m => MonadEffect (AppT m)
+derive newtype instance MonadHooks m => MonadHooks (AppT m)
+derive newtype instance Component m => Component (AppT m)
+instance Monad m => UseInt (AppT m) where
+  useInt = AppT ask
+
+mountApp :: Int -> AppT HydrateM Unit -> Node -> Hooks Unit
+mountApp int (AppT m) node = mount (runReaderT m int) node
 
 main :: Effect Unit
 main = launchAff_ do
   bodyMaybe <- awaitBody
-  liftEffect $ flip runHooks_ {} $ traverse_ (mount root) bodyMaybe
+  liftEffect $ runHooks_ $ traverse_ (mountApp 123 root) bodyMaybe
 
-root :: Component ()
+root :: forall m. Component m => UseInt m => m Unit
 root = do
   testComp
   testCounter
   testEffect
   testRaw
+  testApp
 
-testComp :: Component ()
+testComp :: forall m. Component m => m Unit
 testComp = JE.div [ "class" := "test" ] $ text "Hello World!"
 
-testState :: Component ()
+testState :: forall m. Component m => m Unit
 testState = do
   timeSig /\ timeChannel <- newState 0
 
@@ -41,25 +64,30 @@ testState = do
 
   JE.div' $ textSig $ show <$> timeSig
 
-testCounter :: Component ()
+testCounter :: forall m. Component m => m Unit
 testCounter = do
   countSig /\ countChannel <- newState 0
   JE.div' do
     JE.button [ on click \_ -> modifyChannel countChannel (_ + 1) ] $ text "Increment"
     JE.div' $ textSig $ show <$> countSig
 
-testEffect :: Component ()
+testEffect :: forall m. Component m => m Unit
 testEffect = do
   fragSig /\ fragChannel <- newState true
 
   JE.div' do
     JE.button [ on click \_ -> writeChannel fragChannel true ] $ text "Mount"
     JE.button [ on click \_ -> writeChannel fragChannel false ] $ text "Unmount"
-    whenC fragSig do
+    void $ useWhen fragSig do
       useCleaner $ log "Unmounted"
       log "Mounted"
       JE.div [ onMount \_ -> log "Mounted(in props)" ] $ text "Mounted Elem"
 
-testRaw :: Component ()
+testRaw :: forall m. Component m => m Unit
 testRaw = JE.div' do
   raw $ "<div>In Raw Element</div>"
+
+testApp :: forall m. Component m => UseInt m => m Unit
+testApp = do
+  int <- useInt
+  JE.div' $ text $ show int
