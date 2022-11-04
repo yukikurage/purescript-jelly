@@ -36,13 +36,13 @@ derive newtype instance Component m => Component (AppT m)
 instance Monad m => UseInt (AppT m) where
   useInt = AppT ask
 
-mountApp :: Int -> AppT HydrateM Unit -> Node -> Hooks Unit
-mountApp int (AppT m) node = mount (runReaderT m int) node
+mountApp :: AppT HydrateM Unit -> Int -> Node -> Hooks Unit
+mountApp (AppT m) int node = mount (runReaderT m int) node
 
 main :: Effect Unit
 main = launchAff_ do
   bodyMaybe <- awaitBody
-  liftEffect $ runHooks_ $ traverse_ (mountApp 123 root) bodyMaybe
+  liftEffect $ runHooks_ $ traverse_ (mountApp root 123) bodyMaybe
 
 root :: forall m. Component m => UseInt m => m Unit
 root = do
