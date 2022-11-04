@@ -14,8 +14,8 @@ import Jelly.Component (class Component, raw, text, textSig)
 import Jelly.Element as JE
 import Jelly.Hydrate (HydrateM, mount)
 import Jelly.Prop (on, onMount, (:=))
-import Signal (modifyChannel, newState, writeChannel)
-import Signal.Hooks (class MonadHooks, Hooks, runHooks_, useCleaner, useInterval, useWhen)
+import Signal (modifyChannel, writeChannel)
+import Signal.Hooks (class MonadHooks, Hooks, newStateEq, runHooks_, useCleaner, useInterval, useWhen_)
 import Web.DOM (Node)
 import Web.HTML.Event.EventTypes (click)
 
@@ -57,7 +57,7 @@ testComp = JE.div [ "class" := "test" ] $ text "Hello World!"
 
 testState :: forall m. Component m => m Unit
 testState = do
-  timeSig /\ timeChannel <- newState 0
+  timeSig /\ timeChannel <- newStateEq 0
 
   useInterval 1000 do
     modifyChannel timeChannel (_ + 1)
@@ -66,19 +66,20 @@ testState = do
 
 testCounter :: forall m. Component m => m Unit
 testCounter = do
-  countSig /\ countChannel <- newState 0
+  countSig /\ countChannel <- newStateEq 0
+
   JE.div' do
     JE.button [ on click \_ -> modifyChannel countChannel (_ + 1) ] $ text "Increment"
     JE.div' $ textSig $ show <$> countSig
 
 testEffect :: forall m. Component m => m Unit
 testEffect = do
-  fragSig /\ fragChannel <- newState true
+  fragSig /\ fragChannel <- newStateEq true
 
   JE.div' do
     JE.button [ on click \_ -> writeChannel fragChannel true ] $ text "Mount"
     JE.button [ on click \_ -> writeChannel fragChannel false ] $ text "Unmount"
-    void $ useWhen fragSig do
+    useWhen_ fragSig do
       useCleaner $ log "Unmounted"
       log "Mounted"
       JE.div [ onMount \_ -> log "Mounted(in props)" ] $ text "Mounted Elem"
