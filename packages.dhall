@@ -120,6 +120,7 @@ in  upstream
       , "tailrec"
       , "transformers"
       , "tuples"
+      , "unsafe-coerce"
       , "web-events"
       ]
     , repo = "https://github.com/yukikurage/purescript-simple-hooks.git"
