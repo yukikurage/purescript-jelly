@@ -9,13 +9,8 @@ Jelly is a framework with the following features
 - Simple component separation
 - SSG & SPA Routing support
 
-## About Signal
-
-The Signal system is similar to [purescript-signal](https://github.com/bodil/purescript-signal) with the following differences.
-
-- No functions for merging or filtering
-- It is a monad
-- Can stop an Effect Signal from running
+Jelly depends [simple-signal](https://github.com/yukikurage/purescript-simple-signal) and [simple-hooks](https://github.com/yukikurage/purescript-simple-hooks)
+Since systems such as component separation are provided by these, Jelly only provides HTML feature.
 
 ## Installation
 
