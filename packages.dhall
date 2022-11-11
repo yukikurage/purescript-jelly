@@ -106,7 +106,7 @@ in  upstream
   with jelly-signal =
     { dependencies = [ "effect", "prelude", "refs", "tuples", "unsafe-coerce" ]
     , repo = "https://github.com/yukikurage/purescript-jelly-signal.git"
-    , version = ">=0.2.0"
+    , version = "v0.2.0"
     }
   with jelly-hooks =
     { dependencies =
@@ -124,5 +124,5 @@ in  upstream
       , "web-events"
       ]
     , repo = "https://github.com/yukikurage/purescript-jelly-hooks.git"
-    , version = ">=0.2.1"
+    , version = "v0.2.1"
     }
