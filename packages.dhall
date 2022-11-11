@@ -103,3 +103,26 @@ let upstream =
         sha256:55be93ee309eeb1b3a1d30c7b9fa5d18ffefa67f5fbeec1566b7b6a70b0ac218
 
 in  upstream
+  with jelly-signal =
+    { dependencies = [ "effect", "prelude", "refs", "tuples", "unsafe-coerce" ]
+    , repo = "https://github.com/yukikurage/purescript-jelly-signal.git"
+    , version = ">=0.2.0"
+    }
+  with jelly-hooks =
+    { dependencies =
+      [ "aff"
+      , "effect"
+      , "js-timers"
+      , "maybe"
+      , "prelude"
+      , "refs"
+      , "jelly-signal"
+      , "tailrec"
+      , "transformers"
+      , "tuples"
+      , "unsafe-coerce"
+      , "web-events"
+      ]
+    , repo = "https://github.com/yukikurage/purescript-jelly-hooks.git"
+    , version = ">=0.2.1"
+    }
