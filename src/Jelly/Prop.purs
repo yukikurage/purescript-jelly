@@ -5,7 +5,7 @@ import Prelude
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Signal (Signal, readSignal)
+import Jelly.Signal (Signal, readSignal)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 

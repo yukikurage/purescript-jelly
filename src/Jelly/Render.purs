@@ -8,9 +8,9 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Jelly.Component (class Component)
+import Jelly.Hooks (class MonadHooks)
 import Jelly.Prop (renderProps)
-import Signal (readSignal)
-import Signal.Hooks (class MonadHooks)
+import Jelly.Signal (readSignal)
 
 newtype RenderM a = RenderM (WriterT String Effect a)
 

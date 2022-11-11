@@ -12,10 +12,10 @@ import Effect.Class.Console (log)
 import Jelly.Aff (awaitBody)
 import Jelly.Component (class Component, raw, text, textSig)
 import Jelly.Element as JE
+import Jelly.Hooks (class MonadHooks, Hooks, newStateEq, runHooks_, useCleaner, useInterval, useWhen_)
 import Jelly.Hydrate (HydrateM, mount)
 import Jelly.Prop (on, onMount, (:=))
-import Signal (modifyChannel, writeChannel)
-import Signal.Hooks (class MonadHooks, Hooks, newStateEq, runHooks_, useCleaner, useInterval, useWhen_)
+import Jelly.Signal (modifyChannel, writeChannel)
 import Web.DOM (Node)
 import Web.HTML.Event.EventTypes (click)
 

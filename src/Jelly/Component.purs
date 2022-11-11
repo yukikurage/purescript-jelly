@@ -3,9 +3,9 @@ module Jelly.Component where
 import Prelude
 
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT)
+import Jelly.Hooks (class MonadHooks)
 import Jelly.Prop (Prop, hoistProp)
-import Signal (Signal)
-import Signal.Hooks (class MonadHooks)
+import Jelly.Signal (Signal)
 
 class MonadHooks m <= Component m where
   el :: String -> Array (Prop m) -> m Unit -> m Unit
