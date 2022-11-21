@@ -4,8 +4,7 @@ import Prelude
 
 import Data.Array (fold)
 import Data.Maybe (Maybe(..))
-import Effect (Effect)
-import Jelly.Signal (Signal, readSignal)
+import Jelly.Signal (Signal)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
@@ -57,15 +56,15 @@ on = PropHandler
 onMount :: forall m. (Element -> m Unit) -> Prop m
 onMount = PropMountEffect
 
-renderProp :: forall m. Prop m -> Effect String
+renderProp :: forall m. Prop m -> Signal String
 renderProp = case _ of
   PropAttribute name valueSig -> do
-    value <- readSignal valueSig
+    value <- valueSig
     pure case value of
       Nothing -> ""
       Just v -> " " <> name <> "=\"" <> v <> "\""
   PropHandler _ _ -> pure ""
   PropMountEffect _ -> pure ""
 
-renderProps :: forall m. Array (Prop m) -> Effect String
+renderProps :: forall m. Array (Prop m) -> Signal String
 renderProps props = fold $ map renderProp props

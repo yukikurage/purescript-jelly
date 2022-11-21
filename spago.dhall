@@ -4,12 +4,14 @@
   , "arrays"
   , "effect"
   , "either"
+  , "exists"
   , "foldable-traversable"
+  , "free"
+  , "jelly-hooks"
+  , "jelly-signal"
   , "maybe"
   , "prelude"
   , "refs"
-  , "jelly-hooks"
-  , "jelly-signal"
   , "tailrec"
   , "transformers"
   , "tuples"
@@ -18,7 +20,13 @@
   , "web-html"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+, sources =
+  [ "src/Jelly/Aff.purs"
+  , "src/Jelly/Component.purs"
+  , "src/Jelly/Element.purs"
+  , "src/Jelly/Prop.purs"
+  , "src/Jelly/Render.purs"
+  ]
 , license = "MIT"
 , repository = "https://github.com/yukikurage/purescript-jelly.git"
 }

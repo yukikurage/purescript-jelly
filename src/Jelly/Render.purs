@@ -3,54 +3,75 @@ module Jelly.Render where
 import Prelude
 
 import Control.Monad.Rec.Class (class MonadRec)
-import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, lift, runWriterT, tell)
-import Data.Tuple.Nested ((/\))
-import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
-import Jelly.Component (class Component)
-import Jelly.Hooks (class MonadHooks)
+import Control.Monad.Writer (class MonadTell, class MonadTrans, class MonadWriter, WriterT, lift, runWriterT, tell)
+import Data.Tuple.Nested (type (/\), (/\))
+import Effect.Class (class MonadEffect)
+import Jelly.Component (Component, ComponentF(..), foldComponentM)
+import Jelly.Hooks (class MonadHooks, useHooks_)
 import Jelly.Prop (renderProps)
-import Jelly.Signal (readSignal)
+import Jelly.Signal (Signal)
 
-newtype RenderM a = RenderM (WriterT String Effect a)
+newtype RenderM m a = RenderM (WriterT (Signal String) m a)
 
-derive newtype instance Functor RenderM
-derive newtype instance Apply RenderM
-derive newtype instance Applicative RenderM
-derive newtype instance Bind RenderM
-derive newtype instance Monad RenderM
-derive newtype instance MonadEffect RenderM
-derive newtype instance MonadRec RenderM
-derive newtype instance MonadTell String RenderM
-derive newtype instance MonadWriter String RenderM
-instance MonadHooks RenderM where
-  useCleaner = RenderM <<< lift <<< identity
-  useHooks sig = RenderM $ do
-    RenderM wtr <- liftEffect $ readSignal sig
-    a /\ rendered <- liftEffect $ runWriterT wtr
-    tell rendered
-    pure $ pure a
+runRenderM :: forall m a. RenderM m a -> m (a /\ Signal String)
+runRenderM (RenderM m) = runWriterT m
 
-instance Component RenderM where
-  el tag props children = do
-    propsRendered <- liftEffect $ renderProps props
-    childrenRendered <- liftEffect $ render children
-    tell $ "<" <> tag <> propsRendered <> ">" <> childrenRendered <> "</" <> tag <> ">"
-  elNS namespace tag props children = do
-    propsRendered <- liftEffect $ renderProps props
-    childrenRendered <- liftEffect $ render children
-    tell $ "<" <> tag <> " xmlns=\"" <> namespace <> "\"" <> propsRendered <> ">" <> childrenRendered <> "</" <> tag <> ">"
-  elVoid tag props = do
-    propsRendered <- liftEffect $ renderProps props
-    tell $ "<" <> tag <> propsRendered <> ">"
-  rawSig innerHtmlSig = do
-    tell =<< readSignal innerHtmlSig
-  textSig ts = do
-    tell =<< readSignal ts
-  doctype name publicId systemId = do
-    tell $ "<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">"
+derive newtype instance Functor m => Functor (RenderM m)
+derive newtype instance Monad m => Apply (RenderM m)
+derive newtype instance Monad m => Applicative (RenderM m)
+derive newtype instance Monad m => Bind (RenderM m)
+derive newtype instance Monad m => Monad (RenderM m)
+derive newtype instance MonadEffect m => MonadEffect (RenderM m)
+derive newtype instance MonadRec m => MonadRec (RenderM m)
+derive newtype instance Monad m => MonadTell (Signal String) (RenderM m)
+derive newtype instance Monad m => MonadWriter (Signal String) (RenderM m)
+derive newtype instance MonadTrans RenderM
+derive newtype instance MonadHooks m => MonadHooks (RenderM m)
 
-render :: RenderM Unit -> Effect String
-render (RenderM m) = do
-  _ /\ rendered <- runWriterT m
+renderInterpreter
+  :: forall m
+   . MonadHooks m
+  => MonadRec m
+  => ComponentF m ~> RenderM m
+renderInterpreter = case _ of
+  ComponentEl tag props children f -> do
+    let propsRendered = renderProps props
+    childrenRendered <- lift $ render children
+    tell $
+      pure ("<" <> tag) <> propsRendered <> pure ">" <> childrenRendered <> pure ("</" <> tag <> ">")
+    pure f
+  ComponentElNS namespace tag props children f -> do
+    let propsRendered = renderProps props
+    childrenRendered <- lift $ render children
+    tell $ pure ("<" <> tag <> " xmlns=\"" <> namespace <> "\"")
+      <> propsRendered
+      <> pure ">"
+      <> childrenRendered
+      <> pure ("</" <> tag <> ">")
+    pure f
+  ComponentElVoid tag props f -> do
+    let propsRendered = renderProps props
+    tell $ pure ("<" <> tag) <> propsRendered <> pure ">"
+    pure f
+  ComponentRawSig innerHtmlSig f -> do
+    tell innerHtmlSig
+    pure f
+  ComponentTextSig ts f -> do
+    tell ts
+    pure f
+  ComponentDoctype name publicId systemId f -> do
+    tell $ pure ("<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">")
+    pure f
+  ComponentLifecycle (mSig :: Signal (m (Component m))) f -> do
+    let
+      mkHook :: m (Component m) -> RenderM m Unit
+      mkHook mCmp = do
+        cmp <- lift mCmp
+        foldComponentM renderInterpreter cmp
+    useHooks_ $ mkHook <$> mSig
+    pure f
+
+render :: forall m. MonadRec m => MonadHooks m => Component m -> m (Signal String)
+render comp = do
+  _ /\ rendered <- runRenderM $ foldComponentM renderInterpreter comp
   pure rendered

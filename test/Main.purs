@@ -2,49 +2,58 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT, ask, runReaderT)
-import Data.Foldable (traverse_)
-import Data.Tuple.Nested ((/\))
+import Control.Monad.Reader (class MonadTrans, ReaderT, ask, lift, runReaderT)
+import Control.Monad.Rec.Class (class MonadRec)
+import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Aff (launchAff_)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
-import Jelly.Aff (awaitBody)
-import Jelly.Component (class Component, raw, text, textSig)
+import Jelly.Component (Component, hooks, raw, switch, text, textSig)
 import Jelly.Element as JE
-import Jelly.Hooks (class MonadHooks, Hooks, newStateEq, runHooks_, useCleaner, useInterval, useWhen_)
-import Jelly.Hydrate (HydrateM, mount)
+import Jelly.Hooks (class MonadHooks, Hooks, newStateEq, runHooks, runHooks_, useCleaner, useInterval)
 import Jelly.Prop (on, onMount, (:=))
-import Jelly.Signal (modifyChannel, writeChannel)
-import Web.DOM (Node)
+import Jelly.Render (render)
+import Jelly.Signal (modifyChannel, readSignal, writeChannel)
 import Web.HTML.Event.EventTypes (click)
 
-newtype AppT :: forall k. (k -> Type) -> k -> Type
-newtype AppT m a = AppT (ReaderT Int m a)
+newtype AppT a = AppT (ReaderT Int Hooks a)
 
-class UseInt m where
+class Monad m <= UseInt m where
   useInt :: m Int
 
-derive newtype instance Monad m => Functor (AppT m)
-derive newtype instance Monad m => Apply (AppT m)
-derive newtype instance Monad m => Applicative (AppT m)
-derive newtype instance Monad m => Bind (AppT m)
-derive newtype instance Monad m => Monad (AppT m)
-derive newtype instance MonadEffect m => MonadEffect (AppT m)
-derive newtype instance MonadHooks m => MonadHooks (AppT m)
-derive newtype instance Component m => Component (AppT m)
-instance Monad m => UseInt (AppT m) where
+instance (MonadTrans t, UseInt m, Monad (t m)) => UseInt (t m) where
+  useInt = lift useInt
+
+derive newtype instance Functor AppT
+derive newtype instance Apply AppT
+derive newtype instance Applicative AppT
+derive newtype instance Bind AppT
+derive newtype instance Monad AppT
+derive newtype instance MonadEffect AppT
+derive newtype instance MonadHooks AppT
+derive newtype instance MonadRec AppT
+instance UseInt AppT where
   useInt = AppT ask
 
-mountApp :: AppT HydrateM Unit -> Int -> Node -> Hooks Unit
-mountApp (AppT m) int node = mount (runReaderT m int) node
+runAppT :: forall a. AppT a -> Int -> Effect (a /\ Effect Unit)
+runAppT (AppT rdr) i = runHooks (runReaderT rdr i)
+
+runAppT_ :: AppT Unit -> Int -> Effect Unit
+runAppT_ (AppT rdr) i = runHooks_ (runReaderT rdr i)
+
+-- mountApp :: AppT HydrateM Unit -> Int -> Node -> Hooks Unit
+-- mountApp (AppT m) int node = mount (runReaderT m int) node
 
 main :: Effect Unit
-main = launchAff_ do
-  bodyMaybe <- awaitBody
-  liftEffect $ runHooks_ $ traverse_ (mountApp root 123) bodyMaybe
+main = runAppT_ app 123
 
-root :: forall m. Component m => UseInt m => m Unit
+app :: forall m. MonadRec m => MonadHooks m => UseInt m => m Unit
+app = do
+  rendered <- render root
+  log =<< readSignal rendered
+  pure unit
+
+root :: forall m. MonadHooks m => UseInt m => Component m
 root = do
   testComp
   testCounter
@@ -52,43 +61,46 @@ root = do
   testRaw
   testApp
 
-testComp :: forall m. Component m => m Unit
+testComp :: forall m. Component m
 testComp = JE.div [ "class" := "test" ] $ text "Hello World!"
 
-testState :: forall m. Component m => m Unit
-testState = do
+testState :: forall m. MonadHooks m => Component m
+testState = hooks do
   timeSig /\ timeChannel <- newStateEq 0
 
   useInterval 1000 do
     modifyChannel timeChannel (_ + 1)
 
-  JE.div' $ textSig $ show <$> timeSig
+  pure $ JE.div' $ textSig $ show <$> timeSig
 
-testCounter :: forall m. Component m => m Unit
-testCounter = do
+testCounter :: forall m. MonadHooks m => Component m
+testCounter = hooks do
   countSig /\ countChannel <- newStateEq 0
 
-  JE.div' do
+  pure $ JE.div' do
     JE.button [ on click \_ -> modifyChannel countChannel (_ + 1) ] $ text "Increment"
     JE.div' $ textSig $ show <$> countSig
 
-testEffect :: forall m. Component m => m Unit
-testEffect = do
+testEffect :: forall m. MonadHooks m => Component m
+testEffect = hooks do
   fragSig /\ fragChannel <- newStateEq true
 
-  JE.div' do
+  pure $ JE.div' do
     JE.button [ on click \_ -> writeChannel fragChannel true ] $ text "Mount"
     JE.button [ on click \_ -> writeChannel fragChannel false ] $ text "Unmount"
-    useWhen_ fragSig do
-      useCleaner $ log "Unmounted"
-      log "Mounted"
-      JE.div [ onMount \_ -> log "Mounted(in props)" ] $ text "Mounted Elem"
+    switch $ fragSig <#> \frag ->
+      when frag $ hooks do
+        useCleaner $ log "Unmounted"
+        log "Mounted"
+        pure $ JE.div [ onMount \_ -> log "Mounted(in props)" ] $ text "Mounted Elem"
 
-testRaw :: forall m. Component m => m Unit
+testRaw :: forall m. Component m
 testRaw = JE.div' do
   raw $ "<div>In Raw Element</div>"
 
-testApp :: forall m. Component m => UseInt m => m Unit
-testApp = do
+testApp :: forall m. UseInt m => Component m
+testApp = hooks do
   int <- useInt
-  JE.div' $ text $ show int
+  pure do
+    JE.div' do
+      text $ show int
