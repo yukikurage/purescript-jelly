@@ -16,7 +16,25 @@ import Jelly.Render (render)
 import Jelly.Signal (modifyChannel, readSignal, writeChannel)
 import Web.HTML.Event.EventTypes (click)
 
-newtype AppT a = AppT (ReaderT Int Hooks a)
+newtype App a = App (ReaderT Int Hooks a)
+
+newtype AppInfinite a = AppInfinite (ReaderT (AppInfinite Unit) Hooks a)
+
+derive newtype instance Functor AppInfinite
+derive newtype instance Apply AppInfinite
+derive newtype instance Applicative AppInfinite
+derive newtype instance Bind AppInfinite
+derive newtype instance Monad AppInfinite
+derive newtype instance MonadEffect AppInfinite
+derive newtype instance MonadHooks AppInfinite
+derive newtype instance MonadRec AppInfinite
+
+runAppInfinite :: AppInfinite Unit -> AppInfinite Unit -> Effect Unit
+runAppInfinite (AppInfinite m) r = runHooks_ (runReaderT m r)
+
+appInfiniteLog :: AppInfinite Unit
+appInfiniteLog = do
+  log "appInfiniteLog"
 
 class Monad m <= UseInt m where
   useInt :: m Int
@@ -24,28 +42,28 @@ class Monad m <= UseInt m where
 instance (MonadTrans t, UseInt m, Monad (t m)) => UseInt (t m) where
   useInt = lift useInt
 
-derive newtype instance Functor AppT
-derive newtype instance Apply AppT
-derive newtype instance Applicative AppT
-derive newtype instance Bind AppT
-derive newtype instance Monad AppT
-derive newtype instance MonadEffect AppT
-derive newtype instance MonadHooks AppT
-derive newtype instance MonadRec AppT
-instance UseInt AppT where
-  useInt = AppT ask
+derive newtype instance Functor App
+derive newtype instance Apply App
+derive newtype instance Applicative App
+derive newtype instance Bind App
+derive newtype instance Monad App
+derive newtype instance MonadEffect App
+derive newtype instance MonadHooks App
+derive newtype instance MonadRec App
+instance UseInt App where
+  useInt = App ask
 
-runAppT :: forall a. AppT a -> Int -> Effect (a /\ Effect Unit)
-runAppT (AppT rdr) i = runHooks (runReaderT rdr i)
+runApp :: forall a. App a -> Int -> Effect (a /\ Effect Unit)
+runApp (App rdr) i = runHooks (runReaderT rdr i)
 
-runAppT_ :: AppT Unit -> Int -> Effect Unit
-runAppT_ (AppT rdr) i = runHooks_ (runReaderT rdr i)
+runApp_ :: App Unit -> Int -> Effect Unit
+runApp_ (App rdr) i = runHooks_ (runReaderT rdr i)
 
--- mountApp :: AppT HydrateM Unit -> Int -> Node -> Hooks Unit
--- mountApp (AppT m) int node = mount (runReaderT m int) node
+-- mountApp :: App HydrateM Unit -> Int -> Node -> Hooks Unit
+-- mountApp (App m) int node = mount (runReaderT m int) node
 
 main :: Effect Unit
-main = runAppT_ app 123
+main = runApp_ app 123
 
 app :: forall m. MonadRec m => MonadHooks m => UseInt m => m Unit
 app = do
