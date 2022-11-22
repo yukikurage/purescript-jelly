@@ -2,7 +2,7 @@ module Jelly.Hydrate where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Reader (class MonadAsk, class MonadReader, class MonadTrans, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT, tell)
 import Data.Foldable (for_, traverse_)
@@ -11,8 +11,8 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref, new, read, write)
-import Jelly.Component (class Component)
-import Jelly.Hooks (class MonadHooks, Hooks, liftHooks, useCleaner, useEvent, useHooks)
+import Jelly.Component (Component, ComponentF(..), foldComponentM)
+import Jelly.Hooks (class MonadHooks, useCleaner, useEvent, useHooks, useHooks_)
 import Jelly.Prop (Prop(..))
 import Jelly.Signal (Signal, readSignal, runSignal, watchSignal)
 import Web.DOM (Document, DocumentType, Element, Node, Text)
@@ -68,27 +68,33 @@ useRegisterText doInitialize txt txtSig = do
       mempty
   useCleaner cleaner
 
-newtype HydrateM a = HydrateM (ReaderT (Ref (Maybe Node)) (WriterT (Signal (Array Node)) Hooks) a)
+newtype HydrateM m a = HydrateM (ReaderT (Ref (Maybe Node)) (WriterT (Signal (Array Node)) m) a)
 
-derive newtype instance Functor HydrateM
-derive newtype instance Apply HydrateM
-derive newtype instance Applicative HydrateM
-derive newtype instance Bind HydrateM
-derive newtype instance Monad HydrateM
-derive newtype instance MonadEffect HydrateM
-derive newtype instance MonadRec HydrateM
-derive newtype instance MonadTell (Signal (Array Node)) HydrateM
-derive newtype instance MonadWriter (Signal (Array Node)) HydrateM
-derive newtype instance MonadAsk (Ref (Maybe Node)) HydrateM
-derive newtype instance MonadReader (Ref (Maybe Node)) HydrateM
-derive newtype instance MonadHooks HydrateM
+derive newtype instance Functor m => Functor (HydrateM m)
+derive newtype instance Monad m => Apply (HydrateM m)
+derive newtype instance Monad m => Applicative (HydrateM m)
+derive newtype instance Monad m => Bind (HydrateM m)
+derive newtype instance Monad m => Monad (HydrateM m)
+derive newtype instance MonadEffect m => MonadEffect (HydrateM m)
+derive newtype instance MonadRec m => MonadRec (HydrateM m)
+derive newtype instance Monad m => MonadTell (Signal (Array Node)) (HydrateM m)
+derive newtype instance Monad m => MonadWriter (Signal (Array Node)) (HydrateM m)
+derive newtype instance Monad m => MonadAsk (Ref (Maybe Node)) (HydrateM m)
+derive newtype instance Monad m => MonadReader (Ref (Maybe Node)) (HydrateM m)
+derive newtype instance MonadHooks m => MonadHooks (HydrateM m)
+instance MonadTrans HydrateM where
+  lift = HydrateM <<< lift <<< lift
+
+runHydrateM :: forall m a. Monad m => HydrateM m a -> Ref (Maybe Node) -> m (a /\ Signal (Array Node))
+runHydrateM (HydrateM m) ref = runWriterT $ runReaderT m ref
 
 hydrateNode
-  :: forall a
-   . (Node -> Maybe a)
+  :: forall m a
+   . MonadEffect m
+  => (Node -> Maybe a)
   -> (a -> Node)
   -> Effect a
-  -> HydrateM (a /\ Boolean)
+  -> HydrateM m (a /\ Boolean)
 hydrateNode convertTo convertFrom make = do
   realNodeRef <- ask
   maybeNode <- liftEffect $ read realNodeRef
@@ -103,69 +109,82 @@ hydrateNode convertTo convertFrom make = do
       tell $ pure [ convertFrom a ]
       pure $ a /\ false
 
-instance Component HydrateM where
-  el tag props children = do
-    w <- liftEffect window
-    d <- liftEffect $ HTMLDocument.toDocument <$> document w
-    e /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
+hydrateInterpreter
+  :: forall m
+   . Monad m
+  => MonadRec m
+  => MonadHooks m
+  => ComponentF m ~> HydrateM m
+hydrateInterpreter componentF = do
+  w <- liftEffect window
+  d <- liftEffect $ HTMLDocument.toDocument <$> document w
+  case componentF of
+    ComponentEl tag props children f -> do
+      e /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
 
-    liftHooks $ hydrate children $ Element.toNode e
-    useRegisterProps (not isHydrate) e props
+      lift $ hydrate children $ Element.toNode e
+      lift $ useRegisterProps (not isHydrate) e props
 
-  elNS namespace tag props children = do
-    w <- liftEffect window
-    d <- liftEffect $ HTMLDocument.toDocument <$> document w
-    el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElementNS (Just namespace) tag d
+      pure f
+    ComponentElNS namespace tag props children f -> do
+      el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElementNS (Just namespace) tag d
 
-    liftHooks $ hydrate children $ Element.toNode el
-    useRegisterProps (not isHydrate) el props
+      lift $ hydrate children $ Element.toNode el
+      lift $ useRegisterProps (not isHydrate) el props
 
-  elVoid tag props = do
-    w <- liftEffect window
-    d <- liftEffect $ HTMLDocument.toDocument <$> document w
-    el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
+      pure f
+    ComponentElVoid tag props f -> do
+      el /\ isHydrate <- hydrateNode Element.fromNode Element.toNode $ createElement tag d
 
-    useRegisterProps (not isHydrate) el props
+      lift $ useRegisterProps (not isHydrate) el props
 
-  textSig ts = do
-    w <- liftEffect window
-    d <- liftEffect $ HTMLDocument.toDocument <$> document w
-    txt /\ isHydrate <- hydrateNode Text.fromNode Text.toNode (createTextNode "" d)
+      pure f
+    ComponentTextSig ts f -> do
+      txt /\ isHydrate <- hydrateNode Text.fromNode Text.toNode (createTextNode "" d)
 
-    useRegisterText (not isHydrate) txt ts
+      lift $ useRegisterText (not isHydrate) txt ts
 
-  rawSig innerHtmlSig = do
-    realNodeRef <- ask
-    nodesSig <- useHooks $ liftEffect <<< convertInnerHtmlToNodes <$> innerHtmlSig
-    let
-      skipRef = do
-        maybeNode <- read realNodeRef
-        case maybeNode of
-          Just node -> do
-            ns <- nextSibling node
-            write ns realNodeRef
-          Nothing -> write Nothing realNodeRef
+      pure f
+    ComponentRawSig innerHtmlSig f -> do
+      realNodeRef <- ask
+      nodesSig <- lift $ useHooks $ liftEffect <<< convertInnerHtmlToNodes <$> innerHtmlSig
+      let
+        skipRef = do
+          maybeNode <- read realNodeRef
+          case maybeNode of
+            Just node -> do
+              ns <- nextSibling node
+              write ns realNodeRef
+            Nothing -> write Nothing realNodeRef
 
-    nodes <- readSignal nodesSig
-    liftEffect $ for_ nodes \_ -> skipRef
+      nodes <- readSignal nodesSig
+      liftEffect $ for_ nodes \_ -> skipRef
 
-    tell nodesSig
+      tell nodesSig
 
-  doctype name publicId systemId = do
-    w <- liftEffect window
-    d <- liftEffect $ HTMLDocument.toDocument <$> document w
-    _ <- hydrateNode DocumentType.fromNode DocumentType.toNode
-      (createDocumentType name publicId systemId d)
+      pure f
+    ComponentDoctype name publicId systemId f -> do
+      _ <- hydrateNode DocumentType.fromNode DocumentType.toNode
+        (createDocumentType name publicId systemId d)
 
-    pure unit
+      pure f
+    ComponentLifecycle (mSig :: Signal (m (Component m))) f -> do
+      let
+        mkHook :: m (Component m) -> HydrateM m Unit
+        mkHook mCmp = do
+          cmp <- lift mCmp
+          foldComponentM hydrateInterpreter cmp
+      useHooks_ $ mkHook <$> mSig
 
-hydrate :: HydrateM Unit -> Node -> Hooks Unit
-hydrate (HydrateM cmp) node = do
+      pure f
+
+hydrate :: forall m. MonadHooks m => MonadRec m => Component m -> Node -> m Unit
+hydrate component node = do
   realNodeRef <- liftEffect $ new =<< firstChild node
-  _ /\ nodesSig <- runWriterT $ runReaderT cmp realNodeRef
+  _ /\ nodesSig <- runHydrateM (foldComponentM hydrateInterpreter component) realNodeRef
   useRegisterChildren true node nodesSig
 
-mount :: HydrateM Unit -> Node -> Hooks Unit
+mount :: forall m. MonadHooks m => MonadRec m => Component m -> Node -> m Unit
 mount cmp node = do
   liftEffect $ updateChildren node []
   hydrate cmp node

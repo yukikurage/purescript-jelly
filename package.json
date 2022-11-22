@@ -4,7 +4,6 @@
   "main": "index.js",
   "scripts": {
     "test": "npx spago -x spago-test.dhall build && purs-backend-es bundle-app -s -t public/index.js -y -m Test.Main",
-    "test-run": "npx spago -x spago-test.dhall run -m Test.Main",
     "serve": "npx http-server public"
   },
   "devDependencies": {

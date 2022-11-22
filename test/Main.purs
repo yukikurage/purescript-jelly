@@ -4,16 +4,21 @@ import Prelude
 
 import Control.Monad.Reader (class MonadTrans, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
+import Data.Foldable (traverse_)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Aff (launchAff_)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console (log)
+import Jelly.Aff (awaitBody)
 import Jelly.Component (Component, hooks, raw, switch, text, textSig)
 import Jelly.Element as JE
 import Jelly.Hooks (class MonadHooks, Hooks, newStateEq, runHooks, runHooks_, useCleaner, useInterval)
+import Jelly.Hydrate (mount)
 import Jelly.Prop (on, onMount, (:=))
 import Jelly.Render (render)
 import Jelly.Signal (modifyChannel, readSignal, writeChannel)
+import Web.DOM (Node)
 import Web.HTML.Event.EventTypes (click)
 
 newtype App a = App (ReaderT Int Hooks a)
@@ -59,15 +64,15 @@ runApp (App rdr) i = runHooks (runReaderT rdr i)
 runApp_ :: App Unit -> Int -> Effect Unit
 runApp_ (App rdr) i = runHooks_ (runReaderT rdr i)
 
--- mountApp :: App HydrateM Unit -> Int -> Node -> Hooks Unit
--- mountApp (App m) int node = mount (runReaderT m int) node
-
 main :: Effect Unit
-main = runApp_ app 123
+main = launchAff_ do
+  nodeM <- awaitBody
+  liftEffect $ traverse_ (\node -> runApp_ (app node) 123) nodeM
 
-app :: forall m. MonadRec m => MonadHooks m => UseInt m => m Unit
-app = do
+app :: forall m. MonadRec m => MonadHooks m => UseInt m => Node -> m Unit
+app appNode = do
   rendered <- render root
+  mount root appNode
   log =<< readSignal rendered
   pure unit
 
