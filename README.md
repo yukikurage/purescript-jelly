@@ -9,7 +9,7 @@ Jelly is a framework with the following features
 - Simple component separation
 - SSG & SPA Routing support
 
-Jelly depends [simple-signal](https://github.com/yukikurage/purescript-simple-signal) and [simple-hooks](https://github.com/yukikurage/purescript-simple-hooks)
+Jelly depends [jelly-signal](https://github.com/yukikurage/purescript-jelly-signal) and [jelly-hooks](https://github.com/yukikurage/purescript-jelly-hooks)
 Since systems such as component separation are provided by these, Jelly only provides HTML feature.
 
 ## Installation
