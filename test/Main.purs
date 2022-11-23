@@ -21,24 +21,6 @@ import Web.HTML.Event.EventTypes (click)
 
 newtype App a = App (ReaderT Int Hooks a)
 
-newtype AppInfinite a = AppInfinite (ReaderT (AppInfinite Unit) Hooks a)
-
-derive newtype instance Functor AppInfinite
-derive newtype instance Apply AppInfinite
-derive newtype instance Applicative AppInfinite
-derive newtype instance Bind AppInfinite
-derive newtype instance Monad AppInfinite
-derive newtype instance MonadEffect AppInfinite
-derive newtype instance MonadHooks AppInfinite
-derive newtype instance MonadRec AppInfinite
-
-runAppInfinite :: AppInfinite Unit -> AppInfinite Unit -> Effect Unit
-runAppInfinite (AppInfinite m) r = runHooks_ (runReaderT m r)
-
-appInfiniteLog :: AppInfinite Unit
-appInfiniteLog = do
-  log "appInfiniteLog"
-
 class Monad m <= UseInt m where
   useInt :: m Int
 
