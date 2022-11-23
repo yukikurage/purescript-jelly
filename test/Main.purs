@@ -4,21 +4,19 @@ import Prelude
 
 import Control.Monad.Reader (class MonadTrans, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
-import Data.Foldable (traverse_)
+import Control.Safely (traverse_)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Jelly.Aff (awaitBody)
 import Jelly.Component (Component, hooks, raw, switch, text, textSig)
 import Jelly.Element as JE
-import Jelly.Hooks (class MonadHooks, Hooks, newStateEq, runHooks, runHooks_, useCleaner, useInterval)
+import Jelly.Hooks (class MonadHooks, Hooks, runHooks, runHooks_, useCleaner, useInterval, useStateEq)
 import Jelly.Hydrate (mount)
 import Jelly.Prop (on, onMount, (:=))
-import Jelly.Render (render)
-import Jelly.Signal (modifyChannel, readSignal, writeChannel)
-import Web.DOM (Node)
+import Jelly.Signal (modifyChannel_, writeChannel)
 import Web.HTML.Event.EventTypes (click)
 
 newtype App a = App (ReaderT Int Hooks a)
@@ -58,23 +56,16 @@ derive newtype instance MonadRec App
 instance UseInt App where
   useInt = App ask
 
-runApp :: forall a. App a -> Int -> Effect (a /\ Effect Unit)
+runApp :: forall m a. MonadEffect m => App a -> Int -> m (a /\ Effect Unit)
 runApp (App rdr) i = runHooks (runReaderT rdr i)
 
-runApp_ :: App Unit -> Int -> Effect Unit
+runApp_ :: forall m a. MonadEffect m => App a -> Int -> m Unit
 runApp_ (App rdr) i = runHooks_ (runReaderT rdr i)
 
 main :: Effect Unit
 main = launchAff_ do
   nodeM <- awaitBody
-  liftEffect $ traverse_ (\node -> runApp_ (app node) 123) nodeM
-
-app :: forall m. MonadRec m => MonadHooks m => UseInt m => Node -> m Unit
-app appNode = do
-  rendered <- render root
-  mount root appNode
-  log =<< readSignal rendered
-  pure unit
+  runApp_ (traverse_ (mount root) nodeM) 123
 
 root :: forall m. MonadHooks m => UseInt m => Component m
 root = do
@@ -89,24 +80,24 @@ testComp = JE.div [ "class" := "test" ] $ text "Hello World!"
 
 testState :: forall m. MonadHooks m => Component m
 testState = hooks do
-  timeSig /\ timeChannel <- newStateEq 0
+  timeSig /\ timeChannel <- useStateEq 0
 
   useInterval 1000 do
-    modifyChannel timeChannel (_ + 1)
+    modifyChannel_ timeChannel (_ + 1)
 
   pure $ JE.div' $ textSig $ show <$> timeSig
 
 testCounter :: forall m. MonadHooks m => Component m
 testCounter = hooks do
-  countSig /\ countChannel <- newStateEq 0
+  countSig /\ countChannel <- useStateEq 0
 
   pure $ JE.div' do
-    JE.button [ on click \_ -> modifyChannel countChannel (_ + 1) ] $ text "Increment"
+    JE.button [ on click \_ -> modifyChannel_ countChannel (_ + 1) ] $ text "Increment"
     JE.div' $ textSig $ show <$> countSig
 
 testEffect :: forall m. MonadHooks m => Component m
 testEffect = hooks do
-  fragSig /\ fragChannel <- newStateEq true
+  fragSig /\ fragChannel <- useStateEq true
 
   pure $ JE.div' do
     JE.button [ on click \_ -> writeChannel fragChannel true ] $ text "Mount"

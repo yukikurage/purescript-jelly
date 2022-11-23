@@ -8,6 +8,7 @@ import Jelly.Signal (Signal)
 import Web.DOM (Element)
 import Web.Event.Event (Event, EventType)
 
+-- | Prop represents one property of a DOM element.
 data Prop m
   = PropAttribute String (Signal (Maybe String))
   | PropHandler EventType (Event -> m Unit)
@@ -40,22 +41,27 @@ hoistProp f = case _ of
   PropHandler eventType handler -> PropHandler eventType (f <<< handler)
   PropMountEffect effect -> PropMountEffect (f <<< effect)
 
+-- | Create a property
 attr :: forall m a. AttrValue a => String -> a -> Prop m
 attr name value = PropAttribute name $ pure $ toAttrValue value
 
 infix 0 attr as :=
 
+-- | Create a property with a Signal
 attrSig :: forall m a. AttrValue a => String -> Signal a -> Prop m
 attrSig name value = PropAttribute name $ toAttrValue <$> value
 
-infix 0 attrSig as :=@
+infix 0 attrSig as @=
 
+-- | Set an event handler for the given event type.
 on :: forall m. EventType -> (Event -> m Unit) -> Prop m
 on = PropHandler
 
+-- | Set an effect to run when the element is mounted.
 onMount :: forall m. (Element -> m Unit) -> Prop m
 onMount = PropMountEffect
 
+-- | Render a prop
 renderProp :: forall m. Prop m -> Signal String
 renderProp = case _ of
   PropAttribute name valueSig -> do
@@ -66,5 +72,6 @@ renderProp = case _ of
   PropHandler _ _ -> pure ""
   PropMountEffect _ -> pure ""
 
+-- | Render a list of props
 renderProps :: forall m. Array (Prop m) -> Signal String
 renderProps props = fold $ map renderProp props

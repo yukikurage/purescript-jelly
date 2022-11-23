@@ -1,20 +1,24 @@
-module Jelly.Hydrate where
+module Jelly.Hydrate
+  ( HydrateM(..)
+  , hydrate
+  , mount
+  ) where
 
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, class MonadReader, class MonadTrans, ReaderT, ask, lift, runReaderT)
 import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.Writer (class MonadTell, class MonadWriter, WriterT, runWriterT, tell)
-import Data.Foldable (for_, traverse_)
+import Control.Safely (for_, traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref, new, read, write)
 import Jelly.Component (Component, ComponentF(..), foldComponentM)
-import Jelly.Hooks (class MonadHooks, useCleaner, useEvent, useHooks, useHooks_)
+import Jelly.Hooks (class MonadHooks, useEvent, useHooks, useHooks_, useUpdate)
 import Jelly.Prop (Prop(..))
-import Jelly.Signal (Signal, readSignal, runSignal, watchSignal)
+import Jelly.Signal (Signal, readSignal)
 import Web.DOM (Document, DocumentType, Element, Node, Text)
 import Web.DOM.Document (createElement, createElementNS, createTextNode)
 import Web.DOM.DocumentType as DocumentType
@@ -33,41 +37,33 @@ foreign import convertInnerHtmlToNodes :: String -> Effect (Array Node)
 
 foreign import updateChildren :: Node -> Array Node -> Effect Unit
 
-runSignalRegister :: forall m. MonadHooks m => MonadEffect m => Boolean -> Signal (Effect (Effect Unit)) -> m (Effect Unit)
-runSignalRegister doInitialize = if doInitialize then runSignal else watchSignal
+runSignalRegister :: forall m. MonadHooks m => Boolean -> Signal (m Unit) -> m Unit
+runSignalRegister doInitialize = if doInitialize then useHooks_ else useUpdate
 
 useRegisterProp :: forall m. MonadHooks m => Boolean -> Element -> Prop m -> m Unit
 useRegisterProp doInitialize element = case _ of
-  PropAttribute name valueSig -> do
-    cleaner <- runSignalRegister doInitialize $ valueSig <#> \value -> do
-      case value of
-        Nothing -> removeAttribute name element
-        Just v -> setAttribute name v element
-      mempty
-    useCleaner cleaner
+  PropAttribute name valueSig -> runSignalRegister doInitialize $ valueSig <#> \value -> liftEffect do
+    case value of
+      Nothing -> removeAttribute name element
+      Just v -> setAttribute name v element
   PropHandler eventType handler -> do
     useEvent (Element.toEventTarget element) eventType handler
   PropMountEffect effect -> do
     effect element
 
-useRegisterProps :: forall m. MonadHooks m => Boolean -> Element -> Array (Prop m) -> m Unit
+useRegisterProps :: forall m. MonadHooks m => MonadRec m => Boolean -> Element -> Array (Prop m) -> m Unit
 useRegisterProps doInitialize element props = traverse_ (useRegisterProp doInitialize element) props
 
 useRegisterChildren :: forall m. MonadHooks m => Boolean -> Node -> Signal (Array Node) -> m Unit
-useRegisterChildren doInitialize elem chlSig = do
-  cleaner <- runSignalRegister doInitialize $ chlSig <#> \chl -> do
-    updateChildren elem chl
-    mempty
-  useCleaner cleaner
+useRegisterChildren doInitialize elem chlSig = runSignalRegister doInitialize $ chlSig <#> \chl -> liftEffect $ updateChildren elem chl
 
 useRegisterText :: forall m. MonadHooks m => Boolean -> Text -> Signal String -> m Unit
-useRegisterText doInitialize txt txtSig = do
-  cleaner <- runSignalRegister doInitialize $
-    txtSig <#> \tx -> do
-      setTextContent tx $ Text.toNode txt
-      mempty
-  useCleaner cleaner
+useRegisterText doInitialize txt txtSig =
+  runSignalRegister doInitialize $ txtSig <#> \tx -> liftEffect $ setTextContent tx $ Text.toNode txt
 
+-- | Monad for hydrating a component.
+-- | Ref (Maybe Node) is used to store the existing DOM node.
+-- | Signal (Array Node) are result nodes.
 newtype HydrateM m a = HydrateM (ReaderT (Ref (Maybe Node)) (WriterT (Signal (Array Node)) m) a)
 
 derive newtype instance Functor m => Functor (HydrateM m)
@@ -178,12 +174,16 @@ hydrateInterpreter componentF = do
 
       pure f
 
+-- | Hydrate a component into a DOM node.
+-- | Nodes must be in the same order as the component.
 hydrate :: forall m. MonadHooks m => MonadRec m => Component m -> Node -> m Unit
 hydrate component node = do
   realNodeRef <- liftEffect $ new =<< firstChild node
   _ /\ nodesSig <- runHydrateM (foldComponentM hydrateInterpreter component) realNodeRef
   useRegisterChildren true node nodesSig
 
+-- | Mount a component into a DOM node.
+-- | Existing nodes will be removed.
 mount :: forall m. MonadHooks m => MonadRec m => Component m -> Node -> m Unit
 mount cmp node = do
   liftEffect $ updateChildren node []

@@ -1,4 +1,7 @@
-module Jelly.Render where
+module Jelly.Render
+  ( RenderM(..)
+  , render
+  ) where
 
 import Prelude
 
@@ -11,6 +14,8 @@ import Jelly.Hooks (class MonadHooks, useHooks_)
 import Jelly.Prop (renderProps)
 import Jelly.Signal (Signal)
 
+-- | A monad for rendering a component.
+-- | `Signal String` is result.
 newtype RenderM m a = RenderM (WriterT (Signal String) m a)
 
 runRenderM :: forall m a. RenderM m a -> m (a /\ Signal String)
