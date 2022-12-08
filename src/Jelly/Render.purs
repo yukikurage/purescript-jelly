@@ -67,14 +67,15 @@ renderInterpreter = case _ of
   ComponentDoctype name publicId systemId f -> do
     tell $ pure ("<!DOCTYPE " <> name <> " " <> publicId <> " " <> systemId <> ">")
     pure f
-  ComponentLifecycle (mSig :: Signal (m (Component m))) f -> do
-    let
-      mkHook :: m (Component m) -> RenderM m Unit
-      mkHook mCmp = do
-        cmp <- lift mCmp
-        foldComponentM renderInterpreter cmp
-    useHooks_ $ mkHook <$> mSig
+  ComponentHooks hooks f -> do
+    foldComponentM renderInterpreter =<< lift hooks
+
     pure f
+  ComponentSwitch signal f ->  do
+      useHooks_ $ foldComponentM renderInterpreter <$> signal
+
+      pure f
+    
 
 render :: forall m. MonadRec m => MonadHooks m => Component m -> m (Signal String)
 render comp = do

@@ -15,7 +15,8 @@ data ComponentF m f
   | ComponentRawSig (Signal String) f
   | ComponentTextSig (Signal String) f
   | ComponentDoctype String String String f
-  | ComponentLifecycle (Signal (m (Component m))) f
+  | ComponentHooks (m (Component m)) f
+  | ComponentSwitch (Signal (Component m)) f
 
 derive instance Functor (ComponentF m)
 
@@ -86,14 +87,10 @@ doctype dc publicId systemId = ComponentM $ liftF $ ComponentDoctype dc publicId
 doctypeHtml :: forall m. Component m
 doctypeHtml = doctype "html" "" ""
 
--- | Mange component lifecycle
-lifecycle :: forall m. Signal (m (Component m)) -> Component m
-lifecycle sig = ComponentM $ liftF $ ComponentLifecycle sig unit
-
 -- | Switch components based on a Signal
-switch :: forall m. Monad m => Signal (Component m) -> Component m
-switch sig = lifecycle $ pure <$> sig
+switch :: forall m. Signal (Component m) -> Component m
+switch sig = ComponentM $ liftF $ ComponentSwitch sig unit
 
--- | Embeds a logic into a component
-hooks :: forall m. Monad m => m (Component m) -> Component m
-hooks h = lifecycle $ pure h
+-- | Embeds a hooks into a component
+hooks :: forall m. m (Component m) -> Component m
+hooks h = ComponentM $ liftF $ ComponentHooks h unit

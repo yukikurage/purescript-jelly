@@ -164,13 +164,12 @@ hydrateInterpreter componentF = do
         (createDocumentType name publicId systemId d)
 
       pure f
-    ComponentLifecycle (mSig :: Signal (m (Component m))) f -> do
-      let
-        mkHook :: m (Component m) -> HydrateM m Unit
-        mkHook mCmp = do
-          cmp <- lift mCmp
-          foldComponentM hydrateInterpreter cmp
-      useHooks_ $ mkHook <$> mSig
+    ComponentHooks (hooks :: m (Component m)) f -> do
+      foldComponentM hydrateInterpreter =<< lift hooks
+
+      pure f
+    ComponentSwitch (signal :: Signal (Component m)) f -> do
+      useHooks_ $ foldComponentM hydrateInterpreter <$> signal
 
       pure f
 
