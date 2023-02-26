@@ -5,7 +5,6 @@
   , "effect"
   , "either"
   , "free"
-  , "jelly-hooks"
   , "jelly-signal"
   , "maybe"
   , "prelude"

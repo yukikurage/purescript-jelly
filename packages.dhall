@@ -99,30 +99,25 @@ in  upstream
 -------------------------------
 -}
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20221207/packages.dhall
-        sha256:2ae34b92177adee8938984859e554ef43b0d68736717856edb90effda076aa2a
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.4-20230105/packages.dhall
+        sha256:3e9fbc9ba03e9a1fcfd895f65e2d50ee2f5e86c4cd273f3d5c841b655a0e1bda
 
 in  upstream
   with jelly-signal =
-    { dependencies = [ "effect", "prelude", "refs", "tuples", "unsafe-coerce" ]
+    { dependencies = 
+    [ "aff"
+    , "effect"
+    , "js-timers"
+    , "maybe"
+    , "partial"
+    , "prelude"
+    , "refs"
+    , "tailrec"
+    , "transformers"
+    , "tuples"
+    , "unsafe-coerce"
+    , "web-events"
+    ]
     , repo = "https://github.com/yukikurage/purescript-jelly-signal.git"
-    , version = "v0.3.0"
-    }
-  with jelly-hooks =
-    { dependencies =
-      [ "aff"
-      , "effect"
-      , "js-timers"
-      , "maybe"
-      , "prelude"
-      , "refs"
-      , "jelly-signal"
-      , "tailrec"
-      , "transformers"
-      , "tuples"
-      , "unsafe-coerce"
-      , "web-events"
-      ]
-    , repo = "https://github.com/yukikurage/purescript-jelly-hooks.git"
-    , version = "v0.3.0"
+    , version = "v0.4.0"
     }
